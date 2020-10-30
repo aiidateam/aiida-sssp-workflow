@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida import orm
 
 @calcfunction
-def birch_murnaghan_fit(volume_energy: orm.Dict) -> orm.Dict:
+def birch_murnaghan_fit(volume_energy: orm.Dict):
     import numpy as np
 
     volumes = np.array(list(volume_energy['volumes'].values()))
@@ -41,12 +41,12 @@ def birch_murnaghan_fit(volume_energy: orm.Dict) -> orm.Dict:
 
     echarge = 1.60217733e-19
     # TODO 'E0': minimum energy, per atom,
-    res = orm.Dict(dict={
-        'volume0': volume0,
-        'bulk_modulus0': bulk_modulus0 * echarge * 1.0e21,
-        'bulk_deriv0': bulk_deriv0,
-        'residuals0': residuals0[0],
-        'volume0_unit': 'A^3/atom',
-        'bulk_modulus0_unit': 'GPa',
-    })
+    res = {
+        'volume0': orm.Float(volume0),
+        'bulk_modulus0': orm.Float(bulk_modulus0 * echarge * 1.0e21),
+        'bulk_deriv0': orm.Float(bulk_deriv0),
+        'residuals0': orm.Float(residuals0[0]),
+        'volume0_unit': orm.Str('A^3/atom'),
+        'bulk_modulus0_unit': orm.Str('GPa'),
+    }
     return res

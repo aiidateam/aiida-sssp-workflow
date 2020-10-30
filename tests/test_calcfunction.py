@@ -28,14 +28,13 @@ def test_birch_murnaghan_fit():
         }
     })
 
-    res_node = birch_murnaghan_fit(input)
-    res = res_node.get_dict()
+    res = birch_murnaghan_fit(input)
     assert 'volume0' in res
     assert 'bulk_modulus0' in res
     assert 'bulk_deriv0' in res
     assert 'residuals0' in res
-    assert res['volume0_unit'] == 'A^3/atom'
-    assert res['bulk_modulus0_unit'] == 'GPa'
+    assert res['volume0_unit'].value == 'A^3/atom'
+    assert res['bulk_modulus0_unit'].value == 'GPa'
 
 def test_calculate_delta():
     """test calcfunction calculate_delta"""
