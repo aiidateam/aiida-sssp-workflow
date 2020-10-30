@@ -29,7 +29,8 @@
             "sssp_workflow = aiida_sssp_workflow.cli:data_cli"
         ],
         "aiida.workflows": [
-            "sssp_workflow.eos = aiida_sssp_workflow.workflows.eos:EquationOfStateWorkChain"
+            "sssp_workflow.eos = aiida_sssp_workflow.workflows.eos:EquationOfStateWorkChain",
+            "sssp_workflow.delta_factor = aiida_sssp_workflow.workflows.delta_factor:DeltaFactorWorkChain"
         ]
     },
     "include_package_data": true,

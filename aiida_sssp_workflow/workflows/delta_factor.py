@@ -1,25 +1,53 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
 from aiida import orm
-from aiida.engine import WorkChain, ToContext, workfunction
+from aiida.common import AttributeDict
+from aiida.engine import WorkChain, ToContext, calcfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
+@calcfunction
+def helper_parse_upf(upf):
+    return orm.Str(upf.element)
 
-class DeltaFactorWorkchain(WorkChain):
-    """Workchain to calculate delta factor of specific psp"""
+PW_PARAS = lambda: orm.Dict(dict={
+    'SYSTEM': {
+        'degauss': 0.02,
+        'ecutrho': 800,
+        'ecutwfc': 200,
+        'occupations': 'smearing',
+        'smearing': 'marzari-vanderbilt',
+    },
+    'ELECTRONS': {
+        'conv_thr': 1e-10,
+    },
+})
+
+class DeltaFactorWorkChain(WorkChain):
+    """Workchain to calculate delta factor of specific pseudopotential"""
 
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
-        super().difine(spec)
-        spec.input('code')
+        super().define(spec)
+        spec.input('code', valid_type=orm.Code,
+                   help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=orm.UpfData, help='Pseudopotential to be verified')
         spec.input('structure', valid_type=orm.StructureData,
                    help='Ground state structure (a family?) which the verification perform')
+        spec.input('options', valid_type=orm.Dict, required=False,
+            help='Optional `options` to use for the `PwCalculations`.')
+        spec.input_namespace('parameters', help='Para')
+        spec.input('parameters.pw', valid_type=orm.Dict, default=PW_PARAS, help='parameters for pwscf.')
+        spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
+                   help='Global kpoints setting.')
+        spec.input('parameters.scale_count', valid_type=orm.Int, default=lambda: orm.Int(7),
+                   help='Numbers of scale points in eos step.')
+        spec.input('parameters.scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
+                   help='The scale increment in eos step.')
         # TODO clean_workdir
         spec.outline(
             cls.setup,
@@ -31,48 +59,45 @@ class DeltaFactorWorkchain(WorkChain):
         )
         spec.output('delta_factor', valid_type=orm.Float, required=True,
                  help='The delta factor of the pseudopotential.')
+        spec.output('element', valid_type=orm.Str, required=True,
+                    help='The element of the pseudopotential.')
         # TODO delta prime out
+        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
+                       message='The `EquationOfStateWorkChain` sub process failed.')
 
     def setup(self):
         """Input validation"""
-        pass
+        self.ctx.pw_parameters = self.inputs.parameters.pw
+        self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure_and_pseudo(self):
         """validate structure"""
-        self.ctx.element = self.inputs.pseudo.element
+        self.ctx.element = helper_parse_upf(self.inputs.pseudo)
 
     def run_eos(self):
         """run eos workchain"""
         inputs = AttributeDict({
-            'structure': structure,
-            'scale_count': orm.Int(7),
+            'structure': self.inputs.structure,
+            'scale_count': self.inputs.parameters.scale_count,
+            'scale_increment': self.inputs.parameters.scale_increment,
             'scf': {
                 'pw': {
-                    'code': load_code('qe-6.6-pw@daint-mc'),
-                    'pseudos': {self.ctx.element: self.inputs.pseudo},
-                    'parameters': orm.Dict(dict={
-                        'SYSTEM': {
-                            'degauss': 0.02,
-                            'ecutrho': 800,
-                            'ecutwfc': 200,
-                            'occupations': 'smearing',
-                            'smearing': 'marzari-vanderbilt',
-                        },
-                        'ELECTRONS': {
-                            'conv_thr': 1e-10,
-                        },
-                    }),
-                    'metadata': {
-                        'options': {
-                            'resources': {'num_machines': 1},
-                            'max_wallclock_seconds': 1800,
-                            'withmpi': True,
-                        },
-                    },
+                    'code': self.inputs.code,
+                    'pseudos': {self.ctx.element.value: self.inputs.pseudo},
+                    'parameters': self.ctx.pw_parameters,
+                    'metadata': {},
                 },
-                'kpoints_distance': orm.Float(0.1),
+                'kpoints_distance': self.ctx.kpoints_distance,
             }
         })
+
+        if 'options' in self.inputs:
+            inputs.scf.pw.metadata.options = self.inputs.options.get_dict()
+        else:
+            from aiida_quantumespresso.utils.resources import get_default_options
+
+            inputs.scf.pw.metadata.options = get_default_options(with_mpi=True)
+
         running = self.submit(EquationOfStateWorkChain, **inputs)
 
         self.report(f'launching EquationOfStateWorkChain<{running.pk}>')
@@ -107,3 +132,4 @@ class DeltaFactorWorkchain(WorkChain):
     def results(self):
         """Attach the output parameters to the outputs."""
         self.out('delta_factor', self.ctx.delta_factor)
+        self.out('element', self.ctx.element)
