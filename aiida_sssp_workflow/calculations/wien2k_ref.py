@@ -1,5 +1,28 @@
 # -*- coding: utf-8 -*-
-"""The string copy paste from WIEN2k.txt of calcDelta package version 3.1"""
+"""
+The string copy paste from WIEN2k.txt of calcDelta package version 3.1
+and WIEN2K eos results for the rare-earth nitrides ()
+"""
+
+WIEN2K_REN_REF = """
+# Rare-Earth Nitrids(REN) WIEN2K eos data (courtesy of M. Topsakal)
+
+LaN  18.77799   122.037   4.461       
+CeN  16.19013   145.439   4.513       
+PrN  16.33072   120.290   4.025       
+NdN  16.57081   123.322   3.611        
+PmN  15.99888   136.555   0.567       
+SmN  15.96972   122.275   5.106  
+EuN  16.10033   117.219   4.435       
+GdN  15.53591   143.290   0.222       
+TbN  14.77379   140.135   4.069       
+DyN  14.60473   142.980   4.125       
+HoN  14.53329   151.149   4.315       
+ErN  14.25530   147.867   4.460       
+TmN  14.01555   143.253   4.493       
+YbN  13.86410   140.958   5.635       
+LuN  13.54987   170.558   3.892 """
+
 
 WIEN2K_REF = """
 # WIEN2k version 13.1 calcDelta package version 3.1 -- calculations by Stefaan Cottenier

@@ -8,9 +8,6 @@ birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
-@workfunction
-def helper_delta_from_bmf(element, volume_energies):
-
 
 class DeltaFactorWorkchain(WorkChain):
     """Workchain to calculate delta factor of specific psp"""
@@ -19,29 +16,30 @@ class DeltaFactorWorkchain(WorkChain):
     def define(cls, spec):
         """Define the process specification."""
         super().difine(spec)
-        spec.input('pseudo', valid_type=orm.SinglefileData, help='Pseudopotential to be verified')
+        spec.input('code')
+        spec.input('pseudo', valid_type=orm.UpfData, help='Pseudopotential to be verified')
         spec.input('structure', valid_type=orm.StructureData,
                    help='Ground state structure (a family?) which the verification perform')
         # TODO clean_workdir
         spec.outline(
             cls.setup,
-            cls.validate_structure,
+            cls.validate_structure_and_pseudo,
             cls.run_eos,
             cls.inspect_eos,
             cls.run_delta_calc,
             cls.results,
         )
-        spec.out('output_parameters', valid_type=orm.Dict, required=True,
-                 help='The result of delta factor of pseudopotential')
+        spec.output('delta_factor', valid_type=orm.Float, required=True,
+                 help='The delta factor of the pseudopotential.')
         # TODO delta prime out
 
     def setup(self):
         """Input validation"""
         pass
 
-    def validate_structure(self):
+    def validate_structure_and_pseudo(self):
         """validate structure"""
-        pass
+        self.ctx.element = self.inputs.pseudo.element
 
     def run_eos(self):
         """run eos workchain"""
@@ -51,7 +49,7 @@ class DeltaFactorWorkchain(WorkChain):
             'scf': {
                 'pw': {
                     'code': load_code('qe-6.6-pw@daint-mc'),
-                    'pseudos': {upf.element: upf},
+                    'pseudos': {self.ctx.element: self.inputs.pseudo},
                     'parameters': orm.Dict(dict={
                         'SYSTEM': {
                             'degauss': 0.02,
@@ -90,19 +88,22 @@ class DeltaFactorWorkchain(WorkChain):
             self.report(f'EquationOfStateWorkChain failed with exit status {workchain.exit_status}')
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
 
-        volume_energy = orm.Dict(dict={
-            'volumes': workchai.outputs.output_parameters['volumes'],
-            'energies': workchai.outputs.output_parameters['energies'],
-        })
-        self.ctx.eos_result = birch_murnaghan_fit(volume_energy)
-        #TODO report result and output it
+        volume_energy = workchain.outputs.output_parameters # This keep the provenance
+        self.ctx.birch_murnaghan_fit_result = birch_murnaghan_fit(volume_energy)
+        # TODO report result and output it
 
     def run_delta_calc(self):
         """calculate the delta factor"""
-        eos_result = self.ctx.eos_result
-        element = self.ctx.element
-        volume0 = eos_result['volume0']
+        res = self.ctx.birch_murnaghan_fit_result
+        inputs = {
+            'element': self.ctx.element,
+            'v0': res['volume0'],
+            'b0': res['bulk_modulus0'],
+            'bp': res['bulk_deriv0'],
+        }
+        self.ctx.delta_factor = calculate_delta(**inputs)
+        # TODO report
 
     def results(self):
         """Attach the output parameters to the outputs."""
-        pass
+        self.out('delta_factor', self.ctx.delta_factor)
