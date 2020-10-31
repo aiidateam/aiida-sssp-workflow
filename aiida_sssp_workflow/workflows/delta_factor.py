@@ -26,6 +26,9 @@ PW_PARAS = lambda: orm.Dict(dict={
     },
 })
 
+RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']
+
+
 class DeltaFactorWorkChain(WorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
@@ -76,20 +79,37 @@ class DeltaFactorWorkChain(WorkChain):
 
     def validate_structure_and_pseudo(self):
         """validate structure"""
+        import importlib_resources
+
         self.ctx.element = helper_parse_upf(self.inputs.pseudo)
 
         if not 'structure' in self.inputs:
-            import importlib_resources
-
             element = self.ctx.element.value
-            fpath = importlib_resources.path('aiida_sssp_workflow.CIFs', f'{element}.cif')
+            if element in RARE_EARTH_ELEMENTS:
+                fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN', f'{element}N.cif')
+            else:
+                fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs', f'{element}.cif')
             with fpath as path:
-                cif_data = orm.CifData.get_or_create(path)[0]  # TODO how to make this provenance?
+                filename = str(path)
+                cif_data = orm.CifData.get_or_create(filename)[0]
+                # TODO how to make this provenance? return as out node if exist in DB by md5
+                #  check. otherwise create it using a calcf, then return.
             self.ctx.structure = cif_data.get_structure()
         else:
             self.ctx.structure = self.inputs.structure
 
         self.out('eos_initial_structure', self.ctx.structure)
+
+        pseudos = {self.ctx.element.value: self.inputs.pseudo}
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
+            # If rare-earth add psp of N
+            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs', 'N.UPF')
+            with fpath as path:
+                filename = str(path)
+                upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
+                pseudos['N'] = upf_nitrogen
+        self.ctx.pseudos = pseudos
+        self.report(f'pseudos is {pseudos}')
 
     def run_eos(self):
         """run eos workchain"""
@@ -100,7 +120,7 @@ class DeltaFactorWorkChain(WorkChain):
             'scf': {
                 'pw': {
                     'code': self.inputs.code,
-                    'pseudos': {self.ctx.element.value: self.inputs.pseudo},    # RE Nitrogen
+                    'pseudos': self.ctx.pseudos,
                     'parameters': self.ctx.pw_parameters,
                     'metadata': {},
                 },
