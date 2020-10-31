@@ -7,9 +7,11 @@ Molecular Modeling (CMM), Ghent University, Ghent, Belgium
 from io import StringIO
 from aiida.engine import calcfunction
 from aiida import orm
-from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF
+from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 
 import numpy as np
+
+RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']
 
 @calcfunction
 def calculate_delta(element, v0, b0, bp) -> orm.Float:
@@ -17,19 +19,28 @@ def calculate_delta(element, v0, b0, bp) -> orm.Float:
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
     """
-    wien2k_ref = StringIO(WIEN2K_REF)
+    if element.value in RARE_EARTH_ELEMENTS:
+        wien2k_ref = StringIO(WIEN2K_REN_REF)
+    else:
+        # not Lanthanides elements
+        wien2k_ref = StringIO(WIEN2K_REF)
+
     data_ref = np.loadtxt(wien2k_ref,
                           dtype={'names': ('element', 'V0', 'B0', 'BP'),
-                                 'formats': ('S2', np.float, np.float, np.float)})
+                                 'formats': ('U2', np.float, np.float, np.float)})
+
+    # Here use dtype U2 to truncate REN to RE
     data_tested = np.array([(element.value, v0.value, b0.value, bp.value)], dtype={
                         'names': ('element', 'V0', 'B0', 'BP'),
-                        'formats': ('S2', np.float, np.float, np.float),
+                        'formats': ('U2', np.float, np.float, np.float),
                         })
-    eloverlap = list(set(data_tested['element']) & set(data_ref['element']))
+
+    eloverlap = [element.value]
     if not eloverlap:
         # TODO ExitCode
         raise ValueError("Element {} is not present in the reference set"
                           "".format(element))
+    eloverlap = [element.value]
     # Delta computation
     Delta, Deltarel, Delta1 = _calcDelta(data_tested, data_ref,
                                         eloverlap)

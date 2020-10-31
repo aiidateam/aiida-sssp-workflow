@@ -62,6 +62,8 @@ class DeltaFactorWorkChain(WorkChain):
                  help='The delta factor of the pseudopotential.')
         spec.output('element', valid_type=orm.Str, required=True,
                     help='The element of the pseudopotential.')
+        spec.output('eos_initial_structure', valid_type=orm.StructureData,
+                    help='The initial input structure used for calculate delta factor.')
         # TODO delta prime out
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
                        message='The `EquationOfStateWorkChain` sub process failed.')
@@ -82,10 +84,12 @@ class DeltaFactorWorkChain(WorkChain):
             element = self.ctx.element.value
             fpath = importlib_resources.path('aiida_sssp_workflow.CIFs', f'{element}.cif')
             with fpath as path:
-                cif_data = orm.CifData.get_or_create(path)
-                self.ctx.structure = cif_data[0].get_structure()
+                cif_data = orm.CifData.get_or_create(path)[0]  # TODO how to make this provenance?
+            self.ctx.structure = cif_data.get_structure()
         else:
             self.ctx.structure = self.inputs.structure
+
+        self.out('eos_initial_structure', self.ctx.structure)
 
     def run_eos(self):
         """run eos workchain"""
@@ -96,7 +100,7 @@ class DeltaFactorWorkChain(WorkChain):
             'scf': {
                 'pw': {
                     'code': self.inputs.code,
-                    'pseudos': {self.ctx.element.value: self.inputs.pseudo},
+                    'pseudos': {self.ctx.element.value: self.inputs.pseudo},    # RE Nitrogen
                     'parameters': self.ctx.pw_parameters,
                     'metadata': {},
                 },

@@ -48,3 +48,30 @@ def test_calculate_delta():
     }   # Si line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
     assert res.value == 0.0
+
+def test_calculate_delta_H():
+    """test calcfunction calculate_delta
+    make sure space in string is striped."""
+    calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
+
+    inputs = {
+        'element': orm.Str('H'),
+        'v0': orm.Float(17.3883),
+        'b0': orm.Float(10.284),
+        'bp': orm.Float(2.71),
+    }   # Si line of the file so that the delta will be exactly zero
+    res = calculate_delta(**inputs)
+    assert res.value == 0.0
+
+def test_calculate_delta_rare_earth():
+    """test calcfunction calculate_delta"""
+    calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
+
+    inputs = {
+        'element': orm.Str('La'),
+        'v0': orm.Float(18.77799),
+        'b0': orm.Float(122.037),
+        'bp': orm.Float(4.461),
+    }   # LaN line of the file so that the delta will be exactly zero
+    res = calculate_delta(**inputs)
+    assert res.value == 0.0
