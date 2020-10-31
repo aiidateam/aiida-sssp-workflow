@@ -35,9 +35,9 @@ class DeltaFactorWorkChain(WorkChain):
         super().define(spec)
         spec.input('code', valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo', valid_type=orm.UpfData, help='Pseudopotential to be verified')
-        spec.input('structure', valid_type=orm.StructureData,
-                   help='Ground state structure (a family?) which the verification perform')
+        spec.input('pseudo', valid_type=orm.UpfData, required=True, help='Pseudopotential to be verified')
+        spec.input('structure', valid_type=orm.StructureData, required=False,
+                   help='Ground state structure which the verification perform')
         spec.input('options', valid_type=orm.Dict, required=False,
             help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
@@ -67,6 +67,7 @@ class DeltaFactorWorkChain(WorkChain):
 
     def setup(self):
         """Input validation"""
+        # TODO set ecutwfc and ecutrho according to certain protocol
         self.ctx.pw_parameters = self.inputs.parameters.pw
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
@@ -74,10 +75,21 @@ class DeltaFactorWorkChain(WorkChain):
         """validate structure"""
         self.ctx.element = helper_parse_upf(self.inputs.pseudo)
 
+        if not 'structure' in self.inputs:
+            import importlib_resources
+
+            element = self.ctx.element.value
+            fpath = importlib_resources.path('aiida_sssp_workflow.CIFs', f'{element}.cif')
+            with fpath as path:
+                cif_data = orm.CifData.get_or_create(path)
+                self.ctx.structure = cif_data[0].get_structure()
+        else:
+            self.ctx.structure = self.inputs.structure
+
     def run_eos(self):
         """run eos workchain"""
         inputs = AttributeDict({
-            'structure': self.inputs.structure,
+            'structure': self.ctx.structure,
             'scale_count': self.inputs.parameters.scale_count,
             'scale_increment': self.inputs.parameters.scale_increment,
             'scf': {
@@ -133,3 +145,4 @@ class DeltaFactorWorkChain(WorkChain):
         """Attach the output parameters to the outputs."""
         self.out('delta_factor', self.ctx.delta_factor)
         self.out('element', self.ctx.element)
+        # TODO output the parameters used for eos and pw.

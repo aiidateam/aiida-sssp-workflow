@@ -11,6 +11,7 @@ if __name__ == '__main__':
         # this doesn't work when placed in setup.json (something to do with str type)
         package_data={
             "": ["*"],
+            'aiida_sssp_workflow': ['CIFs/*.cif'],
         },
         long_description=open('README.md').read(),
         long_description_content_type='text/markdown',
