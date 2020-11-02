@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 The string copy paste from WIEN2k.txt of calcDelta package version 3.1
-and WIEN2K eos results for the rare-earth nitrides ()
+and WIEN2K eos results for the rare-earth nitrides (Lanthanides)
 """
 
 WIEN2K_REN_REF = """
@@ -22,7 +22,6 @@ ErN  14.25530   147.867   4.460
 TmN  14.01555   143.253   4.493       
 YbN  13.86410   140.958   5.635       
 LuN  13.54987   170.558   3.892 """
-
 
 WIEN2K_REF = """
 # WIEN2k version 13.1 calcDelta package version 3.1 -- calculations by Stefaan Cottenier

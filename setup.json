@@ -38,6 +38,9 @@
     "reentry_register": true,
     "install_requires": [
         "aiida-core>=1.1.0,<2.0.0",
+        "aiida-quantumespresso~=3.2",
+        "aiida-codtools~=2.1",
+        "importlib-resources~=3.3",
         "six",
         "voluptuous"
     ],
