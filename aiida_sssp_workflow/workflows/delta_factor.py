@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
+import importlib_resources
+
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction
@@ -9,9 +11,31 @@ birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
+
 @calcfunction
 def helper_parse_upf(upf):
     return orm.Str(upf.element)
+
+
+@calcfunction
+def helper_create_standard_cif_from_element(element: orm.Str) -> orm.CifData:
+    filename = get_standard_cif_filename_from_element(element.value)
+    cif_data, created = orm.CifData.get_or_create(filename)
+    assert created is True
+
+    return cif_data
+
+
+def get_standard_cif_filename_from_element(element: str) -> str:
+    if element in RARE_EARTH_ELEMENTS:
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN', f'{element}N.cif')
+    else:
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs', f'{element}.cif')
+    with fpath as path:
+        filename = str(path)
+
+    return filename
+
 
 PW_PARAS = lambda: orm.Dict(dict={
     'SYSTEM': {
@@ -26,7 +50,8 @@ PW_PARAS = lambda: orm.Dict(dict={
     },
 })
 
-RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']    # move to utils
+RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
+                       'Lu']  # move to utils
 
 
 class DeltaFactorWorkChain(WorkChain):
@@ -42,7 +67,7 @@ class DeltaFactorWorkChain(WorkChain):
         spec.input('structure', valid_type=orm.StructureData, required=False,
                    help='Ground state structure which the verification perform')
         spec.input('options', valid_type=orm.Dict, required=False,
-            help='Optional `options` to use for the `PwCalculations`.')
+                   help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
         spec.input('parameters.pw', valid_type=orm.Dict, default=PW_PARAS, help='parameters for pwscf.')
         spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
@@ -52,7 +77,7 @@ class DeltaFactorWorkChain(WorkChain):
         spec.input('parameters.scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
                    help='The scale increment in eos step.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-            help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+                   help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
         spec.outline(
             cls.setup,
             cls.validate_structure_and_pseudo,
@@ -62,9 +87,11 @@ class DeltaFactorWorkChain(WorkChain):
             cls.results,
         )
         spec.output('delta_factor', valid_type=orm.Float, required=True,
-                 help='The delta factor of the pseudopotential.')
+                    help='The delta factor of the pseudopotential.')
         spec.output('element', valid_type=orm.Str, required=True,
                     help='The element of the pseudopotential.')
+        spec.output('eos_initial_cif', valid_type=orm.CifData, required=False,
+                    help='The standard cif file provided in sssp_workflow package.')
         spec.output('eos_initial_structure', valid_type=orm.StructureData,
                     help='The initial input structure used for calculate delta factor.')
         # TODO delta prime out
@@ -79,21 +106,23 @@ class DeltaFactorWorkChain(WorkChain):
 
     def validate_structure_and_pseudo(self):
         """validate structure"""
-        import importlib_resources
+        from aiida.common.files import md5_file
 
         self.ctx.element = helper_parse_upf(self.inputs.pseudo)
 
         if not 'structure' in self.inputs:
-            element = self.ctx.element.value
-            if element in RARE_EARTH_ELEMENTS:
-                fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN', f'{element}N.cif')
+            filename = get_standard_cif_filename_from_element(self.ctx.element.value)
+
+            md5 = md5_file(filename)
+            cifs = orm.CifData.from_md5(md5)
+            if not cifs:
+                # cif not stored, create it with calcfunction and return it
+                cif_data = helper_create_standard_cif_from_element(self.ctx.element)
             else:
-                fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs', f'{element}.cif')
-            with fpath as path:
-                filename = str(path)
+                # The Cif is already store let's return it
                 cif_data = orm.CifData.get_or_create(filename)[0]
-                # TODO how to make this provenance? return as out node if exist in DB by md5
-                #  check. otherwise create it using a calcf, then return.
+
+            self.out('eos_initial_cif', cif_data)
             self.ctx.structure = cif_data.get_structure()
         else:
             self.ctx.structure = self.inputs.structure
@@ -150,7 +179,7 @@ class DeltaFactorWorkChain(WorkChain):
             self.report(f'EquationOfStateWorkChain failed with exit status {workchain.exit_status}')
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
 
-        volume_energy = workchain.outputs.output_parameters # This keep the provenance
+        volume_energy = workchain.outputs.output_parameters  # This keep the provenance
         self.ctx.birch_murnaghan_fit_result = birch_murnaghan_fit(volume_energy)
         # TODO report result and output it
 
