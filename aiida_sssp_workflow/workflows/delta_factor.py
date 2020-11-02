@@ -26,7 +26,7 @@ PW_PARAS = lambda: orm.Dict(dict={
     },
 })
 
-RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']
+RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']    # move to utils
 
 
 class DeltaFactorWorkChain(WorkChain):
