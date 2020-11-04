@@ -28,56 +28,83 @@ def helper_create_standard_cif_from_element(element: orm.Str) -> orm.CifData:
 
 def get_standard_cif_filename_from_element(element: str) -> str:
     if element in RARE_EARTH_ELEMENTS:
-        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN', f'{element}N.cif')
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN',
+                                         f'{element}N.cif')
     else:
-        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs', f'{element}.cif')
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs',
+                                         f'{element}.cif')
     with fpath as path:
         filename = str(path)
 
     return filename
 
 
-PW_PARAS = lambda: orm.Dict(dict={
-    'SYSTEM': {
-        'degauss': 0.02,
-        'ecutrho': 800,
-        'ecutwfc': 200,
-        'occupations': 'smearing',
-        'smearing': 'marzari-vanderbilt',
-    },
-    'ELECTRONS': {
-        'conv_thr': 1e-10,
-    },
-})
+PW_PARAS = lambda: orm.Dict(
+    dict={
+        'SYSTEM': {
+            'degauss': 0.02,
+            'ecutrho': 800,
+            'ecutwfc': 200,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+    })
 
-RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
-                       'Lu']  # move to utils
+RARE_EARTH_ELEMENTS = [
+    'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
+    'Tm', 'Yb', 'Lu'
+]  # move to utils
 
 
 class DeltaFactorWorkChain(WorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
-
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
         super().define(spec)
-        spec.input('code', valid_type=orm.Code,
+        spec.input('code',
+                   valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo', valid_type=orm.UpfData, required=True, help='Pseudopotential to be verified')
-        spec.input('structure', valid_type=orm.StructureData, required=False,
-                   help='Ground state structure which the verification perform')
-        spec.input('options', valid_type=orm.Dict, required=False,
+        spec.input('pseudo',
+                   valid_type=orm.UpfData,
+                   required=True,
+                   help='Pseudopotential to be verified')
+        spec.input(
+            'structure',
+            valid_type=orm.StructureData,
+            required=False,
+            help='Ground state structure which the verification perform')
+        spec.input('options',
+                   valid_type=orm.Dict,
+                   required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw', valid_type=orm.Dict, default=PW_PARAS, help='parameters for pwscf.')
-        spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
+        spec.input('parameters.pw',
+                   valid_type=orm.Dict,
+                   default=PW_PARAS,
+                   help='parameters for pwscf.')
+        spec.input('parameters.kpoints_distance',
+                   valid_type=orm.Float,
+                   default=lambda: orm.Float(0.1),
                    help='Global kpoints setting.')
-        spec.input('parameters.scale_count', valid_type=orm.Int, default=lambda: orm.Int(7),
+        spec.input('parameters.scale_count',
+                   valid_type=orm.Int,
+                   default=lambda: orm.Int(7),
                    help='Numbers of scale points in eos step.')
-        spec.input('parameters.scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
+        spec.input('parameters.scale_increment',
+                   valid_type=orm.Float,
+                   default=lambda: orm.Float(0.02),
                    help='The scale increment in eos step.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                   help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+        spec.input(
+            'clean_workdir',
+            valid_type=orm.Bool,
+            default=lambda: orm.Bool(False),
+            help=
+            'If `True`, work directories of all called calculation will be cleaned at the end of execution.'
+        )
         spec.outline(
             cls.setup,
             cls.validate_structure_and_pseudo,
@@ -86,17 +113,29 @@ class DeltaFactorWorkChain(WorkChain):
             cls.run_delta_calc,
             cls.results,
         )
-        spec.output('delta_factor', valid_type=orm.Float, required=True,
+        spec.output('delta_factor',
+                    valid_type=orm.Float,
+                    required=True,
                     help='The delta factor of the pseudopotential.')
-        spec.output('element', valid_type=orm.Str, required=True,
+        spec.output('element',
+                    valid_type=orm.Str,
+                    required=True,
                     help='The element of the pseudopotential.')
-        spec.output('eos_initial_cif', valid_type=orm.CifData, required=False,
-                    help='The standard cif file provided in sssp_workflow package.')
-        spec.output('eos_initial_structure', valid_type=orm.StructureData,
-                    help='The initial input structure used for calculate delta factor.')
+        spec.output(
+            'eos_initial_cif',
+            valid_type=orm.CifData,
+            required=False,
+            help='The standard cif file provided in sssp_workflow package.')
+        spec.output(
+            'eos_initial_structure',
+            valid_type=orm.StructureData,
+            help='The initial input structure used for calculate delta factor.'
+        )
         # TODO delta prime out
-        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
-                       message='The `EquationOfStateWorkChain` sub process failed.')
+        spec.exit_code(
+            201,
+            'ERROR_SUB_PROCESS_FAILED_EOS',
+            message='The `EquationOfStateWorkChain` sub process failed.')
 
     def setup(self):
         """Input validation"""
@@ -111,13 +150,15 @@ class DeltaFactorWorkChain(WorkChain):
         self.ctx.element = helper_parse_upf(self.inputs.pseudo)
 
         if not 'structure' in self.inputs:
-            filename = get_standard_cif_filename_from_element(self.ctx.element.value)
+            filename = get_standard_cif_filename_from_element(
+                self.ctx.element.value)
 
             md5 = md5_file(filename)
             cifs = orm.CifData.from_md5(md5)
             if not cifs:
                 # cif not stored, create it with calcfunction and return it
-                cif_data = helper_create_standard_cif_from_element(self.ctx.element)
+                cif_data = helper_create_standard_cif_from_element(
+                    self.ctx.element)
             else:
                 # The Cif is already store let's return it
                 cif_data = orm.CifData.get_or_create(filename)[0]
@@ -132,7 +173,8 @@ class DeltaFactorWorkChain(WorkChain):
         pseudos = {self.ctx.element.value: self.inputs.pseudo}
         if self.ctx.element in RARE_EARTH_ELEMENTS:
             # If rare-earth add psp of N
-            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs', 'N.UPF')
+            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+                                             'N.UPF')
             with fpath as path:
                 filename = str(path)
                 upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
@@ -146,6 +188,9 @@ class DeltaFactorWorkChain(WorkChain):
             'structure': self.ctx.structure,
             'scale_count': self.inputs.parameters.scale_count,
             'scale_increment': self.inputs.parameters.scale_increment,
+            'metadata': {
+                'call_link_label': 'eos'
+            },
             'scf': {
                 'pw': {
                     'code': self.inputs.code,
@@ -176,11 +221,14 @@ class DeltaFactorWorkChain(WorkChain):
         workchain = self.ctx.workchain_eos
 
         if not workchain.is_finished_ok:
-            self.report(f'EquationOfStateWorkChain failed with exit status {workchain.exit_status}')
+            self.report(
+                f'EquationOfStateWorkChain failed with exit status {workchain.exit_status}'
+            )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
 
         volume_energy = workchain.outputs.output_parameters  # This keep the provenance
-        self.ctx.birch_murnaghan_fit_result = birch_murnaghan_fit(volume_energy)
+        self.ctx.birch_murnaghan_fit_result = birch_murnaghan_fit(
+            volume_energy)
         # TODO report result and output it
 
     def run_delta_calc(self):
@@ -220,4 +268,6 @@ class DeltaFactorWorkChain(WorkChain):
                     pass
 
         if cleaned_calcs:
-            self.report(f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}")
+            self.report(
+                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
+            )
