@@ -159,6 +159,7 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
+        # TODO tstress to cache the calculation for pressure convergence
         bulk_inputs = AttributeDict({
             'metadata': {
                 'call_link_label': 'bulk_scf'
