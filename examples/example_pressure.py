@@ -47,8 +47,9 @@ def pressure_evaluate(ecutwfc, ecutrho):
 
 if __name__ == '__main__':
     # silicon pressure convergence test
-    for ecutwfc in [20,25,30,35,40,45,50,55]:
-        ecutrho = ecutwfc * 6
+    ecutwfc = 30
+    for ecutrho in [280,290,300]:
+        # ecutrho = ecutwfc * 6
         node = pressure_evaluate(ecutwfc=ecutwfc, ecutrho=ecutrho)
         node.description = f'[Si] ecutwfc={ecutwfc} ecutrho={ecutrho}'
-        print(node)
+        print(node.pk)

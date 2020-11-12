@@ -20,7 +20,8 @@
         "aiida.calculations": [
             "sssp_workflow = aiida_sssp_workflow.calculations.calculations:DiffCalculation",
             "sssp_workflow.birch_murnaghan_fit = aiida_sssp_workflow.calculations.birch_murnaghan_fit:birch_murnaghan_fit",
-            "sssp_workflow.calculate_delta = aiida_sssp_workflow.calculations.calculate_delta:calculate_delta"
+            "sssp_workflow.calculate_delta = aiida_sssp_workflow.calculations.calculate_delta:calculate_delta",
+            "sssp_workflow.calculate_delta_volume = aiida_sssp_workflow.calculations.calculate_delta_volume:calculate_delta_volume"
         ],
         "aiida.parsers": [
             "sssp_workflow = aiida_sssp_workflow.parsers:DiffParser"

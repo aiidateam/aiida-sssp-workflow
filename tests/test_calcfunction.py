@@ -75,3 +75,28 @@ def test_calculate_delta_rare_earth():
     }   # LaN line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
     assert res.value == 0.0
+
+def test_delta_volume():
+    """test calcusation of delta volume from convergence tests"""
+    calculate_delta_volume = CalculationFactory('sssp_workflow.calculate_delta_volume')
+
+    pressure_list = [-0.10267932770498,
+                     -0.083408565628544,
+                     0.0089734082951343,
+                     0.021330232832696,
+                     0.021330232832696,
+                     0.014857610455878,
+                     0.021624442940734,
+                     0.025449174345217]
+    inputs = {
+        'equilibrium_refs': orm.Dict(dict={
+            'V0': 20.4530,
+            'B0': 88.545,
+            'BP': 4.31,
+        }),
+        'pressures': orm.List(list=pressure_list),
+        'pressure_reference': orm.Float(0.02545),
+    }
+    res = calculate_delta_volume(**inputs)
+    print(res.get_list())
+    # assert res.get_list()[-1] < 0.01
