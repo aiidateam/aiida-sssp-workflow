@@ -33,7 +33,8 @@
             "sssp_workflow.eos = aiida_sssp_workflow.workflows.eos:EquationOfStateWorkChain",
             "sssp_workflow.delta_factor = aiida_sssp_workflow.workflows.delta_factor:DeltaFactorWorkChain",
             "sssp_workflow.cohesive_energy = aiida_sssp_workflow.workflows.cohesive_energy:CohesiveEnergyWorkChain",
-            "sssp_workflow.pressure_evaluation = aiida_sssp_workflow.workflows.pressure_evaluation:PressureEvaluationWorkChain"
+            "sssp_workflow.pressure_evaluation = aiida_sssp_workflow.workflows.pressure_evaluation:PressureEvaluationWorkChain",
+            "sssp_workflow.phonon_frequencies = aiida_sssp_workflow.workflows.phonon_frequencies:PhononFrequenciesWorkChain"
         ]
     },
     "include_package_data": true,
