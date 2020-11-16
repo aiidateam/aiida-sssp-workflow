@@ -28,6 +28,7 @@ def helper_analyze_cohesive_results(out_bulk_calc, out_atom_calc):
         atom_energy = atom_free_energy + atom_smearing_energy
     except KeyError:
         atom_energy = atom_free_energy
+        atom_smearing_energy = 'None'
 
     cohesive_energy = bulk_energy_per_atom - atom_energy
 
@@ -71,14 +72,8 @@ def helper_parse_upf(upf):
 PW_PARAS = lambda: orm.Dict(
     dict={
         'SYSTEM': {
-            'degauss': 0.02,
-            'ecutrho': 800,
+            'ecutrho': 1600,
             'ecutwfc': 200,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
         },
     })
 
@@ -105,10 +100,14 @@ class CohesiveEnergyWorkChain(WorkChain):
                    required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw',
+        spec.input('parameters.pw_bulk',
                    valid_type=orm.Dict,
                    default=PW_PARAS,
-                   help='parameters for pwscf.')
+                   help='parameters for pwscf of bulk calculation.')
+        spec.input('parameters.pw_atom',
+                   valid_type=orm.Dict,
+                   default=PW_PARAS,
+                   help='parameters for pwscf of atom calculation.')
         spec.input(
             'parameters.kpoints_distance',
             valid_type=orm.Float,
@@ -146,7 +145,41 @@ class CohesiveEnergyWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
-        self.ctx.pw_parameters = self.inputs.parameters.pw
+        import collections.abc
+
+        def update(d, u):
+            for k, v in u.items():
+                if isinstance(v, collections.abc.Mapping):
+                    d[k] = update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
+
+        bulk_parameters = {
+            'SYSTEM': {
+                'degauss': 0.02,
+                'occupations': 'smearing',
+                'smearing': 'marzari-vanderbilt',
+            },
+            'ELECTRONS': {
+                'conv_thr': 1e-10,
+            },
+        }
+        atom_parameters = {
+            'SYSTEM': {
+                'degauss': 0.02,
+                'occupations': 'smearing',
+                'smearing': 'gaussian',
+            },
+            'ELECTRONS': {
+                'conv_thr': 1e-10,
+            },
+        }
+        pw_bulk_parameters = update(bulk_parameters, self.inputs.parameters.pw_bulk.get_dict())
+        pw_atom_parameters = update(atom_parameters, self.inputs.parameters.pw_atom.get_dict())
+        self.ctx.pw_bulk_parameters = orm.Dict(dict=pw_bulk_parameters)
+        self.ctx.pw_atom_parameters = orm.Dict(dict=pw_atom_parameters)
+
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure(self):
@@ -168,7 +201,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'structure': self.inputs.structure,
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
-                'parameters': self.ctx.pw_parameters,
+                'parameters': self.ctx.pw_bulk_parameters,
                 'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
                 'metadata': {},
             },
@@ -186,7 +219,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'structure': self.ctx.atom_structure,
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
-                'parameters': self.ctx.pw_parameters,
+                'parameters': self.ctx.pw_atom_parameters,
                 'metadata': {},
             },
             'kpoints': atom_kpoints,

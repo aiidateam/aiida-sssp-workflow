@@ -31,6 +31,7 @@ parameters_dict = {
                 'conv_thr': 1e-8,
             },
         }),
+        'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
         'metadata': {
             'options': {
                 'resources': {'num_machines': 1},
