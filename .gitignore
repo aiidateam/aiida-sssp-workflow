@@ -3,6 +3,7 @@
 *.swp
 ~*
 *~
+*.pdf
 .project
 *.egg*
 .DS_Store
