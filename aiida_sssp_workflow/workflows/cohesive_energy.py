@@ -23,9 +23,9 @@ def helper_analyze_cohesive_results(out_bulk_calc, out_atom_calc):
     assert out_atom_calc['number_of_atoms'] == 1
     atom_free_energy = out_atom_calc['energy']
     try:
-        # calculation with smearing
+        # calculation with smearing, aka the internal energy of pwscf
         atom_smearing_energy = out_atom_calc['energy_smearing']
-        atom_energy = atom_free_energy + atom_smearing_energy
+        atom_energy = atom_free_energy - atom_smearing_energy
     except KeyError:
         atom_energy = atom_free_energy
         atom_smearing_energy = 'None'

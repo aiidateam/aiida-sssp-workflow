@@ -13,4 +13,5 @@
 .idea/
 build/
 dist/
+run_demos
 pip-wheel-metadata/

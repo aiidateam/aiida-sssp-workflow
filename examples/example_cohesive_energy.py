@@ -21,7 +21,7 @@ if __name__ == '__main__':
     structure = load_node('0c5793b9-e52c-4708-b5a1-f53b5c4814bf')
     upf = load_node('9d9d57fc-49e3-4e0c-8c37-4682ccc0fb51')
 
-    for degauss in [0.002, 0.004, 0.006, 0.008, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02]:
+    for degauss in [0.002, 0.005, 0.01, 0.015, 0.02]:
         # degauss = 0.02
         PW_PARAS = orm.Dict(
             dict={
