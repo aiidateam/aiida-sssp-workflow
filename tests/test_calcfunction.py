@@ -47,7 +47,7 @@ def test_calculate_delta():
         'bp': orm.Float(4.31),
     }   # Si line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
-    assert res.value == 0.0
+    assert res['delta'] == 0.0
 
 def test_calculate_delta_H():
     """test calcfunction calculate_delta
@@ -61,7 +61,7 @@ def test_calculate_delta_H():
         'bp': orm.Float(2.71),
     }   # Si line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
-    assert res.value == 0.0
+    assert res['delta'] == 0.0
 
 def test_calculate_delta_rare_earth():
     """test calcfunction calculate_delta"""
@@ -74,7 +74,7 @@ def test_calculate_delta_rare_earth():
         'bp': orm.Float(4.461),
     }   # LaN line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
-    assert res.value == 0.0
+    assert res['delta'] == 0.0
 
 def test_delta_volume():
     """test calcusation of delta volume from convergence tests"""

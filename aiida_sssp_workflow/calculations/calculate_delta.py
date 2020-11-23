@@ -14,7 +14,7 @@ import numpy as np
 RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']
 
 @calcfunction
-def calculate_delta(element, v0, b0, bp) -> orm.Float:
+def calculate_delta(element, v0, b0, bp) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
@@ -46,7 +46,14 @@ def calculate_delta(element, v0, b0, bp) -> orm.Float:
                                         eloverlap)
     # Delta is in meV/atom here -> convert to eV/atom
     delta = orm.Float(Delta[0] / 1000.)
-    return delta
+    return orm.Dict(dict={
+        'delta': Delta[0],
+        'delta1': Delta1[0],
+        'delta_unit': 'meV/atom',
+        'delta_relative': Deltarel[0],
+        'delta_relative_unit': '%',
+        'birch_murnaghan_inputs': [v0, b0, bp],
+    })
 
 def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
     """

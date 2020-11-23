@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
 import importlib_resources
+import collections.abc
 
 from aiida import orm
 from aiida.common import AttributeDict
@@ -11,6 +12,7 @@ birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
+MAGNETIC_ELEMENTS = ['Mn', 'O', 'Cr', 'Fe', 'Co', 'Ni']
 
 @calcfunction
 def helper_parse_upf(upf):
@@ -24,6 +26,70 @@ def helper_create_standard_cif_from_element(element: orm.Str) -> orm.CifData:
     assert created is True
 
     return cif_data
+
+@calcfunction
+def helper_get_magnetic_inputs(structure: orm.StructureData):
+    """
+    docstring
+    """
+    MAG_INIT_Mn = {"Mn1":0.5,"Mn2":-0.3,"Mn3":0.5,"Mn4":-0.3}
+    MAG_INIT_O = {"O1":0.5,"O2":0.5,"O3":-0.5,"O4":-0.5}
+    MAG_INIT_Cr = {"Cr1":0.5,"Cr2":-0.5}
+
+    mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
+    kind_name = structure.get_kind_names()[0]
+
+    parameters = orm.Dict(dict={
+        'SYSTEM': {
+            'nspin': 2,
+        },
+    })
+    # ferromagnetic
+    if kind_name in ['Fe', 'Co', 'Ni']:
+        for i, site in enumerate(structure.sites):
+            mag_structure.append_site(site=site)
+
+        parameters = orm.Dict(dict={
+            'SYSTEM': {
+                'nspin': 2,
+                'starting_magnetization': {kind_name: 0.2},
+            },
+        })
+
+    #
+    if kind_name in ['Mn', 'O', 'Cr']:
+        for i, site in enumerate(structure.sites):
+            mag_structure.append_atom(position=site.position,symbols=kind_name,name=f'{kind_name}{i+1}')
+
+        if kind_name == 'Mn':
+            parameters = orm.Dict(dict={
+                'SYSTEM': {
+                    'nspin': 2,
+                    'starting_magnetization': MAG_INIT_Mn,
+                },
+            })
+
+        if kind_name == 'O':
+            parameters = orm.Dict(dict={
+                'SYSTEM': {
+                    'nspin': 2,
+                    'starting_magnetization': MAG_INIT_O,
+                },
+            })
+
+        if kind_name == 'Cr':
+            parameters = orm.Dict(dict={
+                'SYSTEM': {
+                    'nspin': 2,
+                    'starting_magnetization': MAG_INIT_Cr,
+                },
+            })
+
+    return {
+        'structure': mag_structure,
+        'parameters': parameters,
+    }
+
 
 
 def get_standard_cif_filename_from_element(element: str) -> str:
@@ -39,19 +105,23 @@ def get_standard_cif_filename_from_element(element: str) -> str:
     return filename
 
 
+def update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
 PW_PARAS = lambda: orm.Dict(
     dict={
         'SYSTEM': {
-            'degauss': 0.02,
-            'ecutrho': 800,
+            'ecutrho': 1600,
             'ecutwfc': 200,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
         },
     })
+
 
 RARE_EARTH_ELEMENTS = [
     'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
@@ -113,8 +183,12 @@ class DeltaFactorWorkChain(WorkChain):
             cls.run_delta_calc,
             cls.results,
         )
-        spec.output('delta_factor',
-                    valid_type=orm.Float,
+        spec.output('eos_parameters',
+                    valid_type=orm.Dict,
+                    required=True,
+                    help='The eos outputs.')
+        spec.output('output_parameters',
+                    valid_type=orm.Dict,
                     required=True,
                     help='The delta factor of the pseudopotential.')
         spec.output('element',
@@ -140,7 +214,20 @@ class DeltaFactorWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
-        self.ctx.pw_parameters = self.inputs.parameters.pw
+
+
+        pw_parameters = {
+            'SYSTEM': {
+                'degauss': 0.02,
+                'occupations': 'smearing',
+                'smearing': 'marzari-vanderbilt',
+            },
+            'ELECTRONS': {
+                'conv_thr': 1e-10,
+            },
+        }
+
+        self.ctx.pw_parameters = orm.Dict(dict=update(pw_parameters, self.inputs.parameters.pw.get_dict()))
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure_and_pseudo(self):
@@ -148,6 +235,24 @@ class DeltaFactorWorkChain(WorkChain):
         from aiida.common.files import md5_file
 
         self.ctx.element = helper_parse_upf(self.inputs.pseudo)
+
+        pseudos = {self.ctx.element.value: self.inputs.pseudo}
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
+            # If rare-earth add psp of N
+            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+                                             'N.UPF')
+            with fpath as path:
+                filename = str(path)
+                upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
+                pseudos['N'] = upf_nitrogen
+            parameters = {
+                'SYSTEM': {
+                    'nspin': 2,
+                },
+            }
+            self.ctx.pw_parameters = orm.Dict(dict=update(self.ctx.pw_parameters.get_dict(), parameters))
+        self.ctx.pseudos = pseudos
+        self.report(f'pseudos is {pseudos}')
 
         if not 'structure' in self.inputs:
             filename = get_standard_cif_filename_from_element(
@@ -164,23 +269,30 @@ class DeltaFactorWorkChain(WorkChain):
                 cif_data = orm.CifData.get_or_create(filename)[0]
 
             self.out('eos_initial_cif', cif_data)
-            self.ctx.structure = cif_data.get_structure()
+
+            if not self.ctx.element.value in MAGNETIC_ELEMENTS:
+                self.ctx.structure = cif_data.get_structure()
+            else:
+                # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
+                structure = cif_data.get_structure()
+                res = helper_get_magnetic_inputs(structure, self.inputs.pseudo)
+                self.ctx.structure = res['structure']
+                parameters = res['parameters']
+                self.ctx.pw_parameters = orm.Dict(dict=update(parameters.get_dict(), self.ctx.pw_parameters.get_dict()))
+
+                # setting pseudos
+                pseudos = {}
+                pseudo = self.inputs.pseudo
+                for kind_name in self.ctx.structure.get_kind_names():
+                    pseudos[kind_name] = pseudo
+                self.ctx.pseudos = pseudos
+
         else:
             self.ctx.structure = self.inputs.structure
 
         self.out('eos_initial_structure', self.ctx.structure)
 
-        pseudos = {self.ctx.element.value: self.inputs.pseudo}
-        if self.ctx.element in RARE_EARTH_ELEMENTS:
-            # If rare-earth add psp of N
-            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                             'N.UPF')
-            with fpath as path:
-                filename = str(path)
-                upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
-                pseudos['N'] = upf_nitrogen
-        self.ctx.pseudos = pseudos
-        self.report(f'pseudos is {pseudos}')
+
 
     def run_eos(self):
         """run eos workchain"""
@@ -207,7 +319,7 @@ class DeltaFactorWorkChain(WorkChain):
         else:
             from aiida_quantumespresso.utils.resources import get_default_options
 
-            inputs.scf.pw.metadata.options = get_default_options(with_mpi=True)
+            inputs.scf.pw.metadata.options = get_default_options(max_wallclock_seconds=3600, with_mpi=True)
 
         running = self.submit(EquationOfStateWorkChain, **inputs)
 
@@ -227,6 +339,7 @@ class DeltaFactorWorkChain(WorkChain):
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
 
         volume_energy = workchain.outputs.output_parameters  # This keep the provenance
+        self.out('eos_parameters', workchain.outputs.output_parameters)
         self.ctx.birch_murnaghan_fit_result = birch_murnaghan_fit(
             volume_energy)
         # TODO report result and output it
@@ -240,12 +353,12 @@ class DeltaFactorWorkChain(WorkChain):
             'b0': res['bulk_modulus0'],
             'bp': res['bulk_deriv0'],
         }
-        self.ctx.delta_factor = calculate_delta(**inputs)
+        self.ctx.output_parameters = calculate_delta(**inputs)
         # TODO report
 
     def results(self):
         """Attach the output parameters to the outputs."""
-        self.out('delta_factor', self.ctx.delta_factor)
+        self.out('output_parameters', self.ctx.output_parameters)
         self.out('element', self.ctx.element)
         # TODO output the parameters used for eos and pw.
 

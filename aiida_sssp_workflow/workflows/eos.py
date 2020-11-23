@@ -101,7 +101,7 @@ class EquationOfStateWorkChain(WorkChain):
         inputs.metadata.call_link_label = 'scf'
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
-        inputs.pw.settings = orm.Dict(dict={'CMDLINE': ['-ndiag', '1']})    # Too many cores for few bands
+        inputs.pw.settings = orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']})    # Too many cores for few bands
         builder = process_class.get_builder()
 
         builder.update(**inputs)
