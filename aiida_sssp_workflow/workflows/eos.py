@@ -68,6 +68,10 @@ class EquationOfStateWorkChain(WorkChain):
         spec.input('scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
             validator=validate_scale_increment,
             help='The relative difference between consecutive scaling factors.')
+        spec.input('options',
+                   valid_type=orm.Dict,
+                   required=False,
+                   help='Optional `options` to use for the `PwCalculations`.')
         spec.inputs.validator = validate_inputs
         spec.outline(
             cls.run_init,
@@ -102,6 +106,13 @@ class EquationOfStateWorkChain(WorkChain):
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
         inputs.pw.settings = orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']})    # Too many cores for few bands
+        if 'options' in self.inputs:
+            inputs.pw.metadata.options = self.inputs.options.get_dict()
+        else:
+            from aiida_quantumespresso.utils.resources import get_default_options
+
+            inputs.pw.metadata.options = get_default_options(with_mpi=True)
+
         builder = process_class.get_builder()
 
         builder.update(**inputs)

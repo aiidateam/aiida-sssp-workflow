@@ -24,7 +24,7 @@ def run_delta(code, upf, structure=None, is_nc=False):
         'pseudo': upf,
         'options': orm.Dict(dict={
             'resources': {'num_machines': 1},
-            'max_wallclock_seconds': 1800,
+            'max_wallclock_seconds': 1800*3,
             'withmpi': True,
         }),
         'parameters': {
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # node.description = 'GBRV_pbe/si_pbe_v1.uspp.F.UPF'
     # print(node)
 
-    # # sg15/Si_ONCV_PBE-1.2.upf
+    # sg15/Si_ONCV_PBE-1.2.upf
     # upf = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')
     #
     # node = run_delta(code, upf, is_nc=True)
@@ -114,14 +114,34 @@ if __name__ == '__main__':
     # node = run_delta(code, upf, is_nc=True)
     # node.description = 'sg15/Au_ONCV_PBE_FR-1.0.upf'
     # print(node)
+    #
+    # # La.GGA-PBE-paw-v1.0.UPF
+    # from aiida.manage.caching import disable_caching
+    # with disable_caching(identifier='aiida.calculations:quantumespresso.pw'):
+    #     upf = load_node('a8302677-a72a-4775-8b6a-66b8f6283ff3')
+    #
+    #     # maximum inputs
+    #     node = run_delta(code, upf, is_nc=False)
+    #     node.description = 'La.GGA-PBE-paw-v1.0.UPF'
+    #     print(node)
 
-    # La.GGA-PBE-paw-v1.0.UPF
-    # upf = load_node('a8302677-a72a-4775-8b6a-66b8f6283ff3')
+    # # GBRV_pbe/la_pbe_v1.uspp.F.UPF
+    # upf = load_node('64faeb7a-ab34-4bcc-9f24-84895d7fa42e')
     #
     # # maximum inputs
     # node = run_delta(code, upf, is_nc=False)
-    # node.description = 'La.GGA-PBE-paw-v1.0.UPF'
+    # node.description = 'GBRV_pbe/la_pbe_v1.uspp.F.UPF'
     # print(node)
+
+    # Eu.GGA-PBE-paw-v1.0.UPF
+    from aiida.manage.caching import disable_caching
+    with disable_caching(identifier='aiida.calculations:quantumespresso.pw'):
+        upf = load_node('220a8ebd-0ac5-44f1-a6a9-0790b24965a9')
+
+        # maximum inputs
+        node = run_delta(code, upf, is_nc=False)
+        node.description = 'WT/Eu.GGA-PBE-paw-v1.0.UPF'
+        print(node)
 
     # sg15/O_ONCV_PBE-1.2.upf
     # upf = load_node('804b71ea-6d9b-4d80-a343-fd38f8d59382')
@@ -132,12 +152,12 @@ if __name__ == '__main__':
     # print(node)
 
     # GBRV_pbe/o_pbe_v1.2.uspp.F.UPF
-    upf = load_node('be9781ac-7578-4cef-8c53-68173b3eff9a')
-
-    # maximum inputs
-    node = run_delta(code, upf, is_nc=False)
-    node.description = 'GBRV_pbe/o_pbe_v1.2.uspp.F.UPF'
-    print(node)
+    # upf = load_node('be9781ac-7578-4cef-8c53-68173b3eff9a')
+    #
+    # # maximum inputs
+    # node = run_delta(code, upf, is_nc=False)
+    # node.description = 'GBRV_pbe/o_pbe_v1.2.uspp.F.UPF'
+    # print(node)
 
     #
     # # sg15/Mn_ONCV_PBE-1.2.upf

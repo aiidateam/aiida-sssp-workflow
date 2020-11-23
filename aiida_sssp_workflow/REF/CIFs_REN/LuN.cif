@@ -20,13 +20,19 @@ loop_
   _atom_site_fract_z
   _atom_site_type_symbol
          Lu1       0.0       0.0       0.0       Lu        
-         N1        0.5000000000000001  0.5000000000000017  0.49999999999999817           N
-_cell_angle_alpha                       60.00000000000003
-_cell_angle_beta                        60.00000000000003
-_cell_angle_gamma                       60.00000000000001
-_cell_length_a                          3.37152
-_cell_length_b                          3.37152
-_cell_length_c                          3.371520000000003
+         Lu2       0.5       0.5       0.0       Lu        
+         Lu3       0.5       0.0       0.5       Lu        
+         Lu4       0.0       0.5       0.5       Lu        
+         N1        0.0       0.0       0.5       N         
+         N2        0.5       0.5       0.5       N         
+         N3        0.5       0.0       0.0       N         
+         N4        0.0       0.5       0.0       N 
+_cell_angle_alpha                       90.0
+_cell_angle_beta                        90.0
+_cell_angle_gamma                       90.0
+_cell_length_a                          4.7680457666647005
+_cell_length_b                          4.7680457666647005
+_cell_length_c                          4.7680457666647005
 loop_
   _symmetry_equiv_pos_as_xyz
          'x, y, z' 

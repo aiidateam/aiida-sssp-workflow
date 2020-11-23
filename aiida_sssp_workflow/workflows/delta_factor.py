@@ -248,6 +248,8 @@ class DeltaFactorWorkChain(WorkChain):
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
+                    'starting_magnetization(1)': 0.2,
+                    'starting_magnetization(2)': 0.0,   # Nitrogen
                 },
             }
             self.ctx.pw_parameters = orm.Dict(dict=update(self.ctx.pw_parameters.get_dict(), parameters))
@@ -315,12 +317,13 @@ class DeltaFactorWorkChain(WorkChain):
         })
 
         if 'options' in self.inputs:
-            inputs.scf.pw.metadata.options = self.inputs.options.get_dict()
+            inputs.options = self.inputs.options
         else:
             from aiida_quantumespresso.utils.resources import get_default_options
 
-            inputs.scf.pw.metadata.options = get_default_options(max_wallclock_seconds=3600, with_mpi=True)
+            inputs.options = orm.Dict(dict=get_default_options(max_wallclock_seconds=3600, with_mpi=True))
 
+        self.report(f'options is {inputs.options.attributes}')
         running = self.submit(EquationOfStateWorkChain, **inputs)
 
         self.report(f'launching EquationOfStateWorkChain<{running.pk}>')
