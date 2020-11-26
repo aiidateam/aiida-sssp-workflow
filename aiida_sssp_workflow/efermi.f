@@ -322,7 +322,7 @@ c       WRITE(9,*) 'CANNOT BISECT FOREVER, CAN I ?'
 
 170   CONTINUE
 
-      WRITE (*,180) EF
+      WRITE (*,*) EF
 c     WRITE (9,180) EF
 180   FORMAT (' FERMI ENERGY = ',F15.8,' EV')
 

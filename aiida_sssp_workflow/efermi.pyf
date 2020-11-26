@@ -1,0 +1,53 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module efermi_module ! in
+    interface  ! in :efermi_module
+        subroutine efermi(nel,nbands,del,nsppts,ndim8,ndim10,weight,occ,ef,eigval,sort,eigmin,eigmax,enocc,ismear) ! in :efermi:efermi.f
+            integer intent(in):: nel
+            integer intent(in):: nbands
+            real intent(in):: del
+            integer intent(in):: nsppts
+            integer intent(hide),depend(nbands) :: ndim8=nbands
+            integer intent(hide),depend(nsppts) :: ndim10=nsppts
+            real dimension(nsppts), intent(in), depend(nsppts) :: weight
+            real dimension(nsppts,nbands),depend(nsppts), intent(out) :: occ
+            real intent (in,out):: ef
+            real dimension(nsppts,nbands),depend(nsppts,nbands), intent(in) :: eigval
+            real dimension(nsppts*nbands),depend(nsppts,nbands), intent(out) :: sort
+            real intent(out) :: eigmin
+            real intent(out) :: eigmax
+            real intent(out) :: enocc
+            integer intent(in):: ismear
+            integer :: iwarn
+            common /warn/ iwarn
+        end subroutine efermi
+        function erf_c(xx) ! in :efermi2:efermi.f
+            real :: xx
+            real :: erf_c
+        end function erf_c
+        function fermid(xx) ! in :efermi2:efermi.f
+            real :: xx
+            real :: fermid
+        end function fermid
+        function delthm(xx) ! in :efermi2:efermi.f
+            real :: xx
+            real :: delthm
+        end function delthm
+        function spline(x) ! in :efermi2:efermi.f
+            real :: x
+            real :: spline
+        end function spline
+        function poshm(x) ! in :efermi2:efermi.f
+            real :: x
+            real :: poshm
+        end function poshm
+        function poshm2(x) ! in :efermi2:efermi.f
+            real :: x
+            real :: poshm2
+        end function poshm2
+    end interface
+end python module efermi_module
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
