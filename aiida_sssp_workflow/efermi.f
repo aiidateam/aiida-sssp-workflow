@@ -425,7 +425,7 @@ c         WRITE(9,9898) (OCC(J,ISPPT),J=1,NBANDS)
 
 C        WRITE(*,*) '*** ERROR ***'
         WRITE(*,*) '*** Warning ***'
-        WRITE(*,220) TEST,NEL
+        WRITE(*,*) TEST,NEL
 220     FORMAT(' SUM OF OCCUPANCIES =',F18.12 ,' BUT NEL =',I5)
 C        STOP     !! Modified by A. Marrazzo and G. Prandini
 C		  !! to do bands convergence tests.

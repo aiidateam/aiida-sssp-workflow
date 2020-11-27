@@ -11,67 +11,24 @@ from aiida_sssp_workflow.calculations.calculate_bands_distance import calculate_
 
 RY_TO_EV = 13.6056980659
 
-def calc_eta_identity(bandsdata, band_parameters):
-    efermi = orm.Float(band_parameters['fermi_energy'])
-    start_band = orm.Int(0)
-    num_electrons = orm.Int(8)
-    smearing_v = orm.Float(0.0)    # nearly a step function
-    smearing_10 = orm.Float(0.02 * RY_TO_EV)
+def calc_band_distance(wc_node1, wc_node2, is_metal):
+    bandsdata_a = wc_node1.outputs.band_structure
+    band_parameters_a = wc_node1.outputs.band_parameters
 
-    res = retrieve_bands(bandsdata, start_band, num_electrons, efermi, is_metal=orm.Bool(False))
-    bands_a = res['bands']
-    efermi_a = res['efermi']
-    res = retrieve_bands(bandsdata, start_band, num_electrons, efermi, is_metal=orm.Bool(False))
-    bands_b = res['bands']
-    efermi_b = res['efermi']
-    fermi_shift = orm.Float(0.0)
+    bandsdata_b = wc_node2.outputs.band_structure
+    band_parameters_b = wc_node2.outputs.band_parameters
 
-    outputs = calculate_eta_and_max_diff(bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_v)
-    return outputs
+    res = calculate_bands_distance(bandsdata_a, bandsdata_b, band_parameters_a, band_parameters_b,
+                                   orm.Float(0.02 * RY_TO_EV), orm.Bool(is_metal))
+    print(f'etav: {res.get("eta_v")}')
+    print(f'shift_v: {res.get("shift_v")}')
+    print(f'max_diff_v: {res.get("max_diff_v")}')
+    print(f'eta_10: {res.get("eta_10")}')
+    print(f'shift_10: {res.get("shift_10")}')
+    print(f'max_diff_10: {res.get("max_diff_10")}')
 
-def calc_eta_identity_with_shift(bandsdata, band_parameters):
-    efermi = orm.Float(band_parameters['fermi_energy'])
-    start_band = orm.Int(0)
-    num_electrons = orm.Int(8)
-    smearing_v = orm.Float(0.0)    # nearly a step function
-    smearing_10 = orm.Float(0.02 * RY_TO_EV)
-
-    res = retrieve_bands(bandsdata, start_band, num_electrons, efermi, is_metal=orm.Bool(False))
-    bands_a = res['bands']
-    efermi_a = res['efermi']
-    res = retrieve_bands(bandsdata, start_band, num_electrons, efermi, is_metal=orm.Bool(False))
-    bands_b = orm.ArrayData()
-    bands_b.set_array('kpoints', res['bands'].get_array('kpoints'))
-    bands_b.set_array('bands', res['bands'].get_array('bands') + 0.01)
-    efermi_b = res['efermi']
-    fermi_shift = orm.Float(0.0)
-
-    outputs = calculate_eta_and_max_diff(bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_v)
-    return outputs
 
 if __name__ == '__main__':
-    # bandsdata of 8 electrons silicon
-    bandsdata_a = orm.load_node('aa9a6d48-bbc2-4104-977c-4264c725d947')
-    band_parameters_a = orm.load_node('6946d96b-8656-4046-ab04-d8f11ff817c4')
-
-    # bandsdata of 12 elecnrons silicon
-    bandsdata_b = orm.load_node('a9ef4515-59b6-41a5-8667-6608f7adb258')
-    band_parameters_b = orm.load_node('5bfeda4c-a87c-4680-9b24-85254dccabdc')
-
-    res = calculate_bands_distance(bandsdata_a, bandsdata_b, band_parameters_a, band_parameters_b, orm.Float(0.02 * RY_TO_EV))
-    print(res.get('eta_v'))
-    print(res.get('shift_v'))
-    print(res.get('max_diff_v'))
-    print(res.get('eta_10'))
-    print(res.get('shift_10'))
-    print(res.get('max_diff_10'))
-
-    # res = calc_eta_identity(bandsdata, band_parameters)
-    # print(res.get('eta'))
-    # print(res.get('shift'))
-    # print(res.get('max_diff'))
-    #
-    # res = calc_eta_identity_with_shift(bandsdata, band_parameters)
-    # print(res.get('eta'))
-    # print(res.get('shift')) # should be 0.01
-    # print(res.get('max_diff'))  # should be 0.01
+    wc1 = orm.load_node('3d69f296-89f3-4cb3-854d-4e433344a96a')
+    wc2 = orm.load_node('15582ab4-1ba0-4398-8fb7-8831661a3a6a')
+    calc_band_distance(wc1, wc2, is_metal=True)
