@@ -5,7 +5,7 @@ import collections.abc
 
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.engine import WorkChain, ToContext, calcfunction
+from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
@@ -19,7 +19,7 @@ def helper_parse_upf(upf):
     return orm.Str(upf.element)
 
 
-@calcfunction
+@workfunction
 def helper_create_standard_cif_from_element(element: orm.Str) -> orm.CifData:
     filename = get_standard_cif_filename_from_element(element.value)
     cif_data, created = orm.CifData.get_or_create(filename)
