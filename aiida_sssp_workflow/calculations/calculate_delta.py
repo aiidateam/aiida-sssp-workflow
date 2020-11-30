@@ -5,13 +5,20 @@ Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for
 Molecular Modeling (CMM), Ghent University, Ghent, Belgium
 """
 from io import StringIO
-from aiida.engine import calcfunction
-from aiida import orm
-from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 
 import numpy as np
+from aiida.engine import calcfunction
+from aiida import orm
 
-RARE_EARTH_ELEMENTS = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu']
+from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+
+# pylint: disable=invalid-name
+
+RARE_EARTH_ELEMENTS = [
+    'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
+    'Tm', 'Yb', 'Lu'
+]
+
 
 @calcfunction
 def calculate_delta(element, v0, b0, bp) -> orm.Dict:
@@ -26,34 +33,38 @@ def calculate_delta(element, v0, b0, bp) -> orm.Dict:
         wien2k_ref = StringIO(WIEN2K_REF)
 
     data_ref = np.loadtxt(wien2k_ref,
-                          dtype={'names': ('element', 'V0', 'B0', 'BP'),
-                                 'formats': ('U2', np.float, np.float, np.float)})
+                          dtype={
+                              'names': ('element', 'V0', 'B0', 'BP'),
+                              'formats': ('U2', np.float, np.float, np.float)
+                          })
 
     # Here use dtype U2 to truncate REN to RE
-    data_tested = np.array([(element.value, v0.value, b0.value, bp.value)], dtype={
-                        'names': ('element', 'V0', 'B0', 'BP'),
-                        'formats': ('U2', np.float, np.float, np.float),
-                        })
+    data_tested = np.array(
+        [(element.value, v0.value, b0.value, bp.value)],
+        dtype={
+            'names': ('element', 'V0', 'B0', 'BP'),
+            'formats': ('U2', np.float, np.float, np.float),
+        })
 
     eloverlap = [element.value]
     if not eloverlap:
         # TODO ExitCode
         raise ValueError("Element {} is not present in the reference set"
-                          "".format(element))
+                         "".format(element))
     eloverlap = [element.value]
     # Delta computation
-    Delta, Deltarel, Delta1 = _calcDelta(data_tested, data_ref,
-                                        eloverlap)
-    # Delta is in meV/atom here -> convert to eV/atom
-    delta = orm.Float(Delta[0] / 1000.)
-    return orm.Dict(dict={
-        'delta': Delta[0],
-        'delta1': Delta1[0],
-        'delta_unit': 'meV/atom',
-        'delta_relative': Deltarel[0],
-        'delta_relative_unit': '%',
-        'birch_murnaghan_inputs': [v0, b0, bp],
-    })
+    Delta, Deltarel, Delta1 = _calcDelta(data_tested, data_ref, eloverlap)
+
+    return orm.Dict(
+        dict={
+            'delta': Delta[0],
+            'delta1': Delta1[0],
+            'delta_unit': 'meV/atom',
+            'delta_relative': Deltarel[0],
+            'delta_relative_unit': '%',
+            'birch_murnaghan_inputs': [v0, b0, bp],
+        })
+
 
 def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
     """
@@ -61,6 +72,7 @@ def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
     element in eloverlap
     data_w is all-electrons result as ref
     """
+    # pylint: disable=too-many-statements, consider-using-enumerate
     v0w = np.zeros(len(eloverlap))
     b0w = np.zeros(len(eloverlap))
     b1w = np.zeros(len(eloverlap))
@@ -94,13 +106,13 @@ def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
         Vf = 1.06 * (v0w + v0f) / 2.
 
     a3f = 9. * v0f**3. * b0f / 16. * (b1f - 4.)
-    a2f = 9. * v0f**(7./3.) * b0f / 16. * (14. - 3. * b1f)
-    a1f = 9. * v0f**(5./3.) * b0f / 16. * (3. * b1f - 16.)
+    a2f = 9. * v0f**(7. / 3.) * b0f / 16. * (14. - 3. * b1f)
+    a1f = 9. * v0f**(5. / 3.) * b0f / 16. * (3. * b1f - 16.)
     a0f = 9. * v0f * b0f / 16. * (6. - b1f)
 
     a3w = 9. * v0w**3. * b0w / 16. * (b1w - 4.)
-    a2w = 9. * v0w**(7./3.) * b0w / 16. * (14. - 3. * b1w)
-    a1w = 9. * v0w**(5./3.) * b0w / 16. * (3. * b1w - 16.)
+    a2w = 9. * v0w**(7. / 3.) * b0w / 16. * (14. - 3. * b1w)
+    a1w = 9. * v0w**(5. / 3.) * b0w / 16. * (3. * b1w - 16.)
     a0w = 9. * v0w * b0w / 16. * (6. - b1w)
 
     x = [0, 0, 0, 0, 0, 0, 0]
@@ -109,9 +121,9 @@ def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
     x[1] = 6. * (a1f - a1w) * (a0f - a0w)
     x[2] = -3. * (2. * (a2f - a2w) * (a0f - a0w) + (a1f - a1w)**2.)
     x[3] = -2. * (a3f - a3w) * (a0f - a0w) - 2. * (a2f - a2w) * (a1f - a1w)
-    x[4] = -3./5. * (2. * (a3f - a3w) * (a1f - a1w) + (a2f - a2w)**2.)
-    x[5] = -6./7. * (a3f - a3w) * (a2f - a2w)
-    x[6] = -1./3. * (a3f - a3w)**2.
+    x[4] = -3. / 5. * (2. * (a3f - a3w) * (a1f - a1w) + (a2f - a2w)**2.)
+    x[5] = -6. / 7. * (a3f - a3w) * (a2f - a2w)
+    x[6] = -1. / 3. * (a3f - a3w)**2.
 
     y = [0, 0, 0, 0, 0, 0, 0]
 
@@ -119,9 +131,9 @@ def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
     y[1] = 3. * (a1f + a1w) * (a0f + a0w) / 2.
     y[2] = -3. * (2. * (a2f + a2w) * (a0f + a0w) + (a1f + a1w)**2.) / 4.
     y[3] = -(a3f + a3w) * (a0f + a0w) / 2. - (a2f + a2w) * (a1f + a1w) / 2.
-    y[4] = -3./20. * (2. * (a3f + a3w) * (a1f + a1w) + (a2f + a2w)**2.)
-    y[5] = -3./14. * (a3f + a3w) * (a2f + a2w)
-    y[6] = -1./12. * (a3f + a3w)**2.
+    y[4] = -3. / 20. * (2. * (a3f + a3w) * (a1f + a1w) + (a2f + a2w)**2.)
+    y[5] = -3. / 14. * (a3f + a3w) * (a2f + a2w)
+    y[6] = -1. / 12. * (a3f + a3w)**2.
 
     Fi = np.zeros_like(Vi)
     Ff = np.zeros_like(Vf)
@@ -130,11 +142,11 @@ def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
     Gf = np.zeros_like(Vf)
 
     for n in range(7):
-        Fi = Fi + x[n] * Vi**(-(2.*n-3.)/3.)
-        Ff = Ff + x[n] * Vf**(-(2.*n-3.)/3.)
+        Fi = Fi + x[n] * Vi**(-(2. * n - 3.) / 3.)
+        Ff = Ff + x[n] * Vf**(-(2. * n - 3.) / 3.)
 
-        Gi = Gi + y[n] * Vi**(-(2.*n-3.)/3.)
-        Gf = Gf + y[n] * Vf**(-(2.*n-3.)/3.)
+        Gi = Gi + y[n] * Vi**(-(2. * n - 3.) / 3.)
+        Gf = Gf + y[n] * Vf**(-(2. * n - 3.) / 3.)
 
     Delta = 1000. * np.sqrt((Ff - Fi) / (Vf - Vi))
     Deltarel = 100. * np.sqrt((Ff - Fi) / (Gf - Gi))

@@ -16,25 +16,34 @@ upf = orm.load_node('9d9d57fc-49e3-4e0c-8c37-4682ccc0fb51')
 parameters_dict = {
     'kpoints_distance': orm.Float(0.15),
     'pw': {
-        'code': orm.load_code('qe-6.6-pw@daint-mc'),
-        'structure': structure,
-        'pseudos': {upf.element: upf},
-        'parameters': orm.Dict(dict={
-            'CONTROL': {
-                'calculation': 'scf',
-            },
-            'SYSTEM': {
-                'degauss': 0.02,
-                'smearing': 'mv',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-8,
-            },
-        }),
-        'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
+        'code':
+        orm.load_code('qe-6.6-pw@daint-mc'),
+        'structure':
+        structure,
+        'pseudos': {
+            upf.element: upf
+        },
+        'parameters':
+        orm.Dict(
+            dict={
+                'CONTROL': {
+                    'calculation': 'scf',
+                },
+                'SYSTEM': {
+                    'degauss': 0.02,
+                    'smearing': 'mv',
+                },
+                'ELECTRONS': {
+                    'conv_thr': 1e-8,
+                },
+            }),
+        'settings':
+        orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
         'metadata': {
             'options': {
-                'resources': {'num_machines': 1},
+                'resources': {
+                    'num_machines': 1
+                },
                 'max_wallclock_seconds': 1800,
                 'withmpi': True,
             }
@@ -42,20 +51,24 @@ parameters_dict = {
     }
 }
 
-
 if __name__ == '__main__':
     from aiida.engine import submit
     inputs = {
-        'engine': Convergence,
-        'engine_kwargs': orm.Dict(dict={
-            'input_values': ECUT_VALUES,
-            'tol': 0.001,
-             'input_key': 'pw.parameters:SYSTEM.ecutwfc',
-             'result_key': 'output_parameters:energy',
-             'convergence_window': 3,
-        }),
-        'evaluate_process': PwBaseWorkChain,
-        'evaluate': parameters_dict,
+        'engine':
+        Convergence,
+        'engine_kwargs':
+        orm.Dict(
+            dict={
+                'input_values': ECUT_VALUES,
+                'tol': 0.001,
+                'input_key': 'pw.parameters:SYSTEM.ecutwfc',
+                'result_key': 'output_parameters:energy',
+                'convergence_window': 3,
+            }),
+        'evaluate_process':
+        PwBaseWorkChain,
+        'evaluate':
+        parameters_dict,
     }
 
     node = submit(OptimizationWorkChain, **inputs)

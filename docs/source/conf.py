@@ -47,8 +47,6 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.contentui',
-    'aiida.sphinxext',
 ]
 
 intersphinx_mapping = {

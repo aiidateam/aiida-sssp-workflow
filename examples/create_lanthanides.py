@@ -4,8 +4,6 @@ from aiida.engine import calcfunction
 from ase import Atoms
 import os
 
-
-
 # This is all electrons data from 10.1016/j.commatsci.2014.07.030
 # lattice unit in a.u.
 element_latt = {
@@ -26,6 +24,7 @@ element_latt = {
     'Lu': 9.0103,
 }
 
+
 @calcfunction
 def create_lanthanide_nitride(element, latt):
     """ """
@@ -34,23 +33,24 @@ def create_lanthanide_nitride(element, latt):
     element = element.value
     latt = latt.value * AU_TO_ANGSTROM
 
-    cell = [[latt,0.,0.],[0.,latt,0.],[0.,0.,latt]]
-    pbc = [True,True,True]
-    scaled_positions = [[0.0, 0.0, 0.0],
-                [0.5, 0.5, 0.0],
-                [0.5, 0.0, 0.5],
-                [0.0, 0.5, 0.5],
-                [0.0, 0.0, 0.5],
-                [0.5, 0.5, 0.5],value
-                [0.5, 0.0, 0.0],
-                [0.0, 0.5, 0.0]]
-    ase_structure = Atoms(symbols=f'{element}4N4', cell=cell, pbc=pbc, scaled_positions=scaled_positions)
+    cell = [[latt, 0., 0.], [0., latt, 0.], [0., 0., latt]]
+    pbc = [True, True, True]
+    scaled_positions = [[0.0, 0.0, 0.0], [0.5, 0.5, 0.0], [0.5, 0.0, 0.5],
+                        [0.0, 0.5, 0.5], [0.0, 0.0, 0.5], [0.5, 0.5, 0.5],
+                        value[0.5, 0.0, 0.0], [0.0, 0.5, 0.0]]
+    ase_structure = Atoms(symbols=f'{element}4N4',
+                          cell=cell,
+                          pbc=pbc,
+                          scaled_positions=scaled_positions)
     structure = orm.StructureData(ase=ase_structure)
     cif = structure.get_cif()
 
     return cif
 
-dir_path = os.path.abspath("/home/unkcpz/Projs/sssp-workflow/aiida-sssp-workflow/aiida_sssp_workflow/REF/CIFs_REN/")
+
+dir_path = os.path.abspath(
+    "/home/unkcpz/Projs/sssp-workflow/aiida-sssp-workflow/aiida_sssp_workflow/REF/CIFs_REN/"
+)
 for element, latt in element_latt.items():
     cif_data = create_lanthanide_nitride(orm.Str(element), orm.Float(latt))
     cif_file = os.path.join(dir_path, f'{element}N.cif')

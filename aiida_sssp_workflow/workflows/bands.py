@@ -8,11 +8,14 @@ from aiida.engine import WorkChain, calcfunction, ToContext
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
 PwBandsWorkChain = WorkflowFactory('quantumespresso.pw.bands')
-create_kpoints_from_distance = CalculationFactory('quantumespresso.create_kpoints_from_distance')
+create_kpoints_from_distance = CalculationFactory(
+    'quantumespresso.create_kpoints_from_distance')
+
 
 @calcfunction
 def helper_parse_upf(upf):
     return orm.Str(upf.element)
+
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -24,6 +27,7 @@ PW_PARAS = lambda: orm.Dict(
             'conv_thr': 1e-10,
         },
     })
+
 
 class BandsWorkChain(WorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
@@ -51,16 +55,14 @@ class BandsWorkChain(WorkChain):
                    valid_type=orm.Dict,
                    default=PW_PARAS,
                    help='parameters for pw.x.')
-        spec.input(
-            'parameters.scf_kpoints_distance',
-            valid_type=orm.Float,
-            default=lambda: orm.Float(0.1),
-            help='Kpoints distance setting for scf calculation.')
-        spec.input(
-            'parameters.bands_kpoints_distance',
-            valid_type=orm.Float,
-            default=lambda: orm.Float(0.15),
-            help='Kpoints distance setting for bands nscf calculation.')
+        spec.input('parameters.scf_kpoints_distance',
+                   valid_type=orm.Float,
+                   default=lambda: orm.Float(0.1),
+                   help='Kpoints distance setting for scf calculation.')
+        spec.input('parameters.bands_kpoints_distance',
+                   valid_type=orm.Float,
+                   default=lambda: orm.Float(0.15),
+                   help='Kpoints distance setting for bands nscf calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -68,16 +70,19 @@ class BandsWorkChain(WorkChain):
             cls.inspect_bands,
             cls.results,
         )
-        spec.output('scf_parameters', valid_type=orm.Dict,
-            help='The output parameters of the SCF `PwBaseWorkChain`.')
-        spec.output('band_parameters', valid_type=orm.Dict,
+        spec.output('scf_parameters',
+                    valid_type=orm.Dict,
+                    help='The output parameters of the SCF `PwBaseWorkChain`.')
+        spec.output(
+            'band_parameters',
+            valid_type=orm.Dict,
             help='The output parameters of the BANDS `PwBaseWorkChain`.')
-        spec.output('band_structure', valid_type=orm.BandsData,
-            help='The computed band structure.')
-        spec.exit_code(
-            201,
-            'ERROR_SUB_PROCESS_FAILED_BANDS',
-            message='The `PwBandsWorkChain` sub process failed.')
+        spec.output('band_structure',
+                    valid_type=orm.BandsData,
+                    help='The computed band structure.')
+        spec.exit_code(201,
+                       'ERROR_SUB_PROCESS_FAILED_BANDS',
+                       message='The `PwBandsWorkChain` sub process failed.')
 
     def setup(self):
         """Input validation"""
@@ -85,6 +90,7 @@ class BandsWorkChain(WorkChain):
         import collections.abc
 
         def update(d, u):
+            # pylint: disable=invalid-name
             for k, v in u.items():
                 if isinstance(v, collections.abc.Mapping):
                     d[k] = update(d.get(k, {}), v)
@@ -116,15 +122,18 @@ class BandsWorkChain(WorkChain):
                 'conv_thr': 1e-10,
             },
         }
-        pw_scf_parameters = update(scf_parameters, self.inputs.parameters.pw.get_dict())
-        pw_bands_parameters = update(bands_parameters, self.inputs.parameters.pw.get_dict())
+        pw_scf_parameters = update(scf_parameters,
+                                   self.inputs.parameters.pw.get_dict())
+        pw_bands_parameters = update(bands_parameters,
+                                     self.inputs.parameters.pw.get_dict())
         self.ctx.pw_scf_parameters = orm.Dict(dict=pw_scf_parameters)
         self.ctx.pw_bands_parameters = orm.Dict(dict=pw_bands_parameters)
 
         self.ctx.scf_kpoints_distance = self.inputs.parameters.scf_kpoints_distance
 
         bands_kpoints_distance = self.inputs.parameters.bands_kpoints_distance
-        self.ctx.bands_kpoints = create_kpoints_from_distance(self.inputs.structure, bands_kpoints_distance, orm.Bool(False))
+        self.ctx.bands_kpoints = create_kpoints_from_distance(
+            self.inputs.structure, bands_kpoints_distance, orm.Bool(False))
 
     def validate_structure(self):
         """Create isolate atom and validate structure"""
@@ -138,7 +147,8 @@ class BandsWorkChain(WorkChain):
             from aiida_quantumespresso.utils.resources import get_default_options
 
             # Too many kpoints may go beyond 1800s
-            options = get_default_options(with_mpi=True, max_wallclock_seconds=1800*3)
+            options = get_default_options(with_mpi=True,
+                                          max_wallclock_seconds=1800 * 3)
 
         inputs = AttributeDict({
             'structure': self.inputs.structure,
@@ -148,7 +158,9 @@ class BandsWorkChain(WorkChain):
                     'pseudos': self.ctx.pseudos,
                     'parameters': self.ctx.pw_scf_parameters,
                     'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
-                    'metadata': {'options': options},
+                    'metadata': {
+                        'options': options
+                    },
                 },
                 'kpoints_distance': self.ctx.scf_kpoints_distance,
             },
@@ -158,7 +170,9 @@ class BandsWorkChain(WorkChain):
                     'pseudos': self.ctx.pseudos,
                     'parameters': self.ctx.pw_bands_parameters,
                     'settings': orm.Dict(dict={'CMDLINE': ['-nk', '4']}),
-                    'metadata': {'options': options},
+                    'metadata': {
+                        'options': options
+                    },
                 },
             },
             'nbands_factor': orm.Float(2.0),

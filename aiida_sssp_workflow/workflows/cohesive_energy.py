@@ -45,13 +45,13 @@ def helper_analyze_cohesive_results(out_bulk_calc, out_atom_calc):
 
 
 @calcfunction
-def create_isolate_atom(element: orm.Str,
-                        length=lambda: orm.Float(12.0)) -> orm.StructureData:
+def create_isolate_atom(
+    element: orm.Str, length=lambda: orm.Float(12.0)) -> orm.StructureData:
     """
     create a cubic cell with length and the element kind. The atom is locate at the origin point.
     """
     from ase import Atoms
-    L = length.value
+    L = length.value  # pylint: disable=invalid-name
     atom = Atoms(symbols=element.value,
                  pbc=[True, True, True],
                  cell=[L, L, L],
@@ -69,13 +69,12 @@ def helper_parse_upf(upf):
     return orm.Str(upf.element)
 
 
-PW_PARAS = lambda: orm.Dict(
-    dict={
-        'SYSTEM': {
-            'ecutrho': 1600,
-            'ecutwfc': 200,
-        },
-    })
+PW_PARAS = lambda: orm.Dict(dict={
+    'SYSTEM': {
+        'ecutrho': 1600,
+        'ecutwfc': 200,
+    },
+})
 
 
 class CohesiveEnergyWorkChain(WorkChain):
@@ -147,8 +146,8 @@ class CohesiveEnergyWorkChain(WorkChain):
         # TODO set ecutwfc and ecutrho according to certain protocol
         import collections.abc
 
-        def update(d, u):
-            for k, v in u.items():
+        def update(d, u):  # pylint: disable=invalid-name
+            for k, v in u.items():  # pylint: disable=invalid-name
                 if isinstance(v, collections.abc.Mapping):
                     d[k] = update(d.get(k, {}), v)
                 else:
@@ -175,8 +174,10 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'conv_thr': 1e-10,
             },
         }
-        pw_bulk_parameters = update(bulk_parameters, self.inputs.parameters.pw_bulk.get_dict())
-        pw_atom_parameters = update(atom_parameters, self.inputs.parameters.pw_atom.get_dict())
+        pw_bulk_parameters = update(bulk_parameters,
+                                    self.inputs.parameters.pw_bulk.get_dict())
+        pw_atom_parameters = update(atom_parameters,
+                                    self.inputs.parameters.pw_atom.get_dict())
         self.ctx.pw_bulk_parameters = orm.Dict(dict=pw_bulk_parameters)
         self.ctx.pw_atom_parameters = orm.Dict(dict=pw_atom_parameters)
 
@@ -187,8 +188,8 @@ class CohesiveEnergyWorkChain(WorkChain):
         # create isolate atom structure
         self.ctx.element = helper_parse_upf(self.inputs.pseudo)
         self.ctx.pseudos = {self.ctx.element.value: self.inputs.pseudo}
-        self.ctx.atom_structure = create_isolate_atom(self.ctx.element,
-                                                      self.inputs.parameters.vacuum_length)
+        self.ctx.atom_structure = create_isolate_atom(
+            self.ctx.element, self.inputs.parameters.vacuum_length)
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""

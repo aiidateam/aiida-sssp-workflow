@@ -10,8 +10,12 @@ from aiida.plugins import WorkflowFactory
 
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 
+
 @calcfunction
 def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
+    """
+    doc
+    """
     import numpy as np
 
     output_stress = output_trajectory.get_array('stress')[0]
@@ -22,9 +26,11 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
         'hydrostatic_stress': hydrostatic_stress,
     })
 
+
 @calcfunction
 def helper_parse_upf(upf):
     return orm.Str(upf.element)
+
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -85,10 +91,9 @@ class PressureEvaluationWorkChain(WorkChain):
             required=True,
             help=
             'The output parameters include cohesive energy of the structure.')
-        spec.exit_code(
-            201,
-            'ERROR_SUB_PROCESS_FAILED_SCF',
-            message='The `PwBaseWorkChain` sub process failed.')
+        spec.exit_code(201,
+                       'ERROR_SUB_PROCESS_FAILED_SCF',
+                       message='The `PwBaseWorkChain` sub process failed.')
 
     def setup(self):
         """Input validation"""
@@ -99,7 +104,8 @@ class PressureEvaluationWorkChain(WorkChain):
                 'tstress': True,
             },
         })
-        self.ctx.pw_parameters.update_dict(self.inputs.parameters.pw.get_dict())
+        self.ctx.pw_parameters.update_dict(
+            self.inputs.parameters.pw.get_dict())
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure(self):
@@ -125,8 +131,7 @@ class PressureEvaluationWorkChain(WorkChain):
                 'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
                 'metadata': {},
             },
-            'kpoints_distance':
-            self.ctx.kpoints_distance,
+            'kpoints_distance': self.ctx.kpoints_distance,
         })
 
         if 'options' in self.inputs:
@@ -155,7 +160,8 @@ class PressureEvaluationWorkChain(WorkChain):
         output_pamameters = workchain.outputs.output_parameters
 
         # Return the output parameters of current workchain
-        output_parameters = helper_get_hydrostatic_stress(output_trajectory, output_pamameters)
+        output_parameters = helper_get_hydrostatic_stress(
+            output_trajectory, output_pamameters)
         self.out('output_parameters', output_parameters)
 
     def results(self):

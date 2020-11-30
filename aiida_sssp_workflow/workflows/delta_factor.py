@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-import importlib_resources
 import collections.abc
+import re
 
+import importlib_resources
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
-
-import re
 
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
@@ -16,7 +15,8 @@ EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
 MAGNETIC_ELEMENTS = ['Mn', 'O', 'Cr', 'Fe', 'Co', 'Ni']
 
-def parse_upf(upf_content: str, check: bool = True) -> dict:
+
+def parse_upf(upf_content: str) -> dict:
     """
 
     :param upf_content:
@@ -25,8 +25,8 @@ def parse_upf(upf_content: str, check: bool = True) -> dict:
     """
     upf_dict = {}
     regex = r'<PP_HEADER\s(?P<header>.*?)\s*\/>'
-    m = re.search(regex, upf_content, re.DOTALL)
-    header_str = m.group('header')
+    match = re.search(regex, upf_content, re.DOTALL)
+    header_str = match.group('header')
 
     regex = r'(\w*)\s*=\s*"(.*?)"'
     para_pairs = re.findall(regex, header_str)
@@ -46,6 +46,7 @@ def parse_upf(upf_content: str, check: bool = True) -> dict:
     upf_dict['header'] = header_dict
     return upf_dict
 
+
 # TODO also for same function in other workflow
 @calcfunction
 def helper_parse_upf(upf) -> orm.Dict:
@@ -62,14 +63,15 @@ def helper_create_standard_cif_from_element(element: orm.Str) -> orm.CifData:
 
     return cif_data
 
+
 @calcfunction
 def helper_get_magnetic_inputs(structure: orm.StructureData):
     """
     docstring
     """
-    MAG_INIT_Mn = {"Mn1":0.5,"Mn2":-0.3,"Mn3":0.5,"Mn4":-0.3}
-    MAG_INIT_O = {"O1":0.5,"O2":0.5,"O3":-0.5,"O4":-0.5}
-    MAG_INIT_Cr = {"Cr1":0.5,"Cr2":-0.5}
+    MAG_INIT_Mn = {"Mn1": 0.5, "Mn2": -0.3, "Mn3": 0.5, "Mn4": -0.3}  # pylint: disable=invalid-name
+    MAG_INIT_O = {"O1": 0.5, "O2": 0.5, "O3": -0.5, "O4": -0.5}  # pylint: disable=invalid-name
+    MAG_INIT_Cr = {"Cr1": 0.5, "Cr2": -0.5}  # pylint: disable=invalid-name
 
     mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
     kind_name = structure.get_kind_names()[0]
@@ -87,14 +89,18 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
         parameters = orm.Dict(dict={
             'SYSTEM': {
                 'nspin': 2,
-                'starting_magnetization': {kind_name: 0.2},
+                'starting_magnetization': {
+                    kind_name: 0.2
+                },
             },
         })
 
     #
     if kind_name in ['Mn', 'O', 'Cr']:
         for i, site in enumerate(structure.sites):
-            mag_structure.append_atom(position=site.position,symbols=kind_name,name=f'{kind_name}{i+1}')
+            mag_structure.append_atom(position=site.position,
+                                      symbols=kind_name,
+                                      name=f'{kind_name}{i+1}')
 
         if kind_name == 'Mn':
             parameters = orm.Dict(dict={
@@ -126,7 +132,6 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
     }
 
 
-
 def get_standard_cif_filename_from_element(element: str) -> str:
     if element in RARE_EARTH_ELEMENTS:
         fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN',
@@ -141,6 +146,7 @@ def get_standard_cif_filename_from_element(element: str) -> str:
 
 
 def update(d, u):
+    # pylint: disable=invalid-name
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
             d[k] = update(d.get(k, {}), v)
@@ -149,14 +155,12 @@ def update(d, u):
     return d
 
 
-PW_PARAS = lambda: orm.Dict(
-    dict={
-        'SYSTEM': {
-            'ecutrho': 1600,
-            'ecutwfc': 200,
-        },
-    })
-
+PW_PARAS = lambda: orm.Dict(dict={
+    'SYSTEM': {
+        'ecutrho': 1600,
+        'ecutwfc': 200,
+    },
+})
 
 RARE_EARTH_ELEMENTS = [
     'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
@@ -250,7 +254,6 @@ class DeltaFactorWorkChain(WorkChain):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
 
-
         pw_parameters = {
             'SYSTEM': {
                 'degauss': 0.02,
@@ -262,7 +265,8 @@ class DeltaFactorWorkChain(WorkChain):
             },
         }
 
-        self.ctx.pw_parameters = orm.Dict(dict=update(pw_parameters, self.inputs.parameters.pw.get_dict()))
+        self.ctx.pw_parameters = orm.Dict(
+            dict=update(pw_parameters, self.inputs.parameters.pw.get_dict()))
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure_and_pseudo(self):
@@ -282,23 +286,24 @@ class DeltaFactorWorkChain(WorkChain):
                 upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
                 pseudos['N'] = upf_nitrogen
 
-            z_valence_RE = upf_info['z_valence']
-            z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']
+            z_valence_RE = upf_info['z_valence']  # pylint: disable=invalid-name
+            z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']  # pylint: disable=invalid-name
             nbands = (z_valence_N + z_valence_RE) * 4 // 2
             nbands_factor = 2
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
                     'starting_magnetization(1)': 0.2,
-                    'starting_magnetization(2)': 0.0,   # Nitrogen
+                    'starting_magnetization(2)': 0.0,  # Nitrogen
                     'nbnd': int(nbands * nbands_factor),
                 },
             }
-            self.ctx.pw_parameters = orm.Dict(dict=update(self.ctx.pw_parameters.get_dict(), parameters))
+            self.ctx.pw_parameters = orm.Dict(
+                dict=update(self.ctx.pw_parameters.get_dict(), parameters))
         self.ctx.pseudos = pseudos
         self.report(f'pseudos is {pseudos}')
 
-        if not 'structure' in self.inputs:
+        if 'structure' not in self.inputs:
             filename = get_standard_cif_filename_from_element(
                 self.ctx.element.value)
 
@@ -314,15 +319,16 @@ class DeltaFactorWorkChain(WorkChain):
 
             self.out('eos_initial_cif', cif_data)
 
-            if not self.ctx.element.value in MAGNETIC_ELEMENTS:
+            if self.ctx.element.value not in MAGNETIC_ELEMENTS:
                 self.ctx.structure = cif_data.get_structure()
             else:
                 # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
                 structure = cif_data.get_structure()
-                res = helper_get_magnetic_inputs(structure, self.inputs.pseudo)
+                res = helper_get_magnetic_inputs(structure)
                 self.ctx.structure = res['structure']
                 parameters = res['parameters']
-                self.ctx.pw_parameters = orm.Dict(dict=update(parameters.get_dict(), self.ctx.pw_parameters.get_dict()))
+                self.ctx.pw_parameters = orm.Dict(dict=update(
+                    parameters.get_dict(), self.ctx.pw_parameters.get_dict()))
 
                 # setting pseudos
                 pseudos = {}
@@ -335,8 +341,6 @@ class DeltaFactorWorkChain(WorkChain):
             self.ctx.structure = self.inputs.structure
 
         self.out('eos_initial_structure', self.ctx.structure)
-
-
 
     def run_eos(self):
         """run eos workchain"""
@@ -363,7 +367,8 @@ class DeltaFactorWorkChain(WorkChain):
         else:
             from aiida_quantumespresso.utils.resources import get_default_options
 
-            inputs.options = orm.Dict(dict=get_default_options(max_wallclock_seconds=3600, with_mpi=True))
+            inputs.options = orm.Dict(dict=get_default_options(
+                max_wallclock_seconds=3600, with_mpi=True))
 
         self.report(f'options is {inputs.options.attributes}')
         running = self.submit(EquationOfStateWorkChain, **inputs)
