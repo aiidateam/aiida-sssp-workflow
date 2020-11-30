@@ -84,12 +84,12 @@ if __name__ == '__main__':
 
     #
     #
-    # # Si.pbe-n-rrkjus_psl.1.0.0.UPF
-    # upf = load_node('9d9d57fc-49e3-4e0c-8c37-4682ccc0fb51')
-    #
-    # node = run_delta(code, upf, is_nc=False)
-    # node.description = 'Si.pbe-n-rrkjus_psl.1.0.0.UPF'
-    # print(node)
+    # Si.pbe-n-rrkjus_psl.1.0.0.UPF
+    upf = load_node('154bf3b5-7f93-4dd4-9770-ca9a9673beed')
+
+    node = run_delta(code, upf, is_nc=False)
+    node.description = 'Si.pbe-n-rrkjus_psl.1.0.0.UPF'
+    print(node)
 
     # # sg15/Au_ONCV_PBE-1.2.upf
     # upf = load_node('62e411c5-b0ab-4d08-875c-6fa4f74eb74e')
@@ -134,14 +134,12 @@ if __name__ == '__main__':
     # print(node)
 
     # Eu.GGA-PBE-paw-v1.0.UPF
-    from aiida.manage.caching import disable_caching
-    with disable_caching(identifier='aiida.calculations:quantumespresso.pw'):
-        upf = load_node('220a8ebd-0ac5-44f1-a6a9-0790b24965a9')
-
-        # maximum inputs
-        node = run_delta(code, upf, is_nc=False)
-        node.description = 'WT/Eu.GGA-PBE-paw-v1.0.UPF'
-        print(node)
+    # upf = load_node('178436ca-2de9-4a60-a090-fc7323a45b86')
+    #
+    # # maximum inputs
+    # node = run_delta(code, upf, is_nc=False)
+    # node.description = 'WT/Eu.GGA-PBE-paw-v1.0.UPF'
+    # print(node)
 
     # sg15/O_ONCV_PBE-1.2.upf
     # upf = load_node('804b71ea-6d9b-4d80-a343-fd38f8d59382')

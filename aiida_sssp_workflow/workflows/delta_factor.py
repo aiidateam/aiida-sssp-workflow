@@ -8,15 +8,50 @@ from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
+import re
+
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
 MAGNETIC_ELEMENTS = ['Mn', 'O', 'Cr', 'Fe', 'Co', 'Ni']
 
+def parse_upf(upf_content: str, check: bool = True) -> dict:
+    """
+
+    :param upf_content:
+    :param check: if check the integrity of the pp file
+    :return:
+    """
+    upf_dict = {}
+    regex = r'<PP_HEADER\s(?P<header>.*?)\s*\/>'
+    m = re.search(regex, upf_content, re.DOTALL)
+    header_str = m.group('header')
+
+    regex = r'(\w*)\s*=\s*"(.*?)"'
+    para_pairs = re.findall(regex, header_str)
+
+    header_dict = {}
+    for (key, value) in para_pairs:
+        # TODO all other can be float value
+        if key in ['z_valence']:
+            value = float(value)
+
+        # TODO all can be int value
+        if key in ['l_max']:
+            value = int(value)
+
+        header_dict[key] = value
+
+    upf_dict['header'] = header_dict
+    return upf_dict
+
+# TODO also for same function in other workflow
 @calcfunction
-def helper_parse_upf(upf):
-    return orm.Str(upf.element)
+def helper_parse_upf(upf) -> orm.Dict:
+    header = parse_upf(upf.get_content())['header']
+
+    return orm.Dict(dict=header)
 
 
 @workfunction
@@ -234,10 +269,11 @@ class DeltaFactorWorkChain(WorkChain):
         """validate structure"""
         from aiida.common.files import md5_file
 
-        self.ctx.element = helper_parse_upf(self.inputs.pseudo)
+        upf_info = helper_parse_upf(self.inputs.pseudo)
+        self.ctx.element = orm.Str(upf_info['element'])
 
         pseudos = {self.ctx.element.value: self.inputs.pseudo}
-        if self.ctx.element in RARE_EARTH_ELEMENTS:
+        if self.ctx.element.value in RARE_EARTH_ELEMENTS:
             # If rare-earth add psp of N
             fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
                                              'N.UPF')
@@ -245,11 +281,17 @@ class DeltaFactorWorkChain(WorkChain):
                 filename = str(path)
                 upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
                 pseudos['N'] = upf_nitrogen
+
+            z_valence_RE = upf_info['z_valence']
+            z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']
+            nbands = (z_valence_N + z_valence_RE) * 4 // 2
+            nbands_factor = 2
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
                     'starting_magnetization(1)': 0.2,
                     'starting_magnetization(2)': 0.0,   # Nitrogen
+                    'nbnd': int(nbands * nbands_factor),
                 },
             }
             self.ctx.pw_parameters = orm.Dict(dict=update(self.ctx.pw_parameters.get_dict(), parameters))
