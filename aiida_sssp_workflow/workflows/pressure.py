@@ -27,11 +27,6 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
     })
 
 
-@calcfunction
-def helper_parse_upf(upf):
-    return orm.Str(upf.element)
-
-
 PW_PARAS = lambda: orm.Dict(
     dict={
         'SYSTEM': {
@@ -55,10 +50,13 @@ class PressureEvaluationWorkChain(WorkChain):
         spec.input('code',
                    valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
-                   help='Pseudopotential to be verified')
+        spec.input_namespace(
+            'pseudos',
+            valid_type=orm.UpfData,
+            dynamic=True,
+            help=
+            'A mapping of `UpfData` nodes onto the kind name to which they should apply.'
+        )
         spec.input(
             'structure',
             valid_type=orm.StructureData,
@@ -111,8 +109,7 @@ class PressureEvaluationWorkChain(WorkChain):
     def validate_structure(self):
         """Create isolate atom and validate structure"""
         # create isolate atom structure
-        self.ctx.element = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.pseudos = {self.ctx.element.value: self.inputs.pseudo}
+        self.ctx.pseudos = self.inputs.pseudos
 
     def run_scf(self):
         """

@@ -86,31 +86,33 @@ def test_calculate_delta_rare_earth():
     assert res['delta'] == 0.0
 
 
-def test_delta_volume():
-    """test calcusation of delta volume from convergence tests"""
-    calculate_delta_volume = CalculationFactory(
-        'sssp_workflow.calculate_delta_volume')
+def test_get_v0_b0_b1():
+    """
+    doc
+    """
+    from aiida_sssp_workflow.workflows.convergence.pressure import helper_get_v0_b0_b1
 
-    pressure_list = [
-        -0.10267932770498, -0.083408565628544, 0.0089734082951343,
-        0.021330232832696, 0.021330232832696, 0.014857610455878,
-        0.021624442940734, 0.025449174345217
-    ]
-    inputs = {
-        'equilibrium_refs':
-        orm.Dict(dict={
-            'V0': 20.4530,
-            'B0': 88.545,
-            'BP': 4.31,
-        }),
-        'pressures':
-        orm.List(list=pressure_list),
-        'pressure_reference':
-        orm.Float(0.02545),
-    }
-    res = calculate_delta_volume(**inputs)
-    print(res.get_list())
-    # assert res.get_list()[-1] < 0.01
+    res = helper_get_v0_b0_b1(orm.Str('Si'))
+    assert res['V0'].value == 20.4530
+    assert res['B0'].value == 88.545
+    assert res['B1'].value == 4.31
+
+
+def test_get_volume_from_pressure_birch_murnaghan():
+    """
+    doc
+    """
+    from aiida_sssp_workflow.workflows.convergence.pressure import helper_get_volume_from_pressure_birch_murnaghan
+
+    V0 = orm.Float(20.4530)
+    B0 = orm.Float(88.545)
+    B1 = orm.Float(4.31)
+    P = orm.Float(0.01)
+
+    ret = helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1)
+
+    # check that very small residual pressure correspond a small volume change
+    assert ret.value - 20.4530 < 0.1
 
 
 def test_phonon_frequencies_diff():
