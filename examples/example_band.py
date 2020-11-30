@@ -1,41 +1,41 @@
 #!/usr/bin/env python
-from aiida import orm
+from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory
+from aiida.engine import submit
 
-SSSPBandsWorkChain = WorkflowFactory('sssp_workflow.bands')
+from aiida_sssp_workflow.calculations.helper_functions import helper_get_primitive_structure
+
+ConvergenceBandsWorkChain = WorkflowFactory('sssp_workflow.convergence.bands')
 
 if __name__ == '__main__':
-    from aiida.engine import submit
-    from aiida.orm import load_node, load_code
+    from aiida import orm
+    from aiida.orm import load_code, load_node
 
-    # # Si
-    structure = load_node('0c5793b9-e52c-4708-b5a1-f53b5c4814bf')
-    # upf = load_node('9d9d57fc-49e3-4e0c-8c37-4682ccc0fb51') # 8 electrons
-    upf = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')  # 12 electrons
+    code = load_code('qe-6.6-pw@daint-mc')
+
+    # # Silicon structure and pseudopotential
+    # upf = load_node('9d9d57fc-49e3-4e0c-8c37-4682ccc0fb51')
+
+    # Fluorine pseude
+    # upf = load_node('a1b60d81-d5a3-4ddb-a31a-d5b608c1ba52')
 
     # gold structure and pseudopotential
-    # structure = load_node('9c2fc420-f76f-484f-b7d9-4df55eb7fee8')
-    # upf = load_node('197acb08-ff93-4e65-8de9-2242a96197b2')
+    # upf = load_node('197acb08-ff93-4e65-8de9-2242a96197b2') # NC
+    # upf = load_node('61830c2b-fa08-4e92-9571-1141ded79612')  # PAW
 
-    ecutrho = 240
-    ecutwfc = 30
-    PW_PARAS = orm.Dict(dict={
-        'SYSTEM': {
-            'ecutrho': ecutrho,
-            'ecutwfc': ecutwfc,
-        },
-    })
+    # Lanthanum
+    upf = load_node('b2880763-579c-4f6d-8803-2c77f4fb10e8')
 
-    inputs = {
-        'code': load_code('qe-6.6-pw@daint-mc'),
-        'structure': structure,
+    PARA_ECUTWFC_LIST = orm.List(list=[20, 25, 200])
+    PARA_ECUTRHO_LIST = orm.List(list=[160, 200, 1600])
+
+    inputs = AttributeDict({
+        'code': code,
         'pseudo': upf,
         'parameters': {
-            'scf_kpoints_distance': orm.Float(0.1),
-            'bands_kpoints_distance': orm.Float(0.2),
-            'pw': PW_PARAS,
+            'ecutwfc_list': PARA_ECUTWFC_LIST,
+            'ecutrho_list': PARA_ECUTRHO_LIST,
         },
-    }
-    node = submit(SSSPBandsWorkChain, **inputs)
-    node.description = '[Si]'
+    })
+    node = submit(ConvergenceBandsWorkChain, **inputs)
     print(node)

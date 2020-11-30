@@ -2,9 +2,11 @@
 """
 WorkChain calculate the bands for certain pseudopotential
 """
+import numpy as np
+
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.engine import WorkChain, calcfunction, ToContext
+from aiida.engine import WorkChain, ToContext, while_
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
 from aiida_sssp_workflow.utils import update_dict
@@ -12,12 +14,6 @@ from aiida_sssp_workflow.utils import update_dict
 PwBandsWorkChain = WorkflowFactory('quantumespresso.pw.bands')
 create_kpoints_from_distance = CalculationFactory(
     'quantumespresso.create_kpoints_from_distance')
-
-
-@calcfunction
-def helper_parse_upf(upf):
-    return orm.Str(upf.element)
-
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -39,10 +35,13 @@ class BandsWorkChain(WorkChain):
         spec.input('code',
                    valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
-                   help='Pseudopotential to be verified')
+        spec.input_namespace(
+            'pseudos',
+            valid_type=orm.UpfData,
+            dynamic=True,
+            help=
+            'A mapping of `UpfData` nodes onto the kind name to which they should apply.'
+        )
         spec.input(
             'structure',
             valid_type=orm.StructureData,
@@ -61,6 +60,10 @@ class BandsWorkChain(WorkChain):
                    valid_type=orm.Float,
                    default=lambda: orm.Float(0.1),
                    help='Kpoints distance setting for scf calculation.')
+        spec.input('parameters.nbands_factor',
+                   valid_type=orm.Float,
+                   default=lambda: orm.Float(1.0),
+                   help='Bands number factor in bands calculation.')
         spec.input('parameters.bands_kpoints_distance',
                    valid_type=orm.Float,
                    default=lambda: orm.Float(0.15),
@@ -68,8 +71,10 @@ class BandsWorkChain(WorkChain):
         spec.outline(
             cls.setup,
             cls.validate_structure,
-            cls.run_bands,
-            cls.inspect_bands,
+            while_(cls.not_enough_bands)(
+                cls.run_bands,
+                cls.inspect_bands,
+            ),
             cls.results,
         )
         spec.output('scf_parameters',
@@ -82,6 +87,9 @@ class BandsWorkChain(WorkChain):
         spec.output('band_structure',
                     valid_type=orm.BandsData,
                     help='The computed band structure.')
+        spec.output('nbands_factor',
+                    valid_type=orm.Float,
+                    help='The nbands factor of final bands run.')
         spec.exit_code(201,
                        'ERROR_SUB_PROCESS_FAILED_BANDS',
                        message='The `PwBandsWorkChain` sub process failed.')
@@ -122,14 +130,22 @@ class BandsWorkChain(WorkChain):
 
         self.ctx.scf_kpoints_distance = self.inputs.parameters.scf_kpoints_distance
 
+        # set initial lowest highest bands eigenvalue - fermi_energy equals to 0.0
+        self.ctx.nbands_factor = self.inputs.parameters.nbands_factor
+        self.ctx.lowest_highest_eigenvalue = 0.0
+
         bands_kpoints_distance = self.inputs.parameters.bands_kpoints_distance
         self.ctx.bands_kpoints = create_kpoints_from_distance(
             self.inputs.structure, bands_kpoints_distance, orm.Bool(False))
 
     def validate_structure(self):
         """Create isolate atom and validate structure"""
-        self.ctx.element = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.pseudos = {self.ctx.element.value: self.inputs.pseudo}
+        self.ctx.pseudos = self.inputs.pseudos
+
+    def not_enough_bands(self):
+        """Check if the number of bands enough for shift 10eV"""
+        bands_shift = 10.0 + 0.5  # hard code for the time being
+        return self.ctx.lowest_highest_eigenvalue < bands_shift
 
     def run_bands(self):
         if 'options' in self.inputs:
@@ -166,7 +182,7 @@ class BandsWorkChain(WorkChain):
                     },
                 },
             },
-            'nbands_factor': orm.Float(2.0),
+            'nbands_factor': self.ctx.nbands_factor,
             'bands_kpoints': self.ctx.bands_kpoints,
         })
         running = self.submit(PwBandsWorkChain, **inputs)
@@ -183,10 +199,21 @@ class BandsWorkChain(WorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
-        self.report('pw bands workchain succesfully completed')
-        self.out('scf_parameters', workchain.outputs.scf_parameters)
-        self.out('band_parameters', workchain.outputs.band_parameters)
-        self.out('band_structure', workchain.outputs.band_structure)
+        fermi_energy = workchain.outputs.band_parameters['fermi_energy']
+        bands = workchain.outputs.band_structure.get_array(
+            'bands') - fermi_energy
+        self.ctx.lowest_highest_eigenvalue = np.amin(bands[:, -1])
+
+        self.ctx.nbands_factor += 1.0
+        self.ctx.output_nbands_factor = self.ctx.nbands_factor - 1.0
 
     def results(self):
-        pass
+        self.report('pw bands workchain successfully completed')
+        self.out('scf_parameters',
+                 self.ctx.workchain_bands.outputs.scf_parameters)
+        self.out('band_parameters',
+                 self.ctx.workchain_bands.outputs.band_parameters)
+        self.out('band_structure',
+                 self.ctx.workchain_bands.outputs.band_structure)
+        self.out('nbands_factor',
+                 orm.Float(self.ctx.output_nbands_factor).store())

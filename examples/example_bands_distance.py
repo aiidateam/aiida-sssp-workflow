@@ -32,6 +32,10 @@ def calc_band_distance(wc_node1, wc_node2, is_metal):
 
 
 if __name__ == '__main__':
+    # the bands of gold calculated with different pseudopotential
     wc1 = orm.load_node('3d69f296-89f3-4cb3-854d-4e433344a96a')
     wc2 = orm.load_node('15582ab4-1ba0-4398-8fb7-8831661a3a6a')
+
+    # shift values are opposite to each other
     calc_band_distance(wc1, wc2, is_metal=True)
+    calc_band_distance(wc2, wc1, is_metal=True)
