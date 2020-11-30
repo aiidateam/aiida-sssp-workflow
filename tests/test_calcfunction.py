@@ -111,3 +111,18 @@ def test_delta_volume():
     res = calculate_delta_volume(**inputs)
     print(res.get_list())
     # assert res.get_list()[-1] < 0.01
+
+
+def test_phonon_frequencies_diff():
+    """test of helper_get_relative_phonon_frequencies"""
+    from aiida_sssp_workflow.workflows.convergence.phonon_frequencies import helper_get_relative_phonon_frequencies
+
+    freq = orm.List(list=[1., 1., 1.])
+    ref_freq = orm.List(list=[1., 1., 1.])
+
+    res = helper_get_relative_phonon_frequencies(freq, ref_freq)
+
+    assert res['relative_diff'] == 0.0
+    assert res['relative_max_diff'] == 0.0
+    assert res['absolute_diff'] == 0.0
+    assert res['absolute_max_diff'] == 0.0

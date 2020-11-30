@@ -3,21 +3,12 @@
 WorkChain calculate phonon frequencies at Gamma
 """
 from aiida import orm
-from aiida.engine import calcfunction, WorkChain, ToContext
+from aiida.engine import WorkChain, ToContext
 from aiida.common import AttributeDict, NotExistentAttributeError
 from aiida.plugins import WorkflowFactory
 
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 PhBaseWorkflow = WorkflowFactory('quantumespresso.ph.base')
-
-
-@calcfunction
-def helper_parse_upf(upf):
-    """
-    doc
-    """
-    return orm.Str(upf.element)
-
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -33,6 +24,12 @@ PW_PARAS = lambda: orm.Dict(
         },
     })
 
+PH_PARAS = lambda: orm.Dict(dict=
+                            {'INPUTPH': {
+                                'tr2_ph': 1e-16,
+                                'epsil': False,
+                            }})
+
 
 class PhononFrequenciesWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
@@ -45,10 +42,13 @@ class PhononFrequenciesWorkChain(WorkChain):
         spec.input('ph_code',
                    valid_type=orm.Code,
                    help='The `ph.x` code use for the `PwCalculation`.')
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
-                   help='Pseudopotential to be verified')
+        spec.input_namespace(
+            'pseudos',
+            valid_type=orm.UpfData,
+            dynamic=True,
+            help=
+            'A mapping of `UpfData` nodes onto the kind name to which they should apply.'
+        )
         spec.input(
             'structure',
             valid_type=orm.StructureData,
@@ -65,7 +65,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                    help='parameters for pw.x.')
         spec.input('parameters.ph',
                    valid_type=orm.Dict,
-                   default=PW_PARAS,
+                   default=PH_PARAS,
                    help='parameters for ph.x.')
         spec.input('parameters.qpoints',
                    valid_type=orm.List,
@@ -125,8 +125,7 @@ class PhononFrequenciesWorkChain(WorkChain):
     def validate_structure(self):
         """Create isolate atom and validate structure"""
         # create isolate atom structure
-        self.ctx.element = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.pseudos = {self.ctx.element.value: self.inputs.pseudo}
+        self.ctx.pseudos = self.inputs.pseudos
 
     def run_scf(self):
         """

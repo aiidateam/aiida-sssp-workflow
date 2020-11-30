@@ -36,7 +36,8 @@
             "sssp_workflow.pressure_evaluation = aiida_sssp_workflow.workflows.pressure_evaluation:PressureEvaluationWorkChain",
             "sssp_workflow.phonon_frequencies = aiida_sssp_workflow.workflows.phonon_frequencies:PhononFrequenciesWorkChain",
             "sssp_workflow.bands = aiida_sssp_workflow.workflows.bands:BandsWorkChain",
-            "sssp_workflow.convergence.cohesive_energy = aiida_sssp_workflow.workflows.convergence.cohesive_energy:ConvergenceCohesiveEnergyWorkChain"
+            "sssp_workflow.convergence.cohesive_energy = aiida_sssp_workflow.workflows.convergence.cohesive_energy:ConvergenceCohesiveEnergyWorkChain",
+            "sssp_workflow.convergence.phonon_frequencies = aiida_sssp_workflow.workflows.convergence.phonon_frequencies:ConvergencePhononFrequenciesWorkChain"
         ]
     },
     "include_package_data": true,
