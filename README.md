@@ -5,116 +5,70 @@
 
 # aiida-sssp-workflow
 
-SSSP verification workflows
+The `aiida-sssp-workflow` is an aiida plugin to run the verification for a given pseudopotential. The plugin contains 
+workflows to verify the pseudopotential.
+It can:
 
-This plugin is the default output of the
-[AiiDA plugin cutter](https://github.com/aiidateam/aiida-plugin-cutter),
-intended to help developers get started with their AiiDA plugins.
+1) evaluate the [delta factor]() of the pseudopotential with respect to WIEN2K all-electrons results. 
+2) Converge test on varies of properties to give a recommended energy cutoff of the pseudopotential, include properties:
+    1) Cohesive energy
+    2) phonon frequencies
+    3) pressure
+    4) bands distance
+    
+### The computational details to running the calculation
+
+#### Input Structures:
+
+- In Δ-factor calculation: most stable elemental system from [Cottenier's work](http://molmod.ugent.be/deltacodesdft) 
+    and rare-earth nitrides from [Topsakal-Wentzkovitch work](https://www.sciencedirect.com/science/article/abs/pii/S0927025614005059);
+- Phonon, pressure, cohesive energy: Cottenier's structures 
+    (except SiF4 has been used for F because of convergence issues) and 
+    rare-earth nitrides; Use primitive cells.
+- Bands: Cottenier's structures reduced to primitive cells 
+    (except SiF4 has been used for F because of convergence issues) and rare-earth nitrides. 
+    PwbandWorkflow will make a primitive cell for band calculation (Remember to turn off the relax step).
+    
+#### Parameters of Δ calculations
+
+- wave function cutoffs: 200 Ry;
+- dual = 8 (PAW/US), 4 (NC); Mn/Fe/Co have larger duals tested as well; 12 and 16. 
+    We have gone in a mode where we do not use the dual, but we use ECUTRHO and ECUTWFC. However, dual is still used in 
+    simply setting the ecutwfc/ecutrho pairs.
+- k-points: 0.1A^-1;
+- smearing (degauss): Marzari-Vanderbilt, 0.01 Ry; 
+- non spin-polarized calculations except Mn (antiferromagnetic), 
+    O and Cr (antiferromagnetic), 
+    Fe, Co, and Ni (ferromagnetic).
+
+#### Parameters in phonon, pressure, cohesive energy calculations:
+
+- k-points: 0.15A^-1
+- smearing: Marzari-Vanderbilt, 0.01 Ry;
+- k-points for the isolated atoms: 1x1x1;
+- smearing for the isolated atoms: gaussian 0.01 Ry [^atom_smearing]; 
+
+[^atom_smearing]: NOTE: PWscf writes in the output something called total energy. This is *NOT* the total energy when you have smearing; it’s the total free energy E-TS. PWscf also writes -TS, so one can get back the total energy E. In general (for a metal) E-TS should be used. For an atom instead the total energy should be used, since the -TS term is not really physical (it comes from the entropy of fractional occupations on the atom). Check with Nicola if you have atoms where -TS is different from zero. (http://theossrv1.epfl.ch/Main/ElectronicTemperature)
+- unit cell for the isolated atoms: 12x12x12 Å;
+- q-point: only calculate the phonon frequencies on Brillouin-Zone border q=(0.5, 0.5, 0.5). [^phonon]
+- all calculations non-spin-polarized.
+
+[^phonon]: the convergence pattern for the phonons is calculated as:
+- circle = (1/N * ∑i=1,N [ωi(cutoff) - ωi(200Ry)]2 / ωi(200Ry)2)1/2 * 100 (in percentage) and half error bar = Max |[ω(cutoff) - ω(200Ry)] / ω(200Ry)| * 100, if the highest frequency is more than 100 cm-1;
+- circle = (1/N * ∑i=1,N [ωi(cutoff) - ωi(200Ry)]2)1/2 (absolute value) and half error bar = Max |ωi(cutoff) - ω(200Ry)|, if the highest frequency is less than 100 cm-1;
+- N is the total number of frequencies;
+- For some elements, we have neglected the first n frequencies in the summation above, because the frequencies are negative and/or with strong oscillations as function of the cutoff for all the considered pseudos). We have neglected the first four frequencies for H and I, 12 for N and Cl, 6 for O and SiF4 (which replaces F).
+
+#### Bands calculations:
+
+- k-points for the self-consistent calculation: 0.1; (can use cache one for the latter calculation)
+- k-points for the bands calculation (as in, calculations of the eta and eta10 factors): uniform mesh 0.2 w6x6x6ith no symmetry reduction, rather than high-symmetry path which is not determinant;
+- smearing: Marzari-Vanderbilt, 0.02 Ry in scf calculation and Fermi-Dirac in bands distance calculation;
+- all calculations non spin-polarized.
 
 ## Repository contents
 
-* [`.github/`](.github/): [Github Actions](https://github.com/features/actions) configuration
-  * [`ci.yml`](.github/workflows/ci.yml): runs tests, checks test coverage and builds documentation at every new commit
-  * [`publish-on-pypi.yml`](.github/workflows/publish-on-pypi.yml): automatically deploy git tags to PyPI - just generate a [PyPI API token](https://pypi.org/help/#apitoken) for your PyPI account and add it to the `pypi_token` secret of your github repository
-* [`aiida_sssp_workflow/`](aiida_sssp_workflow/): The main source code of the plugin package
-  * [`data/`](aiida_sssp_workflow/data/): A new `DiffParameters` data class, used as input to the `DiffCalculation` `CalcJob` class
-  * [`calculations.py`](aiida_sssp_workflow/calculations/calculations.py): A new `DiffCalculation` `CalcJob` class
-  * [`cli.py`](aiida_sssp_workflow/cli.py): Extensions of the `verdi data` command line interface for the `DiffParameters` class
-  * [`helpers.py`](aiida_sssp_workflow/helpers.py): Helpers for setting up an AiiDA code for `diff` automatically
-  * [`parsers.py`](aiida_sssp_workflow/parsers.py): A new `Parser` for the `DiffCalculation`
-* [`docs/`](docs/): A documentation template ready for publication on [Read the Docs](http://aiida-diff.readthedocs.io/en/latest/)
-* [`examples/`](examples/): An example of how to submit a calculation using this plugin
-* [`tests/`](tests/): Basic regression tests using the [pytest](https://docs.pytest.org/en/latest/) framework (submitting a calculation, ...). Install `pip install -e .[testing]` and run `pytest`.
-* [`.coveragerc`](.coveragerc): Configuration of [coverage.py](https://coverage.readthedocs.io/en/latest) tool reporting which lines of your plugin are covered by tests
-* [`.gitignore`](.gitignore): Telling git which files to ignore
-* [`.pre-commit-config.yaml`](.pre-commit-config.yaml): Configuration of [pre-commit hooks](https://pre-commit.com/) that sanitize coding style and check for syntax errors. Enable via `pip install -e .[pre-commit] && pre-commit install`
-* [`.readthedocs.yml`](.readthedocs.yml): Configuration of documentation build for [Read the Docs](https://readthedocs.org/)
-* [`LICENSE`](LICENSE): License for your plugin
-* [`MANIFEST.in`](MANIFEST.in): Configure non-Python files to be included for publication on [PyPI](https://pypi.org/)
-* [`README.md`](README.md): This file
-* [`conftest.py`](conftest.py): Configuration of fixtures for [pytest](https://docs.pytest.org/en/latest/)
-* [`pytest.ini`](pytest.ini): Configuration of [pytest](https://docs.pytest.org/en/latest/) test discovery
-* [`setup.json`](setup.json): Plugin metadata for registration on [PyPI](https://pypi.org/) and the [AiiDA plugin registry](https://aiidateam.github.io/aiida-registry/) (including entry points)
-* [`setup.py`](setup.py): Installation script for pip / [PyPI](https://pypi.org/)
-
-
-See also the following video sequences from the 2019-05 AiiDA tutorial:
-
- * [aiida-diff setup.json](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=240s)
- * [run aiida-diff example calculation](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=403s)
- * [aiida-diff CalcJob plugin](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=685s)
- * [aiida-diff Parser plugin](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=936s)
- * [aiida-diff computer/code helpers](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=1238s)
- * [aiida-diff input data (with validation)](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=1353s)
- * [aiida-diff cli](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=1621s)
- * [aiida-diff tests](https://www.youtube.com/watch?v=2CxiuiA1uVs&t=1931s)
- * [Adding your plugin to the registry](https://www.youtube.com/watch?v=760O2lDB-TM&t=112s)
- * [pre-commit hooks](https://www.youtube.com/watch?v=760O2lDB-TM&t=333s)
-
-For more information, see the [developer guide](https://aiida-diff.readthedocs.io/en/latest/developer_guide) of your plugin.
-
-
 ## Features
-
- * Add input files using `SinglefileData`:
-   ```python
-   SinglefileData = DataFactory('singlefile')
-   inputs['file1'] = SinglefileData(file='/path/to/file1')
-   inputs['file2'] = SinglefileData(file='/path/to/file2')
-   ```
-
- * Specify command line options via a python dictionary and `DiffParameters`:
-   ```python
-   d = { 'ignore-case': True }
-   DiffParameters = DataFactory('sssp_workflow')
-   inputs['parameters'] = DiffParameters(dict=d)
-   ```
-
- * `DiffParameters` dictionaries are validated using [voluptuous](https://github.com/alecthomas/voluptuous).
-   Find out about supported options:
-   ```python
-   DiffParameters = DataFactory('sssp_workflow')
-   print(DiffParameters.schema.schema)
-   ```
-
-## Installation
-
-```shell
-pip install aiida-sssp-workflow
-verdi quicksetup  # better to set up a new profile
-verdi plugin list aiida.calculations  # should now show your calclulation plugins
-```
-
-
-## Usage
-
-Here goes a complete example of how to submit a test calculation using this plugin.
-
-A quick demo of how to submit a calculation:
-```shell
-verdi daemon start     # make sure the daemon is running
-cd examples
-./example_01.py        # run test calculation
-verdi process list -a  # check record of calculation
-```
-
-The plugin also includes verdi commands to inspect its data types:
-```shell
-verdi data sssp_workflow list
-verdi data sssp_workflow export <PK>
-```
-
-## Development
-
-```shell
-git clone https://github.com/aiidateam/aiida-sssp-workflow .
-cd aiida-sssp-workflow
-pip install -e .[pre-commit,testing]  # install extra dependencies
-pre-commit install  # install pre-commit hooks
-pytest -v  # discover and run all tests
-```
-
-See the [developer guide](http://aiida-sssp-workflow.readthedocs.io/en/latest/developer_guide/index.html) for more information.
 
 ## License
 
@@ -124,6 +78,3 @@ MIT
 ## Contact
 
 morty.yeu@gmail.com
-
-# aiida-sssp-workflow
-# aiida-sssp-workflow
