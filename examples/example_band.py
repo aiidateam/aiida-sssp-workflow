@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # # Si
     structure = load_node('0c5793b9-e52c-4708-b5a1-f53b5c4814bf')
     # upf = load_node('9d9d57fc-49e3-4e0c-8c37-4682ccc0fb51') # 8 electrons
-    upf = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5') # 12 electrons
+    upf = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')  # 12 electrons
 
     # gold structure and pseudopotential
     # structure = load_node('9c2fc420-f76f-484f-b7d9-4df55eb7fee8')

@@ -6,6 +6,7 @@ import numpy as np
 from aiida import orm
 from aiida.engine import calcfunction, workfunction, ExitCode, run_get_node
 
+
 def get_homo(bands, num_electrons: int):
     """
     This function only work for insulator,
@@ -15,6 +16,7 @@ def get_homo(bands, num_electrons: int):
     # get homo band
     band = bands[:, num_electrons // 2 - 1]
     return max(band)
+
 
 def fermi_dirac(band_energy, fermi_energy, smearing):
     """
@@ -29,22 +31,20 @@ def fermi_dirac(band_energy, fermi_energy, smearing):
 
     return res
 
+
 @calcfunction
-def retrieve_bands(bandsdata: orm.BandsData,
-                   start_band: orm.Int,
-                   num_electrons: orm.Int,
-                   efermi: orm.Float,
-                   smearing: orm.Float,
-                   is_metal: orm.Bool):
+def retrieve_bands(bandsdata: orm.BandsData, start_band: orm.Int,
+                   num_electrons: orm.Int, efermi: orm.Float,
+                   smearing: orm.Float, is_metal: orm.Bool):
     """
     :bandsdata:
     ...
     TODO docstring
     """
-    from sssp.efermi_module import efermi as efermi_calc
+    from sssp.efermi_module import efermi as efermi_calc  # pylint: disable=no-name-in-module, import-error
 
     bands = bandsdata.get_bands()
-    bands = bands - efermi.value    # shift all bands to fermi energy 0
+    bands = bands - efermi.value  # shift all bands to fermi energy 0
     bands = bands[:, start_band.value:]
     output_bands = orm.ArrayData()
     output_bands.set_array('kpoints', bandsdata.get_kpoints())
@@ -59,7 +59,8 @@ def retrieve_bands(bandsdata: orm.BandsData,
         bands = np.asfortranarray(bands)
 
         # 2 for firmi-dirac smearing
-        res = efermi_calc(nelectrons, nbands, smearing, nkpoints, weights, 0.0, bands, 2)
+        res = efermi_calc(nelectrons, nbands, smearing, nkpoints, weights, 0.0,
+                          bands, 2)
         output_efermi = orm.Float(res[1])
     else:
         homo_energy = get_homo(bands, num_electrons.value)
@@ -70,13 +71,11 @@ def retrieve_bands(bandsdata: orm.BandsData,
         'efermi': output_efermi,
     }
 
+
 @calcfunction
-def calculate_eta_and_max_diff(bands_a: orm.ArrayData,
-                 bands_b: orm.ArrayData,
-                 efermi_a: orm.Float,
-                 efermi_b: orm.Float,
-                 fermi_shift: orm.Float,
-                 smearing: orm.Float):
+def calculate_eta_and_max_diff(bands_a: orm.ArrayData, bands_b: orm.ArrayData,
+                               efermi_a: orm.Float, efermi_b: orm.Float,
+                               fermi_shift: orm.Float, smearing: orm.Float):
     """
     docstring
     """
@@ -87,25 +86,28 @@ def calculate_eta_and_max_diff(bands_a: orm.ArrayData,
     bands_b = bands_b.get_array('bands')
     num_bands = min(np.shape(bands_a)[1], np.shape(bands_b)[1])
 
-    assert np.shape(bands_a)[0] == np.shape(bands_b)[0], 'have different kpoints'
+    assert np.shape(bands_a)[0] == np.shape(
+        bands_b)[0], 'have different kpoints'
 
     # truncate the bands to same size
     bands_a = bands_a[:, :num_bands - 1]
     bands_b = bands_b[:, :num_bands - 1]
 
-    occ_a = fermi_dirac(bands_a, efermi_a.value + fermi_shift.value, smearing.value)
-    occ_b = fermi_dirac(bands_b, efermi_b.value + fermi_shift.value, smearing.value)
+    occ_a = fermi_dirac(bands_a, efermi_a.value + fermi_shift.value,
+                        smearing.value)
+    occ_b = fermi_dirac(bands_b, efermi_b.value + fermi_shift.value,
+                        smearing.value)
     occ = np.sqrt(occ_a * occ_b)
     # TODO check that the number of bands is enough for this fermi shift
     # by check if the occ are all 1
-    is_bands_enough = np.all(occ[:,-1] < 1.0)
+    is_bands_enough = np.all(occ[:, -1] < 1.0)
     if not is_bands_enough:
         return ExitCode(300, 'bands not enough.')
 
     bands_diff = bands_a - bands_b
 
     def fun_shift(occ, bands_diff, shift):
-        return np.sqrt(np.sum(occ * (bands_diff + shift) ** 2) / np.sum(occ))
+        return np.sqrt(np.sum(occ * (bands_diff + shift)**2) / np.sum(occ))
 
     # Compute eta
     eta_val = partial(fun_shift, occ, bands_diff)
@@ -129,13 +131,10 @@ def calculate_eta_and_max_diff(bands_a: orm.ArrayData,
     }
 
 
-
 @workfunction
-def calculate_bands_distance(bands_a: orm.BandsData,
-                             bands_b: orm.BandsData,
+def calculate_bands_distance(bands_a: orm.BandsData, bands_b: orm.BandsData,
                              band_parameters_a: orm.Dict,
-                             band_parameters_b: orm.Dict,
-                             smearing: orm.Float,
+                             band_parameters_b: orm.Dict, smearing: orm.Float,
                              is_metal: orm.Bool):
     """
     TODO docstring
@@ -147,23 +146,29 @@ def calculate_bands_distance(bands_a: orm.BandsData,
 
     if num_electrons_a <= num_electrons_b:
         num_electrons = int(num_electrons_a)
-        res = retrieve_bands(bands_a, orm.Int(0), orm.Int(num_electrons), orm.Float(efermi_a), smearing, is_metal)
+        res = retrieve_bands(bands_a, orm.Int(0), orm.Int(num_electrons),
+                             orm.Float(efermi_a), smearing, is_metal)
         bands_a = res['bands']
         efermi_a = res['efermi']
 
         start_band = int(num_electrons_b - num_electrons_a) // 2
-        res = retrieve_bands(bands_b, orm.Int(start_band), orm.Int(num_electrons), orm.Float(efermi_b), smearing, is_metal)
+        res = retrieve_bands(bands_b, orm.Int(start_band),
+                             orm.Int(num_electrons), orm.Float(efermi_b),
+                             smearing, is_metal)
         bands_b = res['bands']
         efermi_b = res['efermi']
     else:
         # num_electrons_b < num_electrons_a:
         num_electrons = int(num_electrons_b)
         start_band = int(num_electrons_b - num_electrons_a) // 2
-        res = retrieve_bands(bands_a, orm.Int(start_band), orm.Int(num_electrons), orm.Float(efermi_a), smearing, is_metal)
+        res = retrieve_bands(bands_a, orm.Int(start_band),
+                             orm.Int(num_electrons), orm.Float(efermi_a),
+                             smearing, is_metal)
         bands_a = res['bands']
         efermi_a = res['efermi']
 
-        res = retrieve_bands(bands_b, orm.Int(0), orm.Int(num_electrons), orm.Float(efermi_b), smearing, is_metal)
+        res = retrieve_bands(bands_b, orm.Int(0), orm.Int(num_electrons),
+                             orm.Float(efermi_b), smearing, is_metal)
         bands_b = res['bands']
         efermi_b = res['efermi']
 
@@ -174,7 +179,8 @@ def calculate_bands_distance(bands_a: orm.BandsData,
     else:
         smearing_v = orm.Float(0)
 
-    outputs = calculate_eta_and_max_diff(bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_v)
+    outputs = calculate_eta_and_max_diff(bands_a, bands_b, efermi_a, efermi_b,
+                                         fermi_shift, smearing_v)
     eta_v = outputs.get('eta')
     shift_v = outputs.get('shift')
     max_diff_v = outputs.get('max_diff')
@@ -183,14 +189,16 @@ def calculate_bands_distance(bands_a: orm.BandsData,
     fermi_shift = orm.Float(10.0)
     # if not metal
     smearing_10 = smearing
-    outputs, node = run_get_node(calculate_eta_and_max_diff, bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_10)
+    outputs, node = run_get_node(calculate_eta_and_max_diff, bands_a, bands_b,
+                                 efermi_a, efermi_b, fermi_shift, smearing_10)
     # import ipdb; ipdb.set_trace()
     if node.is_finished_ok:
         eta_10 = outputs.get('eta')
         shift_10 = outputs.get('shift')
         max_diff_10 = outputs.get('max_diff')
     else:
-        return ExitCode(301, f'eta_and_max_diff calculation pk={node.pk} fail.')
+        return ExitCode(301,
+                        f'eta_and_max_diff calculation pk={node.pk} fail.')
 
     return {
         'eta_v': eta_v,

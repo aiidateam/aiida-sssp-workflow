@@ -9,6 +9,7 @@ from aiida_sssp_workflow.calculations.helper_functions import helper_get_primiti
 
 PhononFreqWorkChain = WorkflowFactory('sssp_workflow.phonon_frequencies')
 
+
 def phonon_evaluate(ecutwfc, ecutrho):
     pw_code = load_code('qe-6.6-pw@daint-mc')
     ph_code = load_code('qe-6.6-ph@daint-mc')
@@ -19,25 +20,24 @@ def phonon_evaluate(ecutwfc, ecutrho):
 
     primitive_structure = helper_get_primitive_structure(structure)
 
-    PW_PARAS = orm.Dict(dict={
-        'SYSTEM': {
-            'degauss': 0.01,
-            'ecutrho': ecutrho,
-            'ecutwfc': ecutwfc,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    })
+    PW_PARAS = orm.Dict(
+        dict={
+            'SYSTEM': {
+                'degauss': 0.01,
+                'ecutrho': ecutrho,
+                'ecutwfc': ecutwfc,
+                'occupations': 'smearing',
+                'smearing': 'marzari-vanderbilt',
+            },
+            'ELECTRONS': {
+                'conv_thr': 1e-10,
+            },
+        })
 
-    PH_PARAS = orm.Dict(dict={
-        'INPUTPH': {
-            'tr2_ph': 1e-16,
-            'epsil': False,
-        }
-    })
+    PH_PARAS = orm.Dict(dict={'INPUTPH': {
+        'tr2_ph': 1e-16,
+        'epsil': False,
+    }})
 
     # minimal inputs, maximum wc
     inputs = AttributeDict({
@@ -53,6 +53,7 @@ def phonon_evaluate(ecutwfc, ecutrho):
     node = submit(PhononFreqWorkChain, **inputs)
 
     return node
+
 
 if __name__ == '__main__':
     # silicon pressure convergence test

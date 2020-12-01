@@ -10,28 +10,39 @@ from aiida.engine import run_get_node, submit
 
 DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
 
+
 def run_delta(code, upf, structure=None, is_nc=False):
 
     if is_nc:
-        dual=4
+        dual = 4
     else:
-        dual=8
+        dual = 8
 
     ecutwfc = 200
     ecutrho = ecutwfc * dual
     inputs = AttributeDict({
-        'code': code,
-        'pseudo': upf,
-        'options': orm.Dict(dict={
-            'resources': {'num_machines': 1},
-            'max_wallclock_seconds': 1800*3,
-            'withmpi': True,
-        }),
+        'code':
+        code,
+        'pseudo':
+        upf,
+        'options':
+        orm.Dict(
+            dict={
+                'resources': {
+                    'num_machines': 1
+                },
+                'max_wallclock_seconds': 1800 * 3,
+                'withmpi': True,
+            }),
         'parameters': {
-            'scale_count': orm.Int(7),
-            'scale_increment': orm.Float(0.02),
-            'kpoints_distance': orm.Float(0.1),
-            'pw': orm.Dict(dict={
+            'scale_count':
+            orm.Int(7),
+            'scale_increment':
+            orm.Float(0.02),
+            'kpoints_distance':
+            orm.Float(0.1),
+            'pw':
+            orm.Dict(dict={
                 'SYSTEM': {
                     'ecutwfc': ecutwfc,
                     'ecutrho': ecutrho,
@@ -45,7 +56,6 @@ def run_delta(code, upf, structure=None, is_nc=False):
 
     node = submit(DeltaFactorWorkChain, **inputs)
     return node
-
 
 
 if __name__ == '__main__':
@@ -165,5 +175,3 @@ if __name__ == '__main__':
     # node = run_delta(code, upf, is_nc=True)
     # node.description = 'sg15/Mn_ONCV_PBE-1.2.upf'
     # print(node)
-
-

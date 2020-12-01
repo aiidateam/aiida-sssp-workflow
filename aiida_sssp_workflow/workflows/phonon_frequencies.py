@@ -10,9 +10,14 @@ from aiida.plugins import WorkflowFactory
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 PhBaseWorkflow = WorkflowFactory('quantumespresso.ph.base')
 
+
 @calcfunction
 def helper_parse_upf(upf):
+    """
+    doc
+    """
     return orm.Str(upf.element)
+
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -62,7 +67,9 @@ class PhononFrequenciesWorkChain(WorkChain):
                    valid_type=orm.Dict,
                    default=PW_PARAS,
                    help='parameters for ph.x.')
-        spec.input('parameters.qpoints', valid_type=orm.List, default=lambda: orm.List(list=[[0.,0.,0.]]),
+        spec.input('parameters.qpoints',
+                   valid_type=orm.List,
+                   default=lambda: orm.List(list=[[0., 0., 0.]]),
                    help='qpoints')
         spec.input(
             'parameters.kpoints_distance',
@@ -78,20 +85,16 @@ class PhononFrequenciesWorkChain(WorkChain):
             cls.inspect_ph,
             cls.results,
         )
-        spec.output(
-            'output_parameters',
-            valid_type=orm.Dict,
-            required=True,
-            help=
-            'The output parameters include phonon frequencies.')
-        spec.exit_code(
-            201,
-            'ERROR_SUB_PROCESS_FAILED_SCF',
-            message='The `PwBaseWorkChain` sub process failed.')
-        spec.exit_code(
-            211,
-            'ERROR_NO_REMOTE_FOLDER',
-            message='The remote folder node not exist')
+        spec.output('output_parameters',
+                    valid_type=orm.Dict,
+                    required=True,
+                    help='The output parameters include phonon frequencies.')
+        spec.exit_code(201,
+                       'ERROR_SUB_PROCESS_FAILED_SCF',
+                       message='The `PwBaseWorkChain` sub process failed.')
+        spec.exit_code(211,
+                       'ERROR_NO_REMOTE_FOLDER',
+                       message='The remote folder node not exist')
 
     def setup(self):
         """Input validation"""
@@ -102,22 +105,22 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'wf_collect': True,
             },
         })
-        self.ctx.pw_parameters.update_dict(self.inputs.parameters.pw.get_dict())
+        self.ctx.pw_parameters.update_dict(
+            self.inputs.parameters.pw.get_dict())
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
         # ph.x
-        self.ctx.ph_parameters = orm.Dict(dict={
-            'INPUTPH': {
+        self.ctx.ph_parameters = orm.Dict(
+            dict={'INPUTPH': {
                 'tr2_ph': 1e-16,
                 'epsil': False,
-            }
-        })
-        self.ctx.ph_parameters.update_dict(self.inputs.parameters.ph.get_dict())
+            }})
+        self.ctx.ph_parameters.update_dict(
+            self.inputs.parameters.ph.get_dict())
         qpoints = orm.KpointsData()
         qpoints.set_cell_from_structure(self.inputs.structure)
         qpoints.set_kpoints(self.inputs.parameters.qpoints.get_list())
         self.ctx.qpoints = qpoints
-
 
     def validate_structure(self):
         """Create isolate atom and validate structure"""
@@ -138,11 +141,11 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'code': self.inputs.pw_code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': self.ctx.pw_parameters,
-                'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '2']}),
+                'settings':
+                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '2']}),
                 'metadata': {},
             },
-            'kpoints_distance':
-            self.ctx.kpoints_distance,
+            'kpoints_distance': self.ctx.kpoints_distance,
         })
 
         if 'options' in self.inputs:
@@ -216,4 +219,6 @@ class PhononFrequenciesWorkChain(WorkChain):
         self.out('output_parameters', workchain.outputs.output_parameters)
 
     def results(self):
-        pass
+        """
+        doc
+        """

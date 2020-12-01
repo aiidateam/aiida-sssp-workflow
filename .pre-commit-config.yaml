@@ -2,23 +2,35 @@
 # pre-commit install
 
 # yapf = yet another python formatter
+repos:
 - repo: https://github.com/pre-commit/mirrors-yapf
-  rev: v0.28.0
+  rev: v0.30.0
   hooks:
   - id: yapf
     name: yapf
     args: ["-i"]
 
+-   repo: https://github.com/PyCQA/pylint
+    rev: pylint-2.6.0
+    hooks:
+    -   id: pylint
+        language: system
+        exclude: &exclude_files >
+          (?x)^(
+              examples/.*|
+              docs/.*|
+              .github/.*|
+              conftest.py|
+              aiida_sssp_workflow/cli.py|
+              tests/test_cli.py|
+              aiida_sssp_workflow/helpers.py|
+              aiida_sssp_workflow/data/__init__.py|
+              aiida_sssp_workflow/REF/__init__.py|
+              tests/.*(?<!\.py)$
+          )$
+
 - repo: local
   hooks:
-  # prospector: collection of linters
-  - id: prospector
-    language: system
-    types: [file, python]
-    name: prospector
-    description: "This hook runs Prospector: https://github.com/landscapeio/prospector"
-    entry: prospector
-
   - id: version-number
     name: Check version numbers
     entry: python ./.github/check_version.py

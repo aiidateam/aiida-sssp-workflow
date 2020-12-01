@@ -7,9 +7,11 @@ from aiida.plugins import WorkflowFactory
 
 PwBaseWorkChain = WorkflowFactory('quantumespresso.pw.base')
 
+
 def validate_inputs(value, _):
     """Validate the entire input namespace."""
-    if 'scale_factors' not in value and ('scale_count' not in value and 'scale_count' not in value):
+    if 'scale_factors' not in value and ('scale_count' not in value
+                                         and 'scale_count' not in value):
         return 'neither `scale_factors` nor the pair of `scale_count` and `scale_increment` were defined.'
 
 
@@ -43,16 +45,17 @@ def validate_scale_increment(value, _):
 
 
 @calcfunction
-def scale_structure(structure: orm.StructureData, scale_factor: orm.Float) -> orm.StructureData:
+def scale_structure(structure: orm.StructureData,
+                    scale_factor: orm.Float) -> orm.StructureData:
     """Scale the structure with the given scaling factor."""
     ase = structure.get_ase().copy()
-    ase.set_cell(ase.get_cell() * float(scale_factor)**(1 / 3), scale_atoms=True)
+    ase.set_cell(ase.get_cell() * float(scale_factor)**(1 / 3),
+                 scale_atoms=True)
     return orm.StructureData(ase=ase)
 
 
 class EquationOfStateWorkChain(WorkChain):
     """Workflow to compute the equation of state for a given crystal structure."""
-
     @classmethod
     def define(cls, spec):
         # yapf: disable
@@ -92,7 +95,7 @@ class EquationOfStateWorkChain(WorkChain):
         increment = self.inputs.scale_increment.value
         return [orm.Float(1 + i * increment - (count - 1) * increment / 2) for i in range(count)]
 
-    def get_sub_workchain_builder(self, scale_factor, previous_workchain=None):
+    def get_sub_workchain_builder(self, scale_factor):
         """Return the builder for the relax workchain."""
         process_class = PwBaseWorkChain
         structure = scale_structure(self.inputs.structure, scale_factor)
@@ -131,7 +134,7 @@ class EquationOfStateWorkChain(WorkChain):
         """Run the sub process at each scale factor to compute the structure volume and total energy."""
         # TODO check privious step if not ok stop wc and return.
         for scale_factor in self.get_scale_factors()[1:]:
-            builder = self.get_sub_workchain_builder(scale_factor, previous_workchain=self.ctx.previous_workchain)
+            builder = self.get_sub_workchain_builder(scale_factor)
             self.report(f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`')
             self.to_context(children=append_(self.submit(builder)))
 

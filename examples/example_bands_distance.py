@@ -11,6 +11,7 @@ from aiida_sssp_workflow.calculations.calculate_bands_distance import calculate_
 
 RY_TO_EV = 13.6056980659
 
+
 def calc_band_distance(wc_node1, wc_node2, is_metal):
     bandsdata_a = wc_node1.outputs.band_structure
     band_parameters_a = wc_node1.outputs.band_parameters
@@ -18,8 +19,10 @@ def calc_band_distance(wc_node1, wc_node2, is_metal):
     bandsdata_b = wc_node2.outputs.band_structure
     band_parameters_b = wc_node2.outputs.band_parameters
 
-    res = calculate_bands_distance(bandsdata_a, bandsdata_b, band_parameters_a, band_parameters_b,
-                                   orm.Float(0.02 * RY_TO_EV), orm.Bool(is_metal))
+    res = calculate_bands_distance(bandsdata_a, bandsdata_b,
+                                   band_parameters_a, band_parameters_b,
+                                   orm.Float(0.02 * RY_TO_EV),
+                                   orm.Bool(is_metal))
     print(f'etav: {res.get("eta_v")}')
     print(f'shift_v: {res.get("shift_v")}')
     print(f'max_diff_v: {res.get("max_diff_v")}')
