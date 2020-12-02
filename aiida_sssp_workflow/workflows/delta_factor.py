@@ -293,8 +293,10 @@ class DeltaFactorWorkChain(WorkChain):
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
-                    'starting_magnetization(1)': 0.2,
-                    'starting_magnetization(2)': 0.0,  # Nitrogen
+                    'starting_magnetization': {
+                        self.ctx.element.value: 0.2,
+                        'N': 0.0,
+                    },
                     'nbnd': int(nbands * nbands_factor),
                 },
             }
