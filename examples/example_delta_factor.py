@@ -78,6 +78,14 @@ if __name__ == '__main__':
     # node.description = 'Au_ONCV_PBE-1.0.oncvpsp.upf'
     # print(node)
 
+    # # sg15/Cr_ONCV_PBE-1.2.upf
+    # upf = load_node('d49cc506-c9a4-4247-9111-0266249e102e')
+    #
+    # # maximum inputs
+    # node = run_delta(code, upf, is_nc=True)
+    # node.description = 'sg15/Cr_ONCV_PBE-1.2.upf'
+    # print(node)
+
     # # GBRV_pbe/si_pbe_v1.uspp.F.UPF
     # upf = load_node('65f0427b-4cc5-4311-9f22-6a29a7771e1f')
     #

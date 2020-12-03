@@ -132,7 +132,14 @@ class EquationOfStateWorkChain(WorkChain):
 
     def run_eos(self):
         """Run the sub process at each scale factor to compute the structure volume and total energy."""
-        # TODO check privious step if not ok stop wc and return.
+        workchain = self.ctx.children[0]
+
+        if not workchain.is_finished_ok:
+            self.report(
+                f'PwBaseWorkChain pk={workchain.pk} for first scale structure run is failed.'
+            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=PwBaseWorkChain)
+
         for scale_factor in self.get_scale_factors()[1:]:
             builder = self.get_sub_workchain_builder(scale_factor)
             self.report(f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`')
@@ -140,7 +147,6 @@ class EquationOfStateWorkChain(WorkChain):
 
     def inspect_eos(self):
         """Inspect all children workflows to make sure they finished successfully."""
-        # TODO check the previous one successful.
         if any([not child.is_finished_ok for child in self.ctx.children]):
             process_class = PwBaseWorkChain
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=process_class)
