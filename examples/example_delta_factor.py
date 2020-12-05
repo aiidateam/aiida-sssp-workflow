@@ -78,6 +78,14 @@ if __name__ == '__main__':
     # node.description = 'Au_ONCV_PBE-1.0.oncvpsp.upf'
     # print(node)
 
+    # # sg15/Cr_ONCV_PBE-1.2.upf
+    # upf = load_node('d49cc506-c9a4-4247-9111-0266249e102e')
+    #
+    # # maximum inputs
+    # node = run_delta(code, upf, is_nc=True)
+    # node.description = 'sg15/Cr_ONCV_PBE-1.2.upf'
+    # print(node)
+
     # # GBRV_pbe/si_pbe_v1.uspp.F.UPF
     # upf = load_node('65f0427b-4cc5-4311-9f22-6a29a7771e1f')
     #
@@ -95,11 +103,11 @@ if __name__ == '__main__':
     #
     #
     # Si.pbe-n-rrkjus_psl.1.0.0.UPF
-    upf = load_node('154bf3b5-7f93-4dd4-9770-ca9a9673beed')
-
-    node = run_delta(code, upf, is_nc=False)
-    node.description = 'Si.pbe-n-rrkjus_psl.1.0.0.UPF'
-    print(node)
+    # upf = load_node('154bf3b5-7f93-4dd4-9770-ca9a9673beed')
+    #
+    # node = run_delta(code, upf, is_nc=False)
+    # node.description = 'Si.pbe-n-rrkjus_psl.1.0.0.UPF'
+    # print(node)
 
     # # sg15/Au_ONCV_PBE-1.2.upf
     # upf = load_node('62e411c5-b0ab-4d08-875c-6fa4f74eb74e')
@@ -144,12 +152,12 @@ if __name__ == '__main__':
     # print(node)
 
     # Eu.GGA-PBE-paw-v1.0.UPF
-    # upf = load_node('178436ca-2de9-4a60-a090-fc7323a45b86')
-    #
-    # # maximum inputs
-    # node = run_delta(code, upf, is_nc=False)
-    # node.description = 'WT/Eu.GGA-PBE-paw-v1.0.UPF'
-    # print(node)
+    upf = load_node('220a8ebd-0ac5-44f1-a6a9-0790b24965a9')
+
+    # maximum inputs
+    node = run_delta(code, upf, is_nc=False)
+    node.description = 'WT/Eu.GGA-PBE-paw-v1.0.UPF'
+    print(node)
 
     # sg15/O_ONCV_PBE-1.2.upf
     # upf = load_node('804b71ea-6d9b-4d80-a343-fd38f8d59382')

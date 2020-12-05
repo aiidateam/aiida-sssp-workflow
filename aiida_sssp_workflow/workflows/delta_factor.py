@@ -280,7 +280,7 @@ class DeltaFactorWorkChain(WorkChain):
         if self.ctx.element.value in RARE_EARTH_ELEMENTS:
             # If rare-earth add psp of N
             fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                             'N.UPF')
+                                             'N.pbe-n-radius_5.UPF')
             with fpath as path:
                 filename = str(path)
                 upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
@@ -288,13 +288,17 @@ class DeltaFactorWorkChain(WorkChain):
 
             z_valence_RE = upf_info['z_valence']  # pylint: disable=invalid-name
             z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']  # pylint: disable=invalid-name
-            nbands = (z_valence_N + z_valence_RE) * 4 // 2
+            nbands = (z_valence_N + z_valence_RE) // 2
             nbands_factor = 2
+
+            # TODO degauss need to be 0.002 to conform with WIEN2K results
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
-                    'starting_magnetization(1)': 0.2,
-                    'starting_magnetization(2)': 0.0,  # Nitrogen
+                    'starting_magnetization': {
+                        self.ctx.element.value: 0.2,
+                        'N': 0.0,
+                    },
                     'nbnd': int(nbands * nbands_factor),
                 },
             }
