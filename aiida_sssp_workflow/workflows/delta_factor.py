@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-import collections.abc
 import re
 
 import importlib_resources
@@ -9,11 +8,14 @@ from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
+from aiida_sssp_workflow.utils import update_dict, \
+    get_standard_cif_filename_from_element, \
+    MAGNETIC_ELEMENTS, \
+    RARE_EARTH_ELEMENTS
+
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
-
-MAGNETIC_ELEMENTS = ['Mn', 'O', 'Cr', 'Fe', 'Co', 'Ni']
 
 
 def parse_upf(upf_content: str) -> dict:
@@ -132,40 +134,12 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
     }
 
 
-def get_standard_cif_filename_from_element(element: str) -> str:
-    if element in RARE_EARTH_ELEMENTS:
-        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN',
-                                         f'{element}N.cif')
-    else:
-        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs',
-                                         f'{element}.cif')
-    with fpath as path:
-        filename = str(path)
-
-    return filename
-
-
-def update(d, u):
-    # pylint: disable=invalid-name
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = update(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
-
-
 PW_PARAS = lambda: orm.Dict(dict={
     'SYSTEM': {
         'ecutrho': 1600,
         'ecutwfc': 200,
     },
 })
-
-RARE_EARTH_ELEMENTS = [
-    'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
-    'Tm', 'Yb', 'Lu'
-]  # move to utils
 
 
 class DeltaFactorWorkChain(WorkChain):
@@ -265,8 +239,8 @@ class DeltaFactorWorkChain(WorkChain):
             },
         }
 
-        self.ctx.pw_parameters = orm.Dict(
-            dict=update(pw_parameters, self.inputs.parameters.pw.get_dict()))
+        self.ctx.pw_parameters = orm.Dict(dict=update_dict(
+            pw_parameters, self.inputs.parameters.pw.get_dict()))
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure_and_pseudo(self):
@@ -302,8 +276,8 @@ class DeltaFactorWorkChain(WorkChain):
                     'nbnd': int(nbands * nbands_factor),
                 },
             }
-            self.ctx.pw_parameters = orm.Dict(
-                dict=update(self.ctx.pw_parameters.get_dict(), parameters))
+            self.ctx.pw_parameters = orm.Dict(dict=update_dict(
+                self.ctx.pw_parameters.get_dict(), parameters))
         self.ctx.pseudos = pseudos
         self.report(f'pseudos is {pseudos}')
 
@@ -331,7 +305,7 @@ class DeltaFactorWorkChain(WorkChain):
                 res = helper_get_magnetic_inputs(structure)
                 self.ctx.structure = res['structure']
                 parameters = res['parameters']
-                self.ctx.pw_parameters = orm.Dict(dict=update(
+                self.ctx.pw_parameters = orm.Dict(dict=update_dict(
                     parameters.get_dict(), self.ctx.pw_parameters.get_dict()))
 
                 # setting pseudos

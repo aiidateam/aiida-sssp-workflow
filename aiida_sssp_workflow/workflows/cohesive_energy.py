@@ -8,6 +8,8 @@ from aiida.engine import calcfunction, WorkChain
 from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory
 
+from aiida_sssp_workflow.utils import update_dict
+
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 
 
@@ -143,17 +145,6 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def setup(self):
         """Input validation"""
-        # TODO set ecutwfc and ecutrho according to certain protocol
-        import collections.abc
-
-        def update(d, u):  # pylint: disable=invalid-name
-            for k, v in u.items():  # pylint: disable=invalid-name
-                if isinstance(v, collections.abc.Mapping):
-                    d[k] = update(d.get(k, {}), v)
-                else:
-                    d[k] = v
-            return d
-
         bulk_parameters = {
             'SYSTEM': {
                 'degauss': 0.02,
@@ -174,10 +165,10 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'conv_thr': 1e-10,
             },
         }
-        pw_bulk_parameters = update(bulk_parameters,
-                                    self.inputs.parameters.pw_bulk.get_dict())
-        pw_atom_parameters = update(atom_parameters,
-                                    self.inputs.parameters.pw_atom.get_dict())
+        pw_bulk_parameters = update_dict(
+            bulk_parameters, self.inputs.parameters.pw_bulk.get_dict())
+        pw_atom_parameters = update_dict(
+            atom_parameters, self.inputs.parameters.pw_atom.get_dict())
         self.ctx.pw_bulk_parameters = orm.Dict(dict=pw_bulk_parameters)
         self.ctx.pw_atom_parameters = orm.Dict(dict=pw_atom_parameters)
 

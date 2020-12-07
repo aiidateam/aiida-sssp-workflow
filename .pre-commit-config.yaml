@@ -19,6 +19,7 @@ repos:
           (?x)^(
               examples/.*|
               docs/.*|
+              tests/.*|
               .github/.*|
               conftest.py|
               aiida_sssp_workflow/cli.py|
