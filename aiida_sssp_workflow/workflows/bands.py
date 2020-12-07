@@ -7,6 +7,8 @@ from aiida.common import AttributeDict
 from aiida.engine import WorkChain, calcfunction, ToContext
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
+from aiida_sssp_workflow.utils import update_dict
+
 PwBandsWorkChain = WorkflowFactory('quantumespresso.pw.bands')
 create_kpoints_from_distance = CalculationFactory(
     'quantumespresso.create_kpoints_from_distance')
@@ -87,17 +89,6 @@ class BandsWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
-        import collections.abc
-
-        def update(d, u):
-            # pylint: disable=invalid-name
-            for k, v in u.items():
-                if isinstance(v, collections.abc.Mapping):
-                    d[k] = update(d.get(k, {}), v)
-                else:
-                    d[k] = v
-            return d
-
         scf_parameters = {
             'SYSTEM': {
                 'degauss': 0.02,
@@ -122,10 +113,10 @@ class BandsWorkChain(WorkChain):
                 'conv_thr': 1e-10,
             },
         }
-        pw_scf_parameters = update(scf_parameters,
-                                   self.inputs.parameters.pw.get_dict())
-        pw_bands_parameters = update(bands_parameters,
-                                     self.inputs.parameters.pw.get_dict())
+        pw_scf_parameters = update_dict(scf_parameters,
+                                        self.inputs.parameters.pw.get_dict())
+        pw_bands_parameters = update_dict(bands_parameters,
+                                          self.inputs.parameters.pw.get_dict())
         self.ctx.pw_scf_parameters = orm.Dict(dict=pw_scf_parameters)
         self.ctx.pw_bands_parameters = orm.Dict(dict=pw_bands_parameters)
 
