@@ -4,6 +4,8 @@
 import collections.abc
 import importlib_resources
 
+from aiida import orm
+
 RARE_EARTH_ELEMENTS = [
     'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
     'Tm', 'Yb', 'Lu'
@@ -43,3 +45,23 @@ def get_standard_cif_filename_from_element(element: str) -> str:
         filename = str(path)
 
     return filename
+
+
+def parse_upf(upf_content: str) -> dict:
+    """
+
+    :param upf_content:
+    :param check: if check the integrity of the pp file
+    :return:
+    """
+    from upf_to_json import upf_to_json
+
+    upf_dict = upf_to_json(upf_content, None)
+
+    return upf_dict["pseudo_potential"]
+
+
+def helper_parse_upf(upf: orm.UpfData) -> dict:
+    header = parse_upf(upf.get_content())['header']
+
+    return header

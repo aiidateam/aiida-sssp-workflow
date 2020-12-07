@@ -1,60 +1,21 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-import re
-
 import importlib_resources
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
+# TODO concise import
 from aiida_sssp_workflow.utils import update_dict, \
     get_standard_cif_filename_from_element, \
     MAGNETIC_ELEMENTS, \
-    RARE_EARTH_ELEMENTS
+    RARE_EARTH_ELEMENTS, \
+    helper_parse_upf
 
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
-
-
-def parse_upf(upf_content: str) -> dict:
-    """
-
-    :param upf_content:
-    :param check: if check the integrity of the pp file
-    :return:
-    """
-    upf_dict = {}
-    regex = r'<PP_HEADER\s(?P<header>.*?)\s*\/>'
-    match = re.search(regex, upf_content, re.DOTALL)
-    header_str = match.group('header')
-
-    regex = r'(\w*)\s*=\s*"(.*?)"'
-    para_pairs = re.findall(regex, header_str)
-
-    header_dict = {}
-    for (key, value) in para_pairs:
-        # TODO all other can be float value
-        if key in ['z_valence']:
-            value = float(value)
-
-        # TODO all can be int value
-        if key in ['l_max']:
-            value = int(value)
-
-        header_dict[key] = value
-
-    upf_dict['header'] = header_dict
-    return upf_dict
-
-
-# TODO also for same function in other workflow
-@calcfunction
-def helper_parse_upf(upf) -> orm.Dict:
-    header = parse_upf(upf.get_content())['header']
-
-    return orm.Dict(dict=header)
 
 
 @workfunction
