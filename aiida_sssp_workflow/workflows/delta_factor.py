@@ -6,7 +6,7 @@ import importlib_resources
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
-from aiida.plugins import WorkflowFactory, CalculationFactory
+from aiida.plugins import WorkflowFactory, CalculationFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
     get_standard_cif_filename_from_element, \
@@ -16,6 +16,8 @@ from aiida_sssp_workflow.utils import update_dict, \
 birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
+LegacyUpfData = DataFactory('upf')
+UpfData = DataFactory('pseudo.upf')
 
 
 def parse_upf(upf_content: str) -> dict:
@@ -152,7 +154,7 @@ class DeltaFactorWorkChain(WorkChain):
                    valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo',
-                   valid_type=orm.UpfData,
+                   valid_type=(LegacyUpfData, UpfData),
                    required=True,
                    help='Pseudopotential to be verified')
         spec.input(
@@ -247,21 +249,25 @@ class DeltaFactorWorkChain(WorkChain):
         """validate structure"""
         from aiida.common.files import md5_file
 
-        upf_info = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.element = orm.Str(upf_info['element'])
+        pseudo = self.inputs.pseudo
+        if isinstance(pseudo, LegacyUpfData):
+            with pseudo.open(mode='rb') as handle:
+                pseudo = UpfData(file=handle, filename=pseudo.filename)
 
-        pseudos = {self.ctx.element.value: self.inputs.pseudo}
-        if self.ctx.element.value in RARE_EARTH_ELEMENTS:
+        self.ctx.element = pseudo.element
+
+        pseudos = {self.ctx.element: pseudo}
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
             # If rare-earth add psp of N
             fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
                                              'N.pbe-n-radius_5.UPF')
-            with fpath as path:
-                filename = str(path)
-                upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
+
+            with open(fpath.args[0], 'rb') as handle:
+                upf_nitrogen = UpfData(handle)
                 pseudos['N'] = upf_nitrogen
 
-            z_valence_RE = upf_info['z_valence']  # pylint: disable=invalid-name
-            z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']  # pylint: disable=invalid-name
+            z_valence_RE = pseudo.z_valence  # pylint: disable=invalid-name
+            z_valence_N = upf_nitrogen.z_valence  # pylint: disable=invalid-name
             nbands = (z_valence_N + z_valence_RE) // 2
             nbands_factor = 2
 
@@ -270,7 +276,7 @@ class DeltaFactorWorkChain(WorkChain):
                 'SYSTEM': {
                     'nspin': 2,
                     'starting_magnetization': {
-                        self.ctx.element.value: 0.2,
+                        self.ctx.element: 0.2,
                         'N': 0.0,
                     },
                     'nbnd': int(nbands * nbands_factor),
@@ -278,26 +284,26 @@ class DeltaFactorWorkChain(WorkChain):
             }
             self.ctx.pw_parameters = orm.Dict(dict=update_dict(
                 self.ctx.pw_parameters.get_dict(), parameters))
+
         self.ctx.pseudos = pseudos
         self.report(f'pseudos is {pseudos}')
 
         if 'structure' not in self.inputs:
-            filename = get_standard_cif_filename_from_element(
-                self.ctx.element.value)
+            filename = get_standard_cif_filename_from_element(self.ctx.element)
 
             md5 = md5_file(filename)
             cifs = orm.CifData.from_md5(md5)
             if not cifs:
                 # cif not stored, create it with calcfunction and return it
                 cif_data = helper_create_standard_cif_from_element(
-                    self.ctx.element)
+                    orm.Str(self.ctx.element))
             else:
                 # The Cif is already store let's return it
                 cif_data = orm.CifData.get_or_create(filename)[0]
 
             self.out('eos_initial_cif', cif_data)
 
-            if self.ctx.element.value not in MAGNETIC_ELEMENTS:
+            if self.ctx.element not in MAGNETIC_ELEMENTS:
                 self.ctx.structure = cif_data.get_structure()
             else:
                 # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
