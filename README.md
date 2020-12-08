@@ -40,20 +40,31 @@ It can:
 - non spin-polarized calculations except Mn (antiferromagnetic), 
     O and Cr (antiferromagnetic), 
     Fe, Co, and Ni (ferromagnetic).
+    
+> As for calculation of lanthenide, always increase `nbnd` to two times of the default number.
 
 #### Parameters in phonon, pressure, cohesive energy calculations:
 
 - k-points: 0.15A^-1
 - smearing: Marzari-Vanderbilt, 0.01 Ry;
 - k-points for the isolated atoms: 1x1x1;
-- smearing for the isolated atoms: gaussian 0.01 Ry [^atom_smearing]; 
-
-[^atom_smearing]: NOTE: PWscf writes in the output something called total energy. This is *NOT* the total energy when you have smearing; it’s the total free energy E-TS. PWscf also writes -TS, so one can get back the total energy E. In general (for a metal) E-TS should be used. For an atom instead the total energy should be used, since the -TS term is not really physical (it comes from the entropy of fractional occupations on the atom). Check with Nicola if you have atoms where -TS is different from zero. (http://theossrv1.epfl.ch/Main/ElectronicTemperature)
-- unit cell for the isolated atoms: 12x12x12 Å;
-- q-point: only calculate the phonon frequencies on Brillouin-Zone border q=(0.5, 0.5, 0.5). [^phonon]
+- smearing for the isolated atoms: gaussian 0.01 Ry; 
+- unit cell for the isolated atoms: 12x12x12 Å with atom sit in [6.0, 6.0, 6.0] the middle of the cell;
+- q-point: only calculate the phonon frequencies on Brillouin-Zone border q=(0.5, 0.5, 0.5).
 - all calculations non-spin-polarized.
 
-[^phonon]: the convergence pattern for the phonons is calculated as:
+> In isolate atom energy calculation of cohesive energy evaluation. 
+> As for lanthenide, increase `nbnd` to three times of the default number. Moreover, use more RAM(by increase `num_machine` to 4).
+
+
+> NOTE: PWscf writes in the output something called total energy. This is *NOT* the total energy when you have smearing; 
+> it’s the total free energy E-TS. PWscf also writes -TS, so one can get back the total energy E. 
+> In general (for a metal) E-TS should be used. For an atom instead the total energy should be used, 
+> since the -TS term is not really physical (it comes from the entropy of fractional occupations on the atom). 
+> Check with Nicola if you have atoms where -TS is different from zero. (http://theossrv1.epfl.ch/Main/ElectronicTemperature)
+
+
+##### The convergence pattern for the phonons is calculated as:
 - circle = (1/N * ∑i=1,N [ωi(cutoff) - ωi(200Ry)]2 / ωi(200Ry)2)1/2 * 100 (in percentage) and half error bar = Max |[ω(cutoff) - ω(200Ry)] / ω(200Ry)| * 100, if the highest frequency is more than 100 cm-1;
 - circle = (1/N * ∑i=1,N [ωi(cutoff) - ωi(200Ry)]2)1/2 (absolute value) and half error bar = Max |ωi(cutoff) - ω(200Ry)|, if the highest frequency is less than 100 cm-1;
 - N is the total number of frequencies;
@@ -62,8 +73,8 @@ It can:
 #### Bands calculations:
 
 - k-points for the self-consistent calculation: 0.1; (can use cache one for the latter calculation)
-- k-points for the bands calculation (as in, calculations of the eta and eta10 factors): uniform mesh 0.2 w6x6x6ith no symmetry reduction, rather than high-symmetry path which is not determinant;
-- smearing: Marzari-Vanderbilt, 0.02 Ry in scf calculation and Fermi-Dirac in bands distance calculation;
+- k-points for the bands calculation (as in, calculations of the eta and eta10 factors): uniform mesh 0.2 with no symmetry reduction, rather than high-symmetry path which is not determinant;
+- smearing: Marzari-Vanderbilt, 0.01 Ry in scf calculation and Fermi-Dirac in bands distance calculation;
 - all calculations non spin-polarized.
 
 ## Repository contents
