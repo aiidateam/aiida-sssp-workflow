@@ -97,6 +97,7 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
 
 PW_PARAS = lambda: orm.Dict(dict={
     'SYSTEM': {
+        'degauss': 0.00735,
         'ecutrho': 1600,
         'ecutwfc': 200,
     },
@@ -191,7 +192,6 @@ class DeltaFactorWorkChain(WorkChain):
 
         pw_parameters = {
             'SYSTEM': {
-                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
             },
@@ -230,7 +230,6 @@ class DeltaFactorWorkChain(WorkChain):
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
-                    'degauss': 0.00735,
                     'starting_magnetization': {
                         self.ctx.element.value: 0.2,
                         'N': 0.0,
