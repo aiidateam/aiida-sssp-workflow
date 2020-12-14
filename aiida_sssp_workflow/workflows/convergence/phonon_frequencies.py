@@ -233,8 +233,8 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
         self.ctx.ref_frequencies = ref_workchain.outputs.output_parameters[
             'dynamical_matrix_0']['frequencies']
 
-        for ecutwfc in self.inputs.parameters.ecutwfc_list:
-            ecutrho = ecutwfc * self.inputs.parameters.dual.value
+        for ecutwfc, ecutrho in zip(self.ctx.ecutwfc_list,
+                                    self.ctx.ecutrho_list):
             inputs = self.get_inputs(ecutwfc, ecutrho)
 
             workchain = self.submit(PhononFrequenciesWorkChain, **inputs)

@@ -257,8 +257,8 @@ class ConvergencePressureWorkChain(WorkChain):
         self.ctx.ref_pressure = ref_workchain.outputs.output_parameters[
             'hydrostatic_stress']
 
-        for ecutwfc in self.inputs.parameters.ecutwfc_list:
-            ecutrho = ecutwfc * self.inputs.parameters.dual.value
+        for ecutwfc, ecutrho in zip(self.ctx.ecutwfc_list,
+                                    self.ctx.ecutrho_list):
             inputs = self.get_inputs(ecutwfc, ecutrho)
 
             workchain = self.submit(PressureWorkChain, **inputs)
