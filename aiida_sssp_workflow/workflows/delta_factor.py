@@ -191,7 +191,7 @@ class DeltaFactorWorkChain(WorkChain):
 
         pw_parameters = {
             'SYSTEM': {
-                'degauss': 0.02,
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
             },
@@ -230,6 +230,7 @@ class DeltaFactorWorkChain(WorkChain):
             parameters = {
                 'SYSTEM': {
                     'nspin': 2,
+                    'degauss': 0.00735,
                     'starting_magnetization': {
                         self.ctx.element.value: 0.2,
                         'N': 0.0,
@@ -285,6 +286,7 @@ class DeltaFactorWorkChain(WorkChain):
         """run eos workchain"""
         inputs = AttributeDict({
             'structure': self.ctx.structure,
+            'kpoints_distance': self.ctx.kpoints_distance,
             'scale_count': self.inputs.parameters.scale_count,
             'scale_increment': self.inputs.parameters.scale_increment,
             'metadata': {
@@ -297,7 +299,6 @@ class DeltaFactorWorkChain(WorkChain):
                     'parameters': self.ctx.pw_parameters,
                     'metadata': {},
                 },
-                'kpoints_distance': self.ctx.kpoints_distance,
             }
         })
 

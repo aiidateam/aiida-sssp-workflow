@@ -61,9 +61,12 @@ class EquationOfStateWorkChain(WorkChain):
         # yapf: disable
         super().define(spec)
         spec.expose_inputs(PwBaseWorkChain, namespace='scf',
-            exclude=('clean_workdir', 'pw.structure'),
+            exclude=('clean_workdir', 'pw.structure', 'pw.kpoints', 'pw.kpoints_distance'),
             namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.input('structure', valid_type=orm.StructureData, help='The structure at equilibrium volume.')
+        spec.input('kpoints_distance', valid_type=orm.Float, required=True,
+                   help='The kpoints distance used in generating the kmesh of '
+                        'unscaled structure then for all scaled structures')
         spec.input('scale_factors', valid_type=orm.List, required=False, validator=validate_scale_factors,
             help='The list of scale factors at which the volume and total energy of the structure should be computed.')
         spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7), validator=validate_scale_count,
@@ -99,13 +102,19 @@ class EquationOfStateWorkChain(WorkChain):
         """Return the builder for the relax workchain."""
         process_class = PwBaseWorkChain
         structure = scale_structure(self.inputs.structure, scale_factor)
+        unscaled_structure = self.inputs.structure
 
         inputs = AttributeDict(self.exposed_inputs(PwBaseWorkChain, namespace='scf'))
 
         parameters = inputs.pw.parameters.get_dict()
         parameters.setdefault('CONTROL', {})['calculation'] = 'scf'
 
+        kpoints = orm.KpointsData()
+        kpoints.set_cell_from_structure(unscaled_structure)
+        kpoints.set_kpoints_mesh_from_density(distance=self.inputs.kpoints_distance.value)
+
         inputs.metadata.call_link_label = 'scf'
+        inputs.kpoints = kpoints.store()
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
         inputs.pw.settings = orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']})    # Too many cores for few bands
