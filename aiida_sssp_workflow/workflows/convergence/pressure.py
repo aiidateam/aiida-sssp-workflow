@@ -67,13 +67,25 @@ def helper_get_v0_b0_b1(element: orm.Str):
     import re
     from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 
-    element = element.value
+    if element.value == 'F':
+        # Use SiF4 as reference of fluorine(F)
+        return {
+            'V0': orm.Float(19.3583),
+            'B0': orm.Float(74.0411),
+            'B1': orm.Float(4.1599),
+        }
+
+    if element.value in RARE_EARTH_ELEMENTS:
+        element_str = f'{element.value}N'
+    else:
+        element_str = element.value
+
     regex = re.compile(
-        rf"""{element}\s*
+        rf"""{element_str}\s*
                         (?P<V0>\d*.\d*)\s*
                         (?P<B0>\d*.\d*)\s*
                         (?P<B1>\d*.\d*)""", re.VERBOSE)
-    if element not in RARE_EARTH_ELEMENTS:
+    if element.value not in RARE_EARTH_ELEMENTS:
         match = regex.search(WIEN2K_REF)
         V0 = match.group('V0')
         B0 = match.group('B0')

@@ -97,6 +97,16 @@ def test_get_v0_b0_b1():
     assert res['B0'].value == 88.545
     assert res['B1'].value == 4.31
 
+    res = helper_get_v0_b0_b1(orm.Str('La'))
+    assert res['V0'].value == 18.77799
+    assert res['B0'].value == 122.037
+    assert res['B1'].value == 4.461
+
+    res = helper_get_v0_b0_b1(orm.Str('F'))
+    assert res['V0'].value == 19.3583
+    assert res['B0'].value == 74.0411
+    assert res['B1'].value == 4.1599
+
 
 def test_get_volume_from_pressure_birch_murnaghan():
     """

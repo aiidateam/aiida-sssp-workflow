@@ -81,6 +81,36 @@ It can:
 
 ## Features
 
+## More meta-info collection
+
+### SiF4 structure and its (V0, B0, B1) reference value
+Re-generate the SiF4 structure start from the cif file from [COD database](http://www.crystallography.net/cod/index.php). Detail inputs parameters are list below.
+
+#### Pseudopotentials(SSSP-v1.1 precision)
+- Si: Si.pbe-n-rrkjus_psl.1.0.0.UPF
+- F: F.oncvpsp.upf
+
+#### Pw relax and eos
+
+##### pwscf parameters
+```
+'SYSTEM': {
+    'degauss': 0.00735,
+    'ecutrho': 1600,
+    'ecutwfc': 200,
+    'occupations': 'smearing',
+    'smearing': 'marzari-vanderbilt',
+},
+'ELECTRONS': {
+    'conv_thr': 1e-10,
+},
+```
+
+##### EOS parameters
+
+- seven points
+- 0.02 interval
+
 ## License
 
 MIT
