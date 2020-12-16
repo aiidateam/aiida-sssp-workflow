@@ -39,11 +39,6 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
                    valid_type=orm.UpfData,
                    required=True,
                    help='Pseudopotential to be verified')
-        spec.input('ref_cutoff_pair',
-                   valid_type=orm.List,
-                   required=True,
-                   default=lambda: orm.List(list=[200, 1600]),
-                   help='ecutwfc/ecutrho pair for reference calculation.')
         spec.input('options',
                    valid_type=orm.Dict,
                    required=False,

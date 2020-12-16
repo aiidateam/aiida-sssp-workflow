@@ -99,7 +99,7 @@ class BandsWorkChain(WorkChain):
         # TODO set ecutwfc and ecutrho according to certain protocol
         scf_parameters = {
             'SYSTEM': {
-                'degauss': 0.02,
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
             },

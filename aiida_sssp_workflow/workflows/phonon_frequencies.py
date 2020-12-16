@@ -7,6 +7,8 @@ from aiida.engine import WorkChain, ToContext
 from aiida.common import AttributeDict, NotExistentAttributeError
 from aiida.plugins import WorkflowFactory
 
+from aiida_sssp_workflow.utils import update_dict
+
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 PhBaseWorkflow = WorkflowFactory('quantumespresso.ph.base')
 
@@ -99,24 +101,32 @@ class PhononFrequenciesWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
-        self.ctx.pw_parameters = orm.Dict(dict={
+        pw_parameters = {
+            'SYSTEM': {
+                'degauss': 0.02,
+                'occupations': 'smearing',
+                'smearing': 'marzari-vanderbilt',
+            },
             'CONTROL': {
                 'calculation': 'scf',
                 'wf_collect': True,
             },
-        })
-        self.ctx.pw_parameters.update_dict(
-            self.inputs.parameters.pw.get_dict())
+        }
+        pw_parameters = update_dict(pw_parameters,
+                                    self.inputs.parameters.pw.get_dict())
+        self.ctx.pw_parameters = pw_parameters
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
         # ph.x
-        self.ctx.ph_parameters = orm.Dict(
-            dict={'INPUTPH': {
+        ph_parameters = {
+            'INPUTPH': {
                 'tr2_ph': 1e-16,
                 'epsil': False,
-            }})
-        self.ctx.ph_parameters.update_dict(
-            self.inputs.parameters.ph.get_dict())
+            }
+        }
+        ph_parameters = update_dict(ph_parameters,
+                                    self.inputs.parameters.ph.get_dict())
+        self.ctx.ph_parameters = ph_parameters
         qpoints = orm.KpointsData()
         qpoints.set_cell_from_structure(self.inputs.structure)
         qpoints.set_kpoints(self.inputs.parameters.qpoints.get_list())

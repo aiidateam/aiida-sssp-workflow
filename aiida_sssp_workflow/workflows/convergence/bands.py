@@ -52,6 +52,11 @@ class ConvergenceBandsWorkChain(WorkChain):
                    valid_type=orm.List,
                    default=PARA_ECUTWFC_LIST,
                    help='list of ecutwfc evaluate list.')
+        spec.input('parameters.ref_cutoff_pair',
+                   valid_type=orm.List,
+                   required=True,
+                   default=lambda: orm.List(list=[200, 1600]),
+                   help='ecutwfc/ecutrho pair for reference calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -131,7 +136,7 @@ class ConvergenceBandsWorkChain(WorkChain):
             # The Cif is already store let's return it
             cif_data = orm.CifData.get_or_create(filename)[0]
 
-        self.ctx.structure = cif_data.get_structure()
+        self.ctx.structure = cif_data.get_structure(primitive_cell=True)
         self.ctx.pseudos = pseudos
         self.ctx.pw_parameters = pw_parameters
 
@@ -141,7 +146,7 @@ class ConvergenceBandsWorkChain(WorkChain):
                    nbands_factor: orm.Float = orm.Float(2.0)):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.01,
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
                 'ecutrho': ecutrho,
@@ -172,8 +177,9 @@ class ConvergenceBandsWorkChain(WorkChain):
         Running the calculation for the reference point
         hard code to 200Ry at the moment
         """
-        ecutwfc = 200
-        ecutrho = 1600
+        cutoff_pair = self.inputs.parameters.ref_cutoff_pair.get_list()
+        ecutwfc = cutoff_pair[0]
+        ecutrho = cutoff_pair[1]
         inputs = self.get_inputs(ecutwfc, ecutrho)
 
         running = self.submit(BandsWorkChain, **inputs)
@@ -251,7 +257,7 @@ class ConvergenceBandsWorkChain(WorkChain):
             ecutwfc_list.append(ecutwfc)
             ecutrho_list.append(ecutrho)
 
-            smearing = orm.Float(0.01 * RY_TO_EV)
+            smearing = orm.Float(0.00735 * RY_TO_EV)
             if self.inputs.pseudo.element in NONMETAL_ELEMENTS:
                 is_metal = orm.Bool(False)
             else:
