@@ -97,7 +97,6 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
 
 PW_PARAS = lambda: orm.Dict(dict={
     'SYSTEM': {
-        'degauss': 0.00735,
         'ecutrho': 1600,
         'ecutwfc': 200,
     },
@@ -170,16 +169,6 @@ class DeltaFactorWorkChain(WorkChain):
                     valid_type=orm.Str,
                     required=True,
                     help='The element of the pseudopotential.')
-        spec.output(
-            'eos_initial_cif',
-            valid_type=orm.CifData,
-            required=False,
-            help='The standard cif file provided in sssp_workflow package.')
-        spec.output(
-            'eos_initial_structure',
-            valid_type=orm.StructureData,
-            help='The initial input structure used for calculate delta factor.'
-        )
         # TODO delta prime out
         spec.exit_code(
             201,
@@ -192,6 +181,7 @@ class DeltaFactorWorkChain(WorkChain):
 
         pw_parameters = {
             'SYSTEM': {
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
             },
@@ -256,8 +246,6 @@ class DeltaFactorWorkChain(WorkChain):
                 # The Cif is already store let's return it
                 cif_data = orm.CifData.get_or_create(filename)[0]
 
-            self.out('eos_initial_cif', cif_data)
-
             if self.ctx.element.value not in MAGNETIC_ELEMENTS:
                 self.ctx.structure = cif_data.get_structure()
             else:
@@ -278,8 +266,6 @@ class DeltaFactorWorkChain(WorkChain):
 
         else:
             self.ctx.structure = self.inputs.structure
-
-        self.out('eos_initial_structure', self.ctx.structure)
 
     def run_eos(self):
         """run eos workchain"""
