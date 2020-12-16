@@ -39,6 +39,11 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
                    valid_type=orm.UpfData,
                    required=True,
                    help='Pseudopotential to be verified')
+        spec.input('ref_cutoff_pair',
+                   valid_type=orm.List,
+                   required=True,
+                   default=lambda: orm.List(list=[200, 1600]),
+                   help='ecutwfc/ecutrho pair for reference calculation.')
         spec.input('options',
                    valid_type=orm.Dict,
                    required=False,
@@ -52,6 +57,11 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
                    valid_type=orm.List,
                    default=PARA_ECUTWFC_LIST,
                    help='list of ecutwfc evaluate list.')
+        spec.input('parameters.ref_cutoff_pair',
+                   valid_type=orm.List,
+                   required=True,
+                   default=lambda: orm.List(list=[200, 1600]),
+                   help='ecutwfc/ecutrho pair for reference calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -135,14 +145,14 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
             # The Cif is already store let's return it
             cif_data = orm.CifData.get_or_create(filename)[0]
 
-        self.ctx.structure = cif_data.get_structure()
+        self.ctx.structure = cif_data.get_structure(primitive_cell=True)
         self.ctx.pseudos = pseudos
         self.ctx.pw_parameters = pw_parameters
 
     def get_inputs(self, ecutwfc, ecutrho):
         _PW_BULK_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.01,
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
                 'ecutrho': ecutrho,
@@ -151,7 +161,7 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
         }
         _PW_ATOM_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.01,
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'gaussian',
                 'ecutrho': ecutrho,
@@ -182,8 +192,9 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
         Running the calculation for the reference point
         hard code to 200Ry at the moment
         """
-        ecutwfc = 200
-        ecutrho = 1600  # TODO if NC set to 800
+        cutoff_pair = self.inputs.parameters.ref_cutoff_pair.get_list()
+        ecutwfc = cutoff_pair[0]
+        ecutrho = cutoff_pair[1]
         inputs = self.get_inputs(ecutwfc, ecutrho)
 
         running = self.submit(CohesiveEnergyWorkChain, **inputs)

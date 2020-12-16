@@ -229,9 +229,9 @@ class CohesiveEnergyWorkChain(WorkChain):
             atom_inputs.pw.metadata.options = options
 
             # TODO following is mandatory for lanthanides, should be check again, whether needed for other elements.
-            if atom_inputs.pw.parameters['SYSTEM']['ecutwfc'] > 100.0:
+            if element in RARE_EARTH_ELEMENTS:
                 self.report(
-                    'Big cell in isolate atom calculation with large cuttoff require more RAM.'
+                    'Big cell in isolate lanthenides atom calculation with large cuttoff require more RAM.'
                 )
                 atom_inputs.pw.metadata.options['resources'][
                     'num_machines'] = 4
