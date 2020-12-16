@@ -107,9 +107,13 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
             },
+            'ELECTRONS': {
+                'conv_thr': 1e-10,
+            },
             'CONTROL': {
                 'calculation': 'scf',
                 'wf_collect': True,
+                'tstress': True,
             },
         }
         pw_parameters = update_dict(pw_parameters,

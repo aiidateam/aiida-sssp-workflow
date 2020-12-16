@@ -119,6 +119,11 @@ class CohesiveEnergyWorkChain(WorkChain):
             'ELECTRONS': {
                 'conv_thr': 1e-10,
             },
+            'CONTROL': {
+                'calculation': 'scf',
+                'wf_collect': True,
+                'tstress': True,
+            },
         }
         atom_parameters = {
             'SYSTEM': {

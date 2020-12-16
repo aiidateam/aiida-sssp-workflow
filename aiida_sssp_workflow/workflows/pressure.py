@@ -101,6 +101,8 @@ class PressureEvaluationWorkChain(WorkChain):
                 'conv_thr': 1e-10,
             },
             'CONTROL': {
+                'calculation': 'scf',
+                'wf_collect': True,
                 'tstress': True,
             },
         }
