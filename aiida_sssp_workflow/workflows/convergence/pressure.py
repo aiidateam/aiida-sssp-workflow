@@ -128,6 +128,11 @@ class ConvergencePressureWorkChain(WorkChain):
                    valid_type=orm.List,
                    default=PARA_ECUTWFC_LIST,
                    help='list of ecutwfc evaluate list.')
+        spec.input('parameters.ref_cutoff_pair',
+                   valid_type=orm.List,
+                   required=True,
+                   default=lambda: orm.List(list=[200, 1600]),
+                   help='ecutwfc/ecutrho pair for reference calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -207,14 +212,14 @@ class ConvergencePressureWorkChain(WorkChain):
             # The Cif is already store let's return it
             cif_data = orm.CifData.get_or_create(filename)[0]
 
-        self.ctx.structure = cif_data.get_structure()
+        self.ctx.structure = cif_data.get_structure(primitive_cell=True)
         self.ctx.pseudos = pseudos
         self.ctx.pw_parameters = pw_parameters
 
     def get_inputs(self, ecutwfc, ecutrho):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.01,
+                'degauss': 0.00735,
                 'occupations': 'smearing',
                 'smearing': 'marzari-vanderbilt',
                 'ecutrho': ecutrho,
@@ -243,8 +248,9 @@ class ConvergencePressureWorkChain(WorkChain):
         Running the calculation for the reference point
         hard code to 200Ry at the moment
         """
-        ecutwfc = 200
-        ecutrho = 1600
+        cutoff_pair = self.inputs.parameters.ref_cutoff_pair.get_list()
+        ecutwfc = cutoff_pair[0]
+        ecutrho = cutoff_pair[1]
         inputs = self.get_inputs(ecutwfc, ecutrho)
 
         running = self.submit(PressureWorkChain, **inputs)

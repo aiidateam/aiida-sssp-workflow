@@ -8,6 +8,8 @@ from aiida.engine import calcfunction, WorkChain, ToContext
 from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory
 
+from aiida_sssp_workflow.utils import update_dict
+
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 
 
@@ -27,19 +29,12 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
     })
 
 
-PW_PARAS = lambda: orm.Dict(
-    dict={
-        'SYSTEM': {
-            'degauss': 0.02,
-            'ecutrho': 800,
-            'ecutwfc': 200,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    })
+PW_PARAS = lambda: orm.Dict(dict={
+    'SYSTEM': {
+        'ecutrho': 800,
+        'ecutwfc': 200,
+    },
+})
 
 
 class PressureEvaluationWorkChain(WorkChain):
@@ -95,20 +90,26 @@ class PressureEvaluationWorkChain(WorkChain):
 
     def setup(self):
         """Input validation"""
-        # TODO set ecutwfc and ecutrho according to certain protocol
         # In order to get pressure set CONTROL tetress=.TRUE.
-        self.ctx.pw_parameters = orm.Dict(dict={
+        pw_parameters = {
+            'SYSTEM': {
+                'degauss': 0.02,
+                'occupations': 'smearing',
+                'smearing': 'marzari-vanderbilt',
+            },
+            'ELECTRONS': {
+                'conv_thr': 1e-10,
+            },
             'CONTROL': {
                 'tstress': True,
             },
-        })
-        self.ctx.pw_parameters.update_dict(
-            self.inputs.parameters.pw.get_dict())
+        }
+        pw_parameters = update_dict(pw_parameters,
+                                    self.inputs.parameters.pw.get_dict())
+        self.ctx.pw_parameters = pw_parameters
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure(self):
-        """Create isolate atom and validate structure"""
-        # create isolate atom structure
         self.ctx.pseudos = self.inputs.pseudos
 
     def run_scf(self):
@@ -124,7 +125,7 @@ class PressureEvaluationWorkChain(WorkChain):
                 'structure': self.inputs.structure,
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
-                'parameters': self.ctx.pw_parameters,
+                'parameters': orm.Dict(dict=self.ctx.pw_parameters),
                 'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
                 'metadata': {},
             },
