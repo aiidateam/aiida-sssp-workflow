@@ -149,7 +149,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'structure': self.inputs.structure,
                 'code': self.inputs.pw_code,
                 'pseudos': self.ctx.pseudos,
-                'parameters': self.ctx.pw_parameters,
+                'parameters': orm.Dict(dict=self.ctx.pw_parameters),
                 'settings':
                 orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '2']}),
                 'metadata': {},
@@ -196,7 +196,7 @@ class PhononFrequenciesWorkChain(WorkChain):
             'ph': {
                 'code': self.inputs.ph_code,
                 'qpoints': self.ctx.qpoints,
-                'parameters': self.ctx.ph_parameters,
+                'parameters': orm.Dict(dict=self.ctx.ph_parameters),
                 'parent_folder': self.ctx.scf_remote_folder,
                 'settings': orm.Dict(dict={'CMDLINE': ['-nk', '2']}),
                 'metadata': {},
