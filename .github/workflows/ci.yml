@@ -57,7 +57,7 @@ jobs:
                 python-version: 3.8
 
         -   name: Install python dependencies
-            run:
+            run: |
                 pip install -e .[pre-commit,tests]
 
         -   name: Run pre-commit
@@ -70,7 +70,7 @@ jobs:
 
         strategy:
             matrix:
-                python-version: [3.6, 3.7, 3.8]
+                python-version: [3.7, 3.8, 3.9]
 
         services:
             postgres:
@@ -87,7 +87,7 @@ jobs:
                 -   5672:5672
 
         steps:
-        -   uses: actions/checkout@v2
+        -   uses: actions/checkout@v1
 
         -   name: Cache python dependencies
             id: cache-pip
@@ -110,7 +110,6 @@ jobs:
 
         -   name: Install python dependencies
             run: |
-                pip install --upgrade setuptools
                 pip install -e .[tests]
                 reentry scan
 
