@@ -57,9 +57,9 @@ if __name__ == '__main__':
 
     upf_sg15 = {}
     # # sg15/Au_ONCV_PBE-1.2.upf
-    # upf_sg15['au'] = load_node('b9583fdd-905e-41c1-b5b9-1dfb9e15772d')
+    upf_sg15['au'] = load_node('62e411c5-b0ab-4d08-875c-6fa4f74eb74e')
     # sg15/Si_ONCV_PBE-1.2.upf
-    upf_sg15['si'] = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')
+    # upf_sg15['si'] = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')
     # # sg15/Xe_ONCV_PBE-1.2.upf
     # upf_sg15['xe'] = load_node('3a3c2612-9cdc-4fc9-bd37-589fa87fab06')
     # # sg15/Fe_ONCV_PBE-1.2.upf

@@ -155,7 +155,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_parameters),
                 'settings':
-                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '2']}),
+                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
                 'metadata': {},
             },
             'kpoints_distance': self.ctx.kpoints_distance,

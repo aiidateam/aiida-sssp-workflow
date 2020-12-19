@@ -161,10 +161,14 @@ class BandsWorkChain(WorkChain):
             'structure': self.inputs.structure,
             'scf': {
                 'pw': {
-                    'code': self.inputs.code,
-                    'pseudos': self.ctx.pseudos,
-                    'parameters': self.ctx.pw_scf_parameters,
-                    'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
+                    'code':
+                    self.inputs.code,
+                    'pseudos':
+                    self.ctx.pseudos,
+                    'parameters':
+                    self.ctx.pw_scf_parameters,
+                    'settings':
+                    orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
                     'metadata': {
                         'options': options
                     },

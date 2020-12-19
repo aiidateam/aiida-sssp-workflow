@@ -177,7 +177,8 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_bulk_parameters),
-                'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
+                'settings':
+                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
                 'metadata': {},
             },
             'kpoints_distance':

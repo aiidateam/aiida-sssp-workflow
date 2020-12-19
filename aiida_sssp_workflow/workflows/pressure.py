@@ -128,7 +128,8 @@ class PressureEvaluationWorkChain(WorkChain):
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_parameters),
-                'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
+                'settings':
+                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
                 'metadata': {},
             },
             'kpoints_distance': self.ctx.kpoints_distance,
