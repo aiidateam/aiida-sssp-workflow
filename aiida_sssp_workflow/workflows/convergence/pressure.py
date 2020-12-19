@@ -105,6 +105,13 @@ def helper_get_v0_b0_b1(element: orm.Str):
 
 class ConvergencePressureWorkChain(WorkChain):
     """WorkChain to converge test on pressure of input structure"""
+
+    _DEGUASS = 0.00735
+    _OCCUPATIONS = 'smearing'
+    _SMEARING = 'marzari-vanderbilt'
+    _KDISTANCE = 0.15
+    _CONV_THR = 1e-10
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -219,14 +226,14 @@ class ConvergencePressureWorkChain(WorkChain):
     def get_inputs(self, ecutwfc, ecutrho):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
+                'degauss': self._DEGUASS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._SMEARING,
                 'ecutrho': ecutrho,
                 'ecutwfc': ecutwfc,
             },
             'ELECTRONS': {
-                'conv_thr': 1e-10,
+                'conv_thr': self._CONV_THR,
             },
         }
 
@@ -237,7 +244,7 @@ class ConvergencePressureWorkChain(WorkChain):
             'parameters': {
                 'pw':
                 orm.Dict(dict=update_dict(_PW_PARAS, self.ctx.pw_parameters)),
-                'kpoints_distance': orm.Float(0.15),
+                'kpoints_distance': orm.Float(self._KDISTANCE),
             },
         })
 

@@ -57,6 +57,20 @@ def helper_get_relative_phonon_frequencies(
 
 class ConvergencePhononFrequenciesWorkChain(WorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
+    _DEGUASS = 0.00735
+    _OCCUPATIONS = 'smearing'
+    _SMEARING = 'marzari-vanderbilt'
+    _CONV_THR = 1e-10
+    _QPOINTS_LIST = [[0.5, 0.5, 0.5]]
+    _KDISTANCE = 0.15
+
+    _PH_PARAMETERS = {
+        'INPUTPH': {
+            'tr2_ph': 1e-16,
+            'epsil': False,
+        }
+    }
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -173,22 +187,17 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
     def get_inputs(self, ecutwfc, ecutrho):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
+                'degauss': self._DEGUASS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._SMEARING,
                 'ecutrho': ecutrho,
                 'ecutwfc': ecutwfc,
             },
             'ELECTRONS': {
-                'conv_thr': 1e-10,
+                'conv_thr': self._CONV_THR,
             },
         }
-        _PH_PARAS = {  # pylint: disable=invalid-name
-            'INPUTPH': {
-                'tr2_ph': 1e-16,
-                'epsil': False,
-            }
-        }
+        _PH_PARAS = self._PH_PARAMETERS  # pylint: disable=invalid-name
 
         inputs = AttributeDict({
             'pw_code': self.inputs.pw_code,
@@ -199,8 +208,8 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
                 'pw':
                 orm.Dict(dict=update_dict(_PW_PARAS, self.ctx.pw_parameters)),
                 'ph': orm.Dict(dict=_PH_PARAS),
-                'kpoints_distance': orm.Float(0.15),
-                'qpoints': orm.List(list=[[0.5, 0.5, 0.5]]),
+                'kpoints_distance': orm.Float(self._KDISTANCE),
+                'qpoints': orm.List(list=self._QPOINTS_LIST),
             },
         })
 

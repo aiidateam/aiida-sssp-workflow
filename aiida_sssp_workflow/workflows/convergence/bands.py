@@ -29,6 +29,16 @@ PARA_ECUTRHO_LIST = lambda: orm.List(list=[
 
 class ConvergenceBandsWorkChain(WorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
+
+    _DEGUASS = 0.00735
+    _OCCUPATIONS = 'smearing'
+    _SMEARING = 'marzari-vanderbilt'
+    _CONV_THR = 1e-10
+    _SCF_KDISTANCE = 0.15
+    _BAND_KDISTANCE = 0.20
+
+    _RY_TO_EV = 13.6056980659
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -146,14 +156,14 @@ class ConvergenceBandsWorkChain(WorkChain):
                    nbands_factor: orm.Float = orm.Float(2.0)):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
+                'degauss': self._DEGUASS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._SMEARING,
                 'ecutrho': ecutrho,
                 'ecutwfc': ecutwfc,
             },
             'ELECTRONS': {
-                'conv_thr': 1e-10,
+                'conv_thr': self._CONV_THR,
             },
         }
 
@@ -164,8 +174,8 @@ class ConvergenceBandsWorkChain(WorkChain):
             'parameters': {
                 'pw':
                 orm.Dict(dict=update_dict(_PW_PARAS, self.ctx.pw_parameters)),
-                'scf_kpoints_distance': orm.Float(0.15),
-                'bands_kpoints_distance': orm.Float(0.2),
+                'scf_kpoints_distance': orm.Float(self._SCF_KDISTANCE),
+                'bands_kpoints_distance': orm.Float(self._BAND_KDISTANCE),
                 'nbands_factor': nbands_factor,
             },
         })
@@ -225,8 +235,6 @@ class ConvergenceBandsWorkChain(WorkChain):
         from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS
         from aiida_sssp_workflow.calculations.calculate_bands_distance import calculate_bands_distance
 
-        RY_TO_EV = 13.6056980659  # pylint: disable=invalid-name
-
         pks = [
             child.pk for child in self.ctx.children if not child.is_finished_ok
         ]
@@ -257,7 +265,7 @@ class ConvergenceBandsWorkChain(WorkChain):
             ecutwfc_list.append(ecutwfc)
             ecutrho_list.append(ecutrho)
 
-            smearing = orm.Float(0.00735 * RY_TO_EV)
+            smearing = orm.Float(0.00735 * self._RY_TO_EV)
             if self.inputs.pseudo.element in NONMETAL_ELEMENTS:
                 is_metal = orm.Bool(False)
             else:

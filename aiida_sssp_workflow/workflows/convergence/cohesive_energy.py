@@ -29,6 +29,15 @@ PARA_ECUTRHO_LIST = lambda: orm.List(list=[
 
 class ConvergenceCohesiveEnergyWorkChain(WorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
+
+    _DEGUASS = 0.00735
+    _OCCUPATIONS = 'smearing'
+    _BULK_SMEARING = 'marzari-vanderbilt'
+    _ATOM_SMEARING = 'gaussian'
+    _CONV_THR = 1e-10
+    _KDISTANCE = 0.15
+    _VACUUM_LENGTH = 12.0
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -147,20 +156,26 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
     def get_inputs(self, ecutwfc, ecutrho):
         _PW_BULK_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
+                'degauss': self._DEGUASS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._BULK_SMEARING,
                 'ecutrho': ecutrho,
                 'ecutwfc': ecutwfc,
+            },
+            'ELECTRONS': {
+                'conv_thr': self._CONV_THR,
             },
         }
         _PW_ATOM_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'gaussian',
+                'degauss': self._DEGUASS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._ATOM_SMEARING,
                 'ecutrho': ecutrho,
                 'ecutwfc': ecutwfc,
+            },
+            'ELECTRONS': {
+                'conv_thr': self._CONV_THR,
             },
         }
         inputs = AttributeDict({
@@ -174,9 +189,9 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
                 'pw_atom':
                 orm.Dict(dict=_PW_ATOM_PARAS),
                 'kpoints_distance':
-                orm.Float(0.15),
+                orm.Float(self._KDISTANCE),
                 'vacuum_length':
-                orm.Float(12.0),
+                orm.Float(self._VACUUM_LENGTH),
             },
         })
 

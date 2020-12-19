@@ -29,6 +29,38 @@ PW_PARAS = lambda: orm.Dict(
 
 class BandsWorkChain(WorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
+
+    _SCF_PARAMETERS = {
+        'SYSTEM': {
+            'degauss': 0.00735,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+    }
+
+    _BAND_PARAMETERS = {
+        'SYSTEM': {
+            # ############## NOT REALLY TAKE EFFECT ##########
+            # 'degauss': 0.02,
+            # 'occupations': 'smearing',
+            # 'smearing': 'marzari-vanderbilt',
+            # #############
+            "noinv": True,
+            "nosym": True,
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+    }
+
+    _BANDS_SHIFT = 10.5
+    _SCF_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
+    _BAND_CMDLINE_SETTING = {'CMDLINE': ['-nk', '4']}
+    _MAX_WALLCLOCK_SECONDS = 1800 * 3
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -97,30 +129,8 @@ class BandsWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
-        scf_parameters = {
-            'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-        }
-        bands_parameters = {
-            'SYSTEM': {
-                # ############## NOT REALLY TAKE EFFECT ##########
-                # 'degauss': 0.02,
-                # 'occupations': 'smearing',
-                # 'smearing': 'marzari-vanderbilt',
-                # #############
-                "noinv": True,
-                "nosym": True,
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-        }
+        scf_parameters = self._SCF_PARAMETERS
+        bands_parameters = self._BAND_PARAMETERS
         pw_scf_parameters = update_dict(scf_parameters,
                                         self.inputs.parameters.pw.get_dict())
         pw_bands_parameters = update_dict(bands_parameters,
@@ -144,7 +154,7 @@ class BandsWorkChain(WorkChain):
 
     def not_enough_bands(self):
         """Check if the number of bands enough for shift 10eV"""
-        bands_shift = 10.0 + 0.5  # hard code for the time being
+        bands_shift = self._BANDS_SHIFT  # hard code for the time being
         return self.ctx.lowest_highest_eigenvalue < bands_shift
 
     def run_bands(self):
@@ -154,21 +164,18 @@ class BandsWorkChain(WorkChain):
             from aiida_quantumespresso.utils.resources import get_default_options
 
             # Too many kpoints may go beyond 1800s
-            options = get_default_options(with_mpi=True,
-                                          max_wallclock_seconds=1800 * 3)
+            options = get_default_options(
+                with_mpi=True,
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS)
 
         inputs = AttributeDict({
             'structure': self.inputs.structure,
             'scf': {
                 'pw': {
-                    'code':
-                    self.inputs.code,
-                    'pseudos':
-                    self.ctx.pseudos,
-                    'parameters':
-                    self.ctx.pw_scf_parameters,
-                    'settings':
-                    orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
+                    'code': self.inputs.code,
+                    'pseudos': self.ctx.pseudos,
+                    'parameters': self.ctx.pw_scf_parameters,
+                    'settings': orm.Dict(dict=self._SCF_CMDLINE_SETTING),
                     'metadata': {
                         'options': options
                     },
@@ -180,7 +187,7 @@ class BandsWorkChain(WorkChain):
                     'code': self.inputs.code,
                     'pseudos': self.ctx.pseudos,
                     'parameters': self.ctx.pw_bands_parameters,
-                    'settings': orm.Dict(dict={'CMDLINE': ['-nk', '4']}),
+                    'settings': orm.Dict(dict=self._BAND_CMDLINE_SETTING),
                     'metadata': {
                         'options': options
                     },

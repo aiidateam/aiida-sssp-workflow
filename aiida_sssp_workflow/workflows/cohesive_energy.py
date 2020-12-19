@@ -43,6 +43,39 @@ PW_PARAS = lambda: orm.Dict(dict={
 
 class CohesiveEnergyWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+
+    _BULK_PARAMETERS = {
+        'SYSTEM': {
+            'degauss': 0.02,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+        'CONTROL': {
+            'calculation': 'scf',
+            'wf_collect': True,
+            'tstress': True,
+        },
+    }
+
+    _ATOM_PARAMETERS = {
+        'SYSTEM': {
+            'degauss': 0.02,
+            'occupations': 'smearing',
+            'smearing': 'gaussian',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+    }
+
+    _BULK_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
+    _ATOM_CMDLINE_SETTING = {
+        'CMDLINE': ['-ndiag', '1']
+    }  # TODO use the same one above
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -110,31 +143,8 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def setup(self):
         """Input validation"""
-        bulk_parameters = {
-            'SYSTEM': {
-                'degauss': 0.02,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-            'CONTROL': {
-                'calculation': 'scf',
-                'wf_collect': True,
-                'tstress': True,
-            },
-        }
-        atom_parameters = {
-            'SYSTEM': {
-                'degauss': 0.02,
-                'occupations': 'smearing',
-                'smearing': 'gaussian',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-        }
+        bulk_parameters = self._BULK_PARAMETERS
+        atom_parameters = self._ATOM_PARAMETERS
         pw_bulk_parameters = update_dict(
             bulk_parameters, self.inputs.parameters.pw_bulk.get_dict())
         pw_atom_parameters = update_dict(
@@ -177,8 +187,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_bulk_parameters),
-                'settings':
-                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
+                'settings': orm.Dict(dict=self._BULK_CMDLINE_SETTING),
                 'metadata': {},
             },
             'kpoints_distance':
@@ -227,7 +236,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                         element: pseudo
                     },
                     'parameters': orm.Dict(dict=atom_pw_parameters),
-                    'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
+                    'settings': orm.Dict(dict=self._ATOM_CMDLINE_SETTING),
                     'metadata': {},
                 },
                 'kpoints': atom_kpoints,

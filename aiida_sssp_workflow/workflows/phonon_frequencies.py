@@ -35,6 +35,31 @@ PH_PARAS = lambda: orm.Dict(dict=
 
 class PhononFrequenciesWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+    _PW_PARAMETERS = {
+        'SYSTEM': {
+            'degauss': 0.02,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+        'CONTROL': {
+            'calculation': 'scf',
+            'wf_collect': True,
+            'tstress': True,
+        },
+    }
+    _PH_PARAMETERS = {
+        'INPUTPH': {
+            'tr2_ph': 1e-16,
+            'epsil': False,
+        }
+    }
+
+    _PW_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
+    _PH_CMDLINE_SETTING = {'CMDLINE': ['-nk', '2']}
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -101,33 +126,14 @@ class PhononFrequenciesWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
-        pw_parameters = {
-            'SYSTEM': {
-                'degauss': 0.02,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-            'CONTROL': {
-                'calculation': 'scf',
-                'wf_collect': True,
-                'tstress': True,
-            },
-        }
+        pw_parameters = self._PW_PARAMETERS
         pw_parameters = update_dict(pw_parameters,
                                     self.inputs.parameters.pw.get_dict())
         self.ctx.pw_parameters = pw_parameters
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
         # ph.x
-        ph_parameters = {
-            'INPUTPH': {
-                'tr2_ph': 1e-16,
-                'epsil': False,
-            }
-        }
+        ph_parameters = self._PH_PARAMETERS
         ph_parameters = update_dict(ph_parameters,
                                     self.inputs.parameters.ph.get_dict())
         self.ctx.ph_parameters = ph_parameters
@@ -154,8 +160,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'code': self.inputs.pw_code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_parameters),
-                'settings':
-                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
+                'settings': orm.Dict(dict=self._PW_CMDLINE_SETTING),
                 'metadata': {},
             },
             'kpoints_distance': self.ctx.kpoints_distance,
@@ -202,7 +207,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'qpoints': self.ctx.qpoints,
                 'parameters': orm.Dict(dict=self.ctx.ph_parameters),
                 'parent_folder': self.ctx.scf_remote_folder,
-                'settings': orm.Dict(dict={'CMDLINE': ['-nk', '2']}),
+                'settings': orm.Dict(dict=self._PH_CMDLINE_SETTING),
                 'metadata': {},
             },
         })

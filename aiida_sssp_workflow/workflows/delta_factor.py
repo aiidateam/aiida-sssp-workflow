@@ -105,6 +105,20 @@ PW_PARAS = lambda: orm.Dict(dict={
 
 class DeltaFactorWorkChain(WorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
+
+    _PW_PARAMETERS = {
+        'SYSTEM': {
+            'degauss': 0.00735,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+    }
+
+    _MAX_WALLCLOCK_SECONDS = 1800 * 2
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -179,16 +193,7 @@ class DeltaFactorWorkChain(WorkChain):
         """Input validation"""
         # TODO set ecutwfc and ecutrho according to certain protocol
 
-        pw_parameters = {
-            'SYSTEM': {
-                'degauss': 0.00735,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-        }
+        pw_parameters = self._PW_PARAMETERS
 
         self.ctx.pw_parameters = orm.Dict(dict=update_dict(
             pw_parameters, self.inputs.parameters.pw.get_dict()))
@@ -293,7 +298,8 @@ class DeltaFactorWorkChain(WorkChain):
             from aiida_quantumespresso.utils.resources import get_default_options
 
             inputs.options = orm.Dict(dict=get_default_options(
-                max_wallclock_seconds=3600, with_mpi=True))
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
+                with_mpi=True))
 
         self.report(f'options is {inputs.options.attributes}')
         running = self.submit(EquationOfStateWorkChain, **inputs)

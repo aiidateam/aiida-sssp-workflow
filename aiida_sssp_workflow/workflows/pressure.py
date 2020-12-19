@@ -39,6 +39,25 @@ PW_PARAS = lambda: orm.Dict(dict={
 
 class PressureEvaluationWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+
+    _PW_PARAMETER = {
+        'SYSTEM': {
+            'degauss': 0.02,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
+        },
+        'ELECTRONS': {
+            'conv_thr': 1e-10,
+        },
+        'CONTROL': {
+            'calculation': 'scf',
+            'wf_collect': True,
+            'tstress': True,
+        },
+    }
+
+    _CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -91,21 +110,7 @@ class PressureEvaluationWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # In order to get pressure set CONTROL tetress=.TRUE.
-        pw_parameters = {
-            'SYSTEM': {
-                'degauss': 0.02,
-                'occupations': 'smearing',
-                'smearing': 'marzari-vanderbilt',
-            },
-            'ELECTRONS': {
-                'conv_thr': 1e-10,
-            },
-            'CONTROL': {
-                'calculation': 'scf',
-                'wf_collect': True,
-                'tstress': True,
-            },
-        }
+        pw_parameters = self._PW_PARAMETER
         pw_parameters = update_dict(pw_parameters,
                                     self.inputs.parameters.pw.get_dict())
         self.ctx.pw_parameters = pw_parameters
@@ -128,8 +133,7 @@ class PressureEvaluationWorkChain(WorkChain):
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_parameters),
-                'settings':
-                orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']}),
+                'settings': orm.Dict(dict=self._CMDLINE_SETTING),
                 'metadata': {},
             },
             'kpoints_distance': self.ctx.kpoints_distance,
@@ -158,11 +162,11 @@ class PressureEvaluationWorkChain(WorkChain):
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
         output_trajectory = workchain.outputs.output_trajectory
-        output_pamameters = workchain.outputs.output_parameters
+        output_parameters = workchain.outputs.output_parameters
 
         # Return the output parameters of current workchain
         output_parameters = helper_get_hydrostatic_stress(
-            output_trajectory, output_pamameters)
+            output_trajectory, output_parameters)
         self.out('output_parameters', output_parameters)
 
     def results(self):
