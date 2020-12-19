@@ -140,6 +140,11 @@ class ConvergencePressureWorkChain(WorkChain):
                    required=True,
                    default=lambda: orm.List(list=[200, 1600]),
                    help='ecutwfc/ecutrho pair for reference calculation.')
+        spec.input(
+            'parameters.v0_b0_b1',
+            valid_type=orm.Dict,
+            help=
+            'birch murnaghan fit results used in residual volume evaluation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -324,11 +329,11 @@ class ConvergencePressureWorkChain(WorkChain):
 
             absolute_diff = pressure - ref_pressure
 
-            element = self.inputs.pseudo.element
-            res = helper_get_v0_b0_b1(orm.Str(element))
+            res = self.inputs.parameters.v0_b0_b1
             V0, B0, B1 = res['V0'], res['B0'], res['B1']
             res = helper_get_volume_from_pressure_birch_murnaghan(
-                orm.Float(absolute_diff), V0, B0, B1)
+                orm.Float(absolute_diff), orm.Float(V0), orm.Float(B0),
+                orm.Float(B1))
             relative_diff = res.value
 
             relative_diffs.append(relative_diff)

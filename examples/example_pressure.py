@@ -5,6 +5,8 @@ from aiida import orm
 from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory
 
+from aiida_sssp_workflow.workflows.convergence.pressure import helper_get_v0_b0_b1
+
 from aiida.engine import run_get_node, submit
 
 ConvergencePressureWorkChain = WorkflowFactory(
@@ -17,13 +19,22 @@ def run_test(code, upf, dual):
     PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))
 
+    element = upf.element
+    res = helper_get_v0_b0_b1(orm.Str(element))
+    v0_b0_b1 = {
+        'V0': res['V0'].value,
+        'B0': res['B0'].value,
+        'B1': res['B1'].value,
+    }
+
     inputs = AttributeDict({
         'code': code,
         'pseudo': upf,
         'parameters': {
             'ecutwfc_list': PARA_ECUTWFC_LIST,
             'ecutrho_list': PARA_ECUTRHO_LIST,
-            'ref_cutoff_pair': orm.List(list=[200, 200 * dual])
+            'ref_cutoff_pair': orm.List(list=[200, 200 * dual]),
+            'v0_b0_b1': orm.Dict(dict=v0_b0_b1),
         },
     })
     node = submit(ConvergencePressureWorkChain, **inputs)
@@ -57,7 +68,7 @@ if __name__ == '__main__':
 
     upf_sg15 = {}
     # # sg15/Au_ONCV_PBE-1.2.upf
-    # upf_sg15['au'] = load_node('b9583fdd-905e-41c1-b5b9-1dfb9e15772d')
+    upf_sg15['au'] = load_node('62e411c5-b0ab-4d08-875c-6fa4f74eb74e')
     # sg15/Si_ONCV_PBE-1.2.upf
     upf_sg15['si'] = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')
     # # sg15/Xe_ONCV_PBE-1.2.upf

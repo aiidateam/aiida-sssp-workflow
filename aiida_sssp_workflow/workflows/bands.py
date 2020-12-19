@@ -213,7 +213,7 @@ class BandsWorkChain(WorkChain):
         fermi_energy = workchain.outputs.band_parameters['fermi_energy']
         bands = workchain.outputs.band_structure.get_array(
             'bands') - fermi_energy
-        eigv = np.amin(bands[:, -1])
+        eigv = float(np.amin(bands[:, -1]))
         self.ctx.lowest_highest_eigenvalue = eigv
 
         self.ctx.nbands_factor += 1.0
