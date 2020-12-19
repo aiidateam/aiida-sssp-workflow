@@ -13,7 +13,6 @@ from aiida_sssp_workflow.utils import update_dict, \
     RARE_EARTH_ELEMENTS, \
     helper_parse_upf
 
-birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
 
@@ -171,7 +170,7 @@ class DeltaFactorWorkChain(WorkChain):
             cls.run_delta_calc,
             cls.results,
         )
-        spec.output('eos_parameters',
+        spec.output('output_eos_parameters',
                     valid_type=orm.Dict,
                     required=True,
                     help='The eos outputs.')
@@ -179,11 +178,10 @@ class DeltaFactorWorkChain(WorkChain):
                     valid_type=orm.Dict,
                     required=True,
                     help='The delta factor of the pseudopotential.')
-        spec.output('element',
-                    valid_type=orm.Str,
+        spec.output('output_birch_murnaghan_fit',
+                    valid_type=orm.Dict,
                     required=True,
-                    help='The element of the pseudopotential.')
-        # TODO delta prime out
+                    help='The results V0, B0, B1 of Birch-Murnaghan fit.')
         spec.exit_code(
             201,
             'ERROR_SUB_PROCESS_FAILED_EOS',
@@ -319,10 +317,9 @@ class DeltaFactorWorkChain(WorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
 
-        volume_energy = workchain.outputs.output_parameters  # This keep the provenance
-        self.out('eos_parameters', workchain.outputs.output_parameters)
-        self.ctx.birch_murnaghan_fit_result = birch_murnaghan_fit(
-            volume_energy)
+        self.out('output_eos_parameters', workchain.outputs.output_parameters)
+        self.ctx.birch_murnaghan_fit_result = workchain.outputs.output_parameters[
+            'birch_murnaghan_fit']
         # TODO report result and output it
 
     def run_delta_calc(self):
@@ -330,18 +327,21 @@ class DeltaFactorWorkChain(WorkChain):
         res = self.ctx.birch_murnaghan_fit_result
         inputs = {
             'element': self.ctx.element,
-            'v0': res['volume0'],
-            'b0': res['bulk_modulus0'],
-            'bp': res['bulk_deriv0'],
+            'v0': orm.Float(res['v0']),
+            'b0': orm.Float(res['b0']),
+            'bp': orm.Float(res['bp']),
         }
         self.ctx.output_parameters = calculate_delta(**inputs)
-        # TODO report
+
+        self.report(
+            f'Birch-Murnaghan fit results are {self.ctx.birch_murnaghan_fit_result}'
+        )
+        self.out('output_birch_murnaghan_fit',
+                 orm.Dict(dict=self.ctx.birch_murnaghan_fit_result).store())
 
     def results(self):
         """Attach the output parameters to the outputs."""
         self.out('output_parameters', self.ctx.output_parameters)
-        self.out('element', self.ctx.element)
-        # TODO output the parameters used for eos and pw.
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""

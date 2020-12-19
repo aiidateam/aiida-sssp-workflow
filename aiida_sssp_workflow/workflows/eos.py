@@ -3,9 +3,10 @@
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, append_, calcfunction
-from aiida.plugins import WorkflowFactory
+from aiida.plugins import WorkflowFactory, CalculationFactory
 
 PwBaseWorkChain = WorkflowFactory('quantumespresso.pw.base')
+birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
 
 
 def validate_inputs(value, _):
@@ -174,6 +175,17 @@ class EquationOfStateWorkChain(WorkChain):
             volume_energy['volumes'][index] = volume / num_of_atoms
             volume_energy['energies'][index] = energy / num_of_atoms
 
-        node = orm.Dict(dict=volume_energy).store()
-        self.out('output_parameters', node)
-        self.report(f'results of volume energy relation in {node.__class__.__name__}<{node.pk}>')
+        res = birch_murnaghan_fit(
+            orm.Dict(dict=volume_energy))
+        output_birch_murnaghan_fit = {
+            'v0': res['volume0'],
+            'b0': res['bulk_modulus0'],
+            'bp': res['bulk_deriv0'],
+        }
+
+        output_parameters = {
+            'volume_energy': volume_energy,
+            'birch_murnaghan_fit': output_birch_murnaghan_fit,
+        }
+
+        self.out('output_parameters', orm.Dict(dict=output_parameters).store())
