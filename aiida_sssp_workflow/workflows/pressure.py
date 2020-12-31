@@ -40,7 +40,7 @@ PW_PARAS = lambda: orm.Dict(dict={
 class PressureEvaluationWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
-    _PW_PARAMETER = {
+    _PW_PARAMETERS = {
         'SYSTEM': {
             'degauss': 0.02,
             'occupations': 'smearing',
@@ -86,6 +86,20 @@ class PressureEvaluationWorkChain(WorkChain):
                    default=PW_PARAS,
                    help='parameters for pwscf.')
         spec.input(
+            'parameters.ecutwfc',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
+        )
+        spec.input(
+            'parameters.ecutrho',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
+        )
+        spec.input(
             'parameters.kpoints_distance',
             valid_type=orm.Float,
             default=lambda: orm.Float(0.15),
@@ -110,9 +124,19 @@ class PressureEvaluationWorkChain(WorkChain):
     def setup(self):
         """Input validation"""
         # In order to get pressure set CONTROL tetress=.TRUE.
-        pw_parameters = self._PW_PARAMETER
+        pw_parameters = self._PW_PARAMETERS
         pw_parameters = update_dict(pw_parameters,
                                     self.inputs.parameters.pw.get_dict())
+
+        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
+            parameters = {
+                'SYSTEM': {
+                    'ecutwfc': self.inputs.parameters.ecutwfc,
+                    'ecutrho': self.inputs.parameters.ecutrho,
+                },
+            }
+            pw_parameters = update_dict(pw_parameters, parameters)
+
         self.ctx.pw_parameters = pw_parameters
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
@@ -123,7 +147,6 @@ class PressureEvaluationWorkChain(WorkChain):
         """
         set the inputs and submit scf to get quantities for pressure evaluation
         """
-        # TODO tstress to cache the calculation for pressure convergence
         inputs = AttributeDict({
             'metadata': {
                 'call_link_label': 'scf'

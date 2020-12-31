@@ -90,7 +90,7 @@ def test_get_v0_b0_b1():
     """
     doc
     """
-    from aiida_sssp_workflow.workflows.convergence.pressure import helper_get_v0_b0_b1
+    from aiida_sssp_workflow.workflows.helper import helper_get_v0_b0_b1
 
     res = helper_get_v0_b0_b1(orm.Str('Si'))
     assert res['V0'].value == 20.4530
@@ -114,25 +114,26 @@ def test_get_volume_from_pressure_birch_murnaghan():
     """
     from aiida_sssp_workflow.workflows.convergence.pressure import helper_get_volume_from_pressure_birch_murnaghan
 
-    V0 = orm.Float(20.4530)
-    B0 = orm.Float(88.545)
-    B1 = orm.Float(4.31)
-    P = orm.Float(0.01)
+    V0 = 20.4530
+    B0 = 88.545
+    B1 = 4.31
+    P = 0.01
 
     ret = helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1)
 
     # check that very small residual pressure correspond a small volume change
-    assert ret.value - 20.4530 < 0.1
+    assert ret - 20.4530 < 0.1
 
 
 def test_phonon_frequencies_diff():
     """test of helper_get_relative_phonon_frequencies"""
-    from aiida_sssp_workflow.workflows.convergence.phonon_frequencies import helper_get_relative_phonon_frequencies
+    from aiida_sssp_workflow.workflows.convergence.phonon_frequencies import helper_phonon_frequencies_difference
 
-    freq = orm.List(list=[1., 1., 1.])
-    ref_freq = orm.List(list=[1., 1., 1.])
+    input_parameters = {'dynamical_matrix_0': {'frequencies': [1., 1., 1.]}}
+    ref_parameters = {'dynamical_matrix_0': {'frequencies': [1., 1., 1.]}}
 
-    res = helper_get_relative_phonon_frequencies(freq, ref_freq)
+    res = helper_phonon_frequencies_difference(orm.Dict(dict=input_parameters),
+                                               orm.Dict(dict=ref_parameters))
 
     assert res['relative_diff'] == 0.0
     assert res['relative_max_diff'] == 0.0

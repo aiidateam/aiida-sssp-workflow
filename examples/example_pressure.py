@@ -5,7 +5,7 @@ from aiida import orm
 from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory
 
-from aiida_sssp_workflow.workflows.convergence.pressure import helper_get_v0_b0_b1
+from aiida_sssp_workflow.workflows.helper import helper_get_v0_b0_b1
 
 from aiida.engine import run_get_node, submit
 
@@ -14,7 +14,7 @@ ConvergencePressureWorkChain = WorkflowFactory(
 
 
 def run_test(code, upf, dual):
-    ecutwfc = np.array([30, 35, 200])
+    ecutwfc = np.array([30, 35, 40, 45, 50, 55, 60, 200])
     ecutrho = ecutwfc * dual
     PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))

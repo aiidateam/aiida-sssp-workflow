@@ -2,13 +2,12 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
-from aiida.common import AttributeDict
-from aiida.engine import WorkChain, ToContext, append_, calcfunction
+from aiida.engine import calcfunction
 from aiida import orm
 from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
-from ..helper import get_pw_inputs_from_pseudo
+from .base import BaseConvergenceWorkChain
 
 PressureWorkChain = WorkflowFactory('sssp_workflow.pressure_evaluation')
 
@@ -22,13 +21,7 @@ PARA_ECUTRHO_LIST = lambda: orm.List(list=[
     760, 800, 880, 960, 1040, 1120, 1280, 1440, 1600
 ])
 
-RARE_EARTH_ELEMENTS = [
-    'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
-    'Tm', 'Yb', 'Lu'
-]
 
-
-@calcfunction
 def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
     """
     Knowing the pressure P and the Birch-Murnaghan equation of state
@@ -39,10 +32,6 @@ def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
     """
     import numpy as np
 
-    V0 = V0.value
-    B0 = B0.value
-    B1 = B1.value
-    P = P.value
     # coefficients of the polynomial in x=(V0/V)^(1/3) (aside from the
     # constant multiplicative factor 3B0/2)
     polynomial = [
@@ -55,58 +44,47 @@ def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
     ],
             key=lambda V: abs(V - V0) / float(V0))
 
-    return orm.Float((V - V0) / V0 * 100)
+    return abs(V - V0) / V0 * 100
 
 
 @calcfunction
-def helper_get_v0_b0_b1(element: orm.Str):
-    import re
-    from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+def helper_pressure_difference(input_parameters: orm.Dict,
+                               ref_parameters: orm.Dict, V0: orm.Float,
+                               B0: orm.Float, B1: orm.Float) -> orm.Dict:
+    """
+    doc
+    """
+    res_pressure = input_parameters['hydrostatic_stress']
+    ref_pressure = ref_parameters['hydrostatic_stress']
+    absolute_diff = abs(res_pressure - ref_pressure)
+    relative_diff = helper_get_volume_from_pressure_birch_murnaghan(
+        absolute_diff, V0.value, B0.value, B1.value)
 
-    if element.value == 'F':
-        # Use SiF4 as reference of fluorine(F)
-        return {
-            'V0': orm.Float(19.3583),
-            'B0': orm.Float(74.0411),
-            'B1': orm.Float(4.1599),
-        }
-
-    if element.value in RARE_EARTH_ELEMENTS:
-        element_str = f'{element.value}N'
-    else:
-        element_str = element.value
-
-    regex = re.compile(
-        rf"""{element_str}\s*
-                        (?P<V0>\d*.\d*)\s*
-                        (?P<B0>\d*.\d*)\s*
-                        (?P<B1>\d*.\d*)""", re.VERBOSE)
-    if element.value not in RARE_EARTH_ELEMENTS:
-        match = regex.search(WIEN2K_REF)
-        V0 = match.group('V0')
-        B0 = match.group('B0')
-        B1 = match.group('B1')
-    else:
-        match = regex.search(WIEN2K_REN_REF)
-        V0 = match.group('V0')
-        B0 = match.group('B0')
-        B1 = match.group('B1')
-
-    return {
-        'V0': orm.Float(float(V0)),
-        'B0': orm.Float(float(B0)),
-        'B1': orm.Float(float(B1)),
-    }
+    return orm.Dict(
+        dict={
+            'relative_diff': relative_diff,
+            'absolute_diff': absolute_diff,
+            'absolute_unit': 'GPascal',
+            'relative_unit': '%'
+        })
 
 
-class ConvergencePressureWorkChain(WorkChain):
+class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on pressure of input structure"""
 
+    # hard code parameters of evaluate workflow
     _DEGUASS = 0.00735
     _OCCUPATIONS = 'smearing'
     _SMEARING = 'marzari-vanderbilt'
     _KDISTANCE = 0.15
     _CONV_THR = 1e-10
+
+    # hard code parameters of convergence workflow
+    _TOLERANCE = 1e-1
+    _CONV_THR_CONV = 1e-1
+    _CONV_WINDOW = 3
+
+    _ABSOLUTE_UNIT = 'GPascal'
 
     @classmethod
     def define(cls, spec):
@@ -114,85 +92,42 @@ class ConvergencePressureWorkChain(WorkChain):
         spec.input('code',
                    valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
-                   help='Pseudopotential to be verified')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
-        spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.ecutrho_list',
-                   valid_type=orm.List,
-                   default=lambda: PARA_ECUTRHO_LIST,
-                   help='dual value for ecutrho list.')
-        spec.input('parameters.ecutwfc_list',
-                   valid_type=orm.List,
-                   default=PARA_ECUTWFC_LIST,
-                   help='list of ecutwfc evaluate list.')
-        spec.input('parameters.ref_cutoff_pair',
-                   valid_type=orm.List,
-                   required=True,
-                   default=lambda: orm.List(list=[200, 1600]),
-                   help='ecutwfc/ecutrho pair for reference calculation.')
         spec.input(
             'parameters.v0_b0_b1',
             valid_type=orm.Dict,
             help=
             'birch murnaghan fit results used in residual volume evaluation.')
-        spec.outline(
-            cls.setup,
-            cls.validate_structure,
-            cls.run_ref,
-            cls.run_all,
-            cls.results,
-        )
-        spec.output(
-            'output_parameters',
-            valid_type=orm.Dict,
-            required=True,
-            help=
-            'The output parameters include pressure information of the structures.'
-        )
-        spec.output(
-            'xy_data',
-            valid_type=orm.XyData,
-            required=True,
-            help='The output XY data for plot use; the x axis is ecutwfc.')
-        spec.exit_code(
-            400,
-            'ERROR_SUB_PROCESS_FAILED',
-            message='The sub processes {pk} did not finish successfully.')
 
-    def setup(self):
-        self.ctx.ecutwfc_list = self.inputs.parameters.ecutwfc_list.get_list()
-        self.ctx.ecutrho_list = self.inputs.parameters.ecutrho_list.get_list()
-        if not len(self.ctx.ecutwfc_list) == len(self.ctx.ecutrho_list):
-            return self.exit_codes.ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS
+    def get_create_process(self):
+        return PressureWorkChain
 
-    def validate_structure(self):
-        res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo)
+    def get_evaluate_process(self):
+        return helper_pressure_difference
 
-        self.ctx.structure = res['structure']
-        self.ctx.pseudos = res['pseudos']
-        self.ctx.base_pw_parameters = res['base_pw_parameters']
+    def get_parsed_results(self):
+        return {
+            'absolute_diff':
+            ('The absolute residual pressure difference', 'GPascal'),
+            'relative_diff':
+            ('The relative residual pressure difference', '%'),
+        }
 
-    def get_inputs(self, ecutwfc, ecutrho):
+    def get_converge_y(self):
+        return 'relative_diff', '%'
+
+    def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
                 'degauss': self._DEGUASS,
                 'occupations': self._OCCUPATIONS,
                 'smearing': self._SMEARING,
-                'ecutrho': ecutrho,
-                'ecutwfc': ecutwfc,
             },
             'ELECTRONS': {
                 'conv_thr': self._CONV_THR,
             },
         }
 
-        inputs = AttributeDict({
+        inputs = {
             'code': self.inputs.code,
             'pseudos': self.ctx.pseudos,
             'structure': self.ctx.structure,
@@ -203,108 +138,23 @@ class ConvergencePressureWorkChain(WorkChain):
                 'kpoints_distance':
                 orm.Float(self._KDISTANCE),
             },
-        })
+        }
 
         return inputs
 
-    def run_ref(self):
-        """
-        Running the calculation for the reference point
-        hard code to 200Ry at the moment
-        """
-        cutoff_pair = self.inputs.parameters.ref_cutoff_pair.get_list()
-        ecutwfc = cutoff_pair[0]
-        ecutrho = cutoff_pair[1]
-        inputs = self.get_inputs(ecutwfc, ecutrho)
-
-        running = self.submit(PressureWorkChain, **inputs)
-
-        self.report(f'launching reference PressureWorkChain<{running.pk}>.')
-
-        return ToContext(ref_workchain=running)
-
-    def run_all(self):
-        """
-        Running the calculation for other points
-        """
+    def get_evaluate_process_inputs(self):
         ref_workchain = self.ctx.ref_workchain
+        V0_B0_B1 = self.inputs.parameters.v0_b0_b1  # pylint: disable=invalid-name
 
-        if not ref_workchain.is_finished_ok:
-            self.report(
-                f'Reference run of PressureWorkChain failed with exit status {ref_workchain.exit_status}'
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                pk=ref_workchain.pk)
+        res = {
+            'ref_parameters': ref_workchain.outputs.output_parameters,
+            'V0': orm.Float(V0_B0_B1['V0']),
+            'B0': orm.Float(V0_B0_B1['B0']),
+            'B1': orm.Float(V0_B0_B1['B1']),
+        }
 
-        self.ctx.ref_pressure = ref_workchain.outputs.output_parameters[
-            'hydrostatic_stress']
+        return res
 
-        for ecutwfc, ecutrho in zip(self.ctx.ecutwfc_list,
-                                    self.ctx.ecutrho_list):
-            inputs = self.get_inputs(ecutwfc, ecutrho)
-
-            workchain = self.submit(PressureWorkChain, **inputs)
-            self.report(
-                f'submitting pressure evaluation {workchain.pk} on ecutwfc={ecutwfc} ecutrho={ecutrho}.'
-            )
-            self.to_context(children=append_(workchain))
-
-    def results(self):
-        """
-        doc
-        """
-        import numpy as np
-
-        pks = [
-            child.pk for child in self.ctx.children if not child.is_finished_ok
-        ]
-        if pks:
-            # TODO failed only when points are not enough < 80%
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(pk=pks)
-
-        success_child = [
-            child for child in self.ctx.children if child.is_finished_ok
-        ]
-
-        relative_diffs = []
-        absolute_diffs = []
-        ecutwfc_list = []
-        ecutrho_list = []
-
-        ref_pressure = self.ctx.ref_pressure
-        for child in success_child:
-            ecutwfc = child.inputs.parameters__pw['SYSTEM']['ecutwfc']
-            ecutrho = child.inputs.parameters__pw['SYSTEM']['ecutrho']
-            pressure = child.outputs.output_parameters['hydrostatic_stress']
-            ecutwfc_list.append(ecutwfc)
-            ecutrho_list.append(ecutrho)
-
-            absolute_diff = pressure - ref_pressure
-
-            res = self.inputs.parameters.v0_b0_b1
-            V0, B0, B1 = res['V0'], res['B0'], res['B1']
-            res = helper_get_volume_from_pressure_birch_murnaghan(
-                orm.Float(absolute_diff), orm.Float(V0), orm.Float(B0),
-                orm.Float(B1))
-            relative_diff = res.value
-
-            relative_diffs.append(relative_diff)
-            absolute_diffs.append(absolute_diff)
-
-        xy_data = orm.XyData()
-        xy_data.set_x(np.array(ecutwfc_list), 'wavefunction cutoff', 'Rydberg')
-        xy_data.set_y(np.array(relative_diffs),
-                      'Relative values of phonon frequencies', '%')
-
-        output_parameters = orm.Dict(
-            dict={
-                'ecutwfc_list': ecutwfc_list,
-                'ecutrho_list': ecutrho_list,
-                'relative_diff_list': relative_diffs,
-                'absolute_diff_list': absolute_diffs,
-                'cutoff_unit': 'Ry',
-                'relative_unit': '%',
-                'absolute_unit': 'GPascal',
-            })
-        self.out('output_parameters', output_parameters.store())
-        self.out('xy_data', xy_data.store())
+    def get_output_input_mapping(self):
+        res = orm.Dict(dict={'output_parameters': 'input_parameters'})
+        return res

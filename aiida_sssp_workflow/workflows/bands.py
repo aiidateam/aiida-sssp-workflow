@@ -88,6 +88,20 @@ class BandsWorkChain(WorkChain):
                    valid_type=orm.Dict,
                    default=PW_PARAS,
                    help='parameters for pw.x.')
+        spec.input(
+            'parameters.ecutwfc',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
+        )
+        spec.input(
+            'parameters.ecutrho',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
+        )
         spec.input('parameters.scf_kpoints_distance',
                    valid_type=orm.Float,
                    default=lambda: orm.Float(0.1),
@@ -137,6 +151,17 @@ class BandsWorkChain(WorkChain):
                                           self.inputs.parameters.pw.get_dict())
         pw_bands_parameters['SYSTEM'].pop(
             'nbnd', None)  # Since nbnd can not sit with nband_factor
+
+        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
+            parameters = {
+                'SYSTEM': {
+                    'ecutwfc': self.inputs.parameters.ecutwfc,
+                    'ecutrho': self.inputs.parameters.ecutrho,
+                },
+            }
+            pw_scf_parameters = update_dict(pw_scf_parameters, parameters)
+            pw_bands_parameters = update_dict(pw_bands_parameters, parameters)
+
         self.ctx.pw_scf_parameters = orm.Dict(dict=pw_scf_parameters)
         self.ctx.pw_bands_parameters = orm.Dict(dict=pw_bands_parameters)
 

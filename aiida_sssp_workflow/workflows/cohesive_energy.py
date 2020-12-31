@@ -108,6 +108,20 @@ class CohesiveEnergyWorkChain(WorkChain):
                    default=PW_PARAS,
                    help='parameters for pwscf of atom calculation.')
         spec.input(
+            'parameters.ecutwfc',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
+        )
+        spec.input(
+            'parameters.ecutrho',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
+        )
+        spec.input(
             'parameters.kpoints_distance',
             valid_type=orm.Float,
             default=lambda: orm.Float(0.1),
@@ -149,6 +163,17 @@ class CohesiveEnergyWorkChain(WorkChain):
             bulk_parameters, self.inputs.parameters.pw_bulk.get_dict())
         pw_atom_parameters = update_dict(
             atom_parameters, self.inputs.parameters.pw_atom.get_dict())
+
+        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
+            parameters = {
+                'SYSTEM': {
+                    'ecutwfc': self.inputs.parameters.ecutwfc,
+                    'ecutrho': self.inputs.parameters.ecutrho,
+                },
+            }
+            pw_bulk_parameters = update_dict(pw_bulk_parameters, parameters)
+            pw_atom_parameters = update_dict(pw_atom_parameters, parameters)
+
         self.ctx.pw_bulk_parameters = pw_bulk_parameters
         self.ctx.pw_atom_parameters = pw_atom_parameters
 
@@ -177,7 +202,6 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
-        # TODO tstress to cache the calculation for pressure convergence
         bulk_inputs = AttributeDict({
             'metadata': {
                 'call_link_label': 'bulk_scf'

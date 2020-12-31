@@ -4,6 +4,7 @@ Module comtain helper functions for workflows
 import importlib_resources
 
 from aiida import orm
+from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.utils import helper_parse_upf, \
     RARE_EARTH_ELEMENTS, \
@@ -57,4 +58,45 @@ def get_pw_inputs_from_pseudo(pseudo, primitive_cell=True):
         'structure': cif_data.get_structure(primitive_cell=primitive_cell),
         'pseudos': pseudos,
         'base_pw_parameters': pw_parameters,
+    }
+
+
+@calcfunction
+def helper_get_v0_b0_b1(element: orm.Str):
+    import re
+    from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+
+    if element.value == 'F':
+        # Use SiF4 as reference of fluorine(F)
+        return {
+            'V0': orm.Float(19.3583),
+            'B0': orm.Float(74.0411),
+            'B1': orm.Float(4.1599),
+        }
+
+    if element.value in RARE_EARTH_ELEMENTS:
+        element_str = f'{element.value}N'
+    else:
+        element_str = element.value
+
+    regex = re.compile(
+        rf"""{element_str}\s*
+                        (?P<V0>\d*.\d*)\s*
+                        (?P<B0>\d*.\d*)\s*
+                        (?P<B1>\d*.\d*)""", re.VERBOSE)
+    if element.value not in RARE_EARTH_ELEMENTS:
+        match = regex.search(WIEN2K_REF)
+        V0 = match.group('V0')
+        B0 = match.group('B0')
+        B1 = match.group('B1')
+    else:
+        match = regex.search(WIEN2K_REN_REF)
+        V0 = match.group('V0')
+        B0 = match.group('B0')
+        B1 = match.group('B1')
+
+    return {
+        'V0': orm.Float(float(V0)),
+        'B0': orm.Float(float(B0)),
+        'B1': orm.Float(float(B1)),
     }

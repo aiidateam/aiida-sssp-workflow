@@ -94,6 +94,20 @@ class PhononFrequenciesWorkChain(WorkChain):
                    valid_type=orm.Dict,
                    default=PH_PARAS,
                    help='parameters for ph.x.')
+        spec.input(
+            'parameters.ecutwfc',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
+        )
+        spec.input(
+            'parameters.ecutrho',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
+        )
         spec.input('parameters.qpoints',
                    valid_type=orm.List,
                    default=lambda: orm.List(list=[[0., 0., 0.]]),
@@ -125,11 +139,21 @@ class PhononFrequenciesWorkChain(WorkChain):
 
     def setup(self):
         """Input validation"""
-        # TODO set ecutwfc and ecutrho according to certain protocol
         pw_parameters = self._PW_PARAMETERS
         pw_parameters = update_dict(pw_parameters,
                                     self.inputs.parameters.pw.get_dict())
+
+        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
+            parameters = {
+                'SYSTEM': {
+                    'ecutwfc': self.inputs.parameters.ecutwfc,
+                    'ecutrho': self.inputs.parameters.ecutrho,
+                },
+            }
+            pw_parameters = update_dict(pw_parameters, parameters)
+
         self.ctx.pw_parameters = pw_parameters
+
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
         # ph.x

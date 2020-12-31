@@ -11,14 +11,12 @@ ConvergencePhononFrequencies = WorkflowFactory(
 
 
 def run_test(pw_code, ph_code, upf, dual):
-    ecutwfc = np.array([30, 35, 200])
-    # ecutwfc = np.array(
-    #     [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150, 200])
+    ecutwfc = np.array([30, 35, 40, 45, 50, 55, 60, 200])
     ecutrho = ecutwfc * dual
     PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))
 
-    inputs = AttributeDict({
+    inputs = {
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
@@ -27,7 +25,7 @@ def run_test(pw_code, ph_code, upf, dual):
             'ecutrho_list': PARA_ECUTRHO_LIST,
             'ref_cutoff_pair': orm.List(list=[200, 200 * dual])
         },
-    })
+    }
     node = submit(ConvergencePhononFrequencies, **inputs)
 
     return node

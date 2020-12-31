@@ -12,7 +12,7 @@ ConvergenceCohesiveEnergy = WorkflowFactory(
 
 
 def run_test(code, upf, dual):
-    ecutwfc = np.array([30, 35, 200])
+    ecutwfc = np.array([30, 35, 40, 45, 50, 55, 60, 200])
     ecutrho = ecutwfc * dual
     PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))
