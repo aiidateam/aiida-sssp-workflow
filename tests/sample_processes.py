@@ -1,7 +1,7 @@
 """helper workfunction"""
-from aiida.engine import workfunction
+from aiida.engine import calcfunction
 
 
-@workfunction
-def echo_workfunction(x):
-    return x
+@calcfunction
+def echo_calcfunction(x, y):
+    return x + y

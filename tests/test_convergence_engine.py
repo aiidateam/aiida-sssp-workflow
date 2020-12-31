@@ -1,12 +1,15 @@
 from aiida import orm
 from aiida.plugins import WorkflowFactory
 
-from .sample_processes import echo_workfunction
-from aiida_sssp_workflow.workflows.convergence.engine import TwoFactorConvergence
+from .sample_processes import echo_calcfunction
+from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
 
 from aiida.engine import run
 
 OptimizationWorkChain = WorkflowFactory('optimize.optimize')
+
+_INPUT_VALUES = [(1, 2), (1, 1), (1.0, 0.3), (1.0, 0.2), (0.002, 0.100),
+                 (0.0793, 0.02), (0.0794, 0.02), (0.0792, 0.02)]
 
 
 def test_condition_1():
@@ -17,20 +20,20 @@ def test_condition_1():
     """
     inputs = {
         'engine':
-        TwoFactorConvergence,
+        TwoInputsTwoFactorsConvergence,
         'engine_kwargs':
         orm.Dict(
             dict={
-                'input_values':
-                [3, 2, 1.3, 1.2, 0.102, 0.0993, 0.0994, 0.0992],
+                'input_values': _INPUT_VALUES,
                 'tol': 1e-2,
                 'conv_thr': 2,
                 'input_key': 'x',
+                'extra_input_key': 'y',
                 'result_key': 'result',
                 'convergence_window': 2
             }),
         'evaluate_process':
-        echo_workfunction,
+        echo_calcfunction
     }
 
     res = run(OptimizationWorkChain, **inputs)
@@ -45,20 +48,20 @@ def test_condition_2():
     """
     inputs = {
         'engine':
-        TwoFactorConvergence,
+        TwoInputsTwoFactorsConvergence,
         'engine_kwargs':
         orm.Dict(
             dict={
-                'input_values':
-                [3, 2, 1.3, 1.2, 0.102, 0.0993, 0.0994, 0.0992],
+                'input_values': _INPUT_VALUES,
                 'tol': 1e-2,
                 'conv_thr': 1e-1,
                 'input_key': 'x',
+                'extra_input_key': 'y',
                 'result_key': 'result',
                 'convergence_window': 2
             }),
         'evaluate_process':
-        echo_workfunction,
+        echo_calcfunction
     }
 
     res = run(OptimizationWorkChain, **inputs)

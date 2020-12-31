@@ -10,11 +10,15 @@ import numpy as np
 from aiida_optimize.engines.base import OptimizationEngineWrapper
 from aiida_optimize.engines._convergence import _ConvergenceImpl
 from aiida_optimize.engines._result_mapping import Result
+from aiida_optimize.helpers import get_nested_result
 
-__all__ = ['TwoFactorConvergence']
+from aiida import orm
+from aiida.orm.nodes.data.base import to_aiida_type
+
+__all__ = ['TwoInputsTwoFactorsConvergence']
 
 
-class _TwoFactorConvergenceImpl(_ConvergenceImpl):
+class _TwoInputsTwoFactorsConvergenceImpl(_ConvergenceImpl):
     def __init__(
         self,
         *,
@@ -22,6 +26,7 @@ class _TwoFactorConvergenceImpl(_ConvergenceImpl):
         tol: float,
         conv_thr: float,
         input_key: str,
+        extra_input_key: str,
         result_key: str,
         convergence_window: int,
         array_name: ty.Optional[str],
@@ -44,6 +49,8 @@ class _TwoFactorConvergenceImpl(_ConvergenceImpl):
             logger=logger,
             result_state=result_state,
         )
+
+        self.extra_input_key = extra_input_key
         self.conv_thr = conv_thr
 
     @property
@@ -107,46 +114,67 @@ class _TwoFactorConvergenceImpl(_ConvergenceImpl):
 
         return res
 
+    def _create_inputs(self) -> ty.List[ty.Dict[str, orm.Float]]:
+        """
+        Create the inputs for the evaluation function.
+        If the work chain is not initialized, the appropriate number of
+        inputs to fill the convergence window are generated.
+        Otherwise, one more input will be generated
+        """
+        if not self.initialized:
+            # Do enough calculations to fill the initial convergence window
+            num_new_iters = self.convergence_window
+            self.initialized = True
+        else:
+            num_new_iters = self._num_new_iters
 
-class TwoFactorConvergence(OptimizationEngineWrapper):
+        self.current_index += num_new_iters
+        inputs = [{
+            self.input_key: to_aiida_type(self.input_values[i][0]),
+            self.extra_input_key: to_aiida_type(self.input_values[i][1]),
+        } for i in range(self.current_index -
+                         num_new_iters, self.current_index)]
+
+        return inputs
+
+    def _get_optimal_result(self) -> ty.Tuple[int, orm.Node, orm.Node]:
+        """
+        Retrieve the converged index and result value (output value, _not_ max
+        distance within convergence window)
+        """
+        opt_index = len(self.result_values) - self.convergence_window
+        opt_input = self._result_mapping[opt_index].input[self.input_key]
+        opt_output = get_nested_result(self._result_mapping[opt_index].output,
+                                       self.result_key)
+
+        return opt_index, opt_input, opt_output
+
+
+class TwoInputsTwoFactorsConvergence(OptimizationEngineWrapper):
     """
     Wrapper class for convergence engine
-
-    Parameters
-    ----------
-    input_values : iterable object
-        List or other iterable of inputs within the desired range to check convergence
-    tol : float
-        Roughness tolerance for checking convergence
-    input_key : str
-        Name of the input key which should be varied to find convergence
-    result_key : str
-        Name of the output / result key which is the value to converge
-    convergence_window : int
-        Number of results to consider when checking convergence
-    array_name : str or None
-        Name of array within output / result ArrayData (only necessary if the output is
-        given in an ArrayData)
     """
 
-    _IMPL_CLASS = _TwoFactorConvergenceImpl
+    _IMPL_CLASS = _TwoInputsTwoFactorsConvergenceImpl
 
-    def __new__(  #type: ignore  # pylint: disable=too-many-arguments,arguments-differ
+    def __new__(  # pylint: disable=too-many-arguments,arguments-differ
         cls,
         input_values: ty.List[ty.Any],
         tol: float,
         conv_thr: float,
         input_key: str,
+        extra_input_key: str,
         result_key: str,
         convergence_window: int = 2,
         array_name: ty.Optional[str] = None,
         logger: ty.Optional[ty.Any] = None,
-    ) -> _TwoFactorConvergenceImpl:
+    ) -> _TwoInputsTwoFactorsConvergenceImpl:
         return cls._IMPL_CLASS(  # pylint: disable=no-member
             input_values=input_values,
             tol=tol,
             conv_thr=conv_thr,
             input_key=input_key,
+            extra_input_key=extra_input_key,
             result_key=result_key,
             convergence_window=convergence_window,
             array_name=array_name,

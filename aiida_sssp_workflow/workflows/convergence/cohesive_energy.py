@@ -3,7 +3,7 @@
 Convergence test on cohesive energy of a given pseudopotential
 """
 from aiida.common import AttributeDict
-from aiida.engine import WorkChain, ToContext, append_
+from aiida.engine import WorkChain, calcfunction, ToContext, append_
 from aiida import orm
 from aiida.plugins import WorkflowFactory
 
@@ -11,6 +11,26 @@ from aiida_sssp_workflow.utils import update_dict
 from ..helper import get_pw_inputs_from_pseudo
 
 CohesiveEnergyWorkChain = WorkflowFactory('sssp_workflow.cohesive_energy')
+CreateEvaluateWorkChain = WorkflowFactory('optimize.wrappers.create_evaluate')
+
+
+@calcfunction
+def helper_cohesive_energy_differenge(input_parameters: orm.Dict,
+                                      ref_parameters: orm.Dict) -> orm.Dict:
+    res_energy = input_parameters['cohesive_energy_per_atom']
+    ref_energy = ref_parameters['cohesive_energy_per_atom']
+    absolute_diff = abs(res_energy - ref_energy)
+    relative_diff = abs((res_energy - ref_energy) / ref_energy)
+
+    res = {
+        'absolute_diff': absolute_diff,
+        'relative_diff': relative_diff,
+        'cohesive_energy_unit': 'eV/atom',
+        'relative_unit': '%'
+    }
+
+    return orm.Dict(dict=res)
+
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[
     20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,
@@ -177,14 +197,22 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
                 pk=ref_workchain.pk)
 
-        self.ctx.ref_energy = ref_workchain.outputs.output_parameters[
-            'cohesive_energy']
-
         for ecutwfc, ecutrho in zip(self.ctx.ecutwfc_list,
                                     self.ctx.ecutrho_list):
-            inputs = self.get_inputs(ecutwfc, ecutrho)
+            create_inputs = self.get_inputs(ecutwfc, ecutrho)
+            evaluate_inputs = {
+                'ref_parameters': ref_workchain.outputs.output_parameters,
+            }
 
-            workchain = self.submit(CohesiveEnergyWorkChain, **inputs)
+            workchain = self.submit(
+                CreateEvaluateWorkChain,
+                create_process=CohesiveEnergyWorkChain,
+                evaluate_process=helper_cohesive_energy_differenge,
+                create=create_inputs,
+                evaluate=evaluate_inputs,
+                output_input_mapping=orm.Dict(
+                    dict={'output_parameters': 'input_parameters'}))
+
             self.report(
                 f'submitting cohesive energy evaluation {workchain.pk} on ecutwfc={ecutwfc} ecutrho={ecutrho}.'
             )
@@ -206,35 +234,40 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
         success_child = [
             child for child in self.ctx.children if child.is_finished_ok
         ]
-        cohesive_energies = []
-        relative_values = []
+        absolute_diff_list = []
+        relative_diff_list = []
         ecutwfc_list = []
         ecutrho_list = []
 
-        ref_energy = self.ctx.ref_energy
         for child in success_child:
-            ecutwfc = child.inputs.parameters__pw_bulk['SYSTEM']['ecutwfc']
-            ecutrho = child.inputs.parameters__pw_bulk['SYSTEM']['ecutrho']
-            energy = child.outputs.output_parameters['cohesive_energy']
-            relative_value = (energy -
-                              ref_energy) / ref_energy * 100.0  # unit %
+            ecutwfc = child.inputs.create__parameters__pw_bulk['SYSTEM'][
+                'ecutwfc']
+            ecutrho = child.inputs.create__parameters__pw_bulk['SYSTEM'][
+                'ecutrho']
+
             ecutwfc_list.append(ecutwfc)
             ecutrho_list.append(ecutrho)
 
-            cohesive_energies.append(energy)
-            relative_values.append(relative_value)
+            absolute_diff = child.outputs.evaluate__result['absolute_diff']
+            relative_diff = child.outputs.evaluate__result['relative_diff']
+            absolute_diff_list.append(absolute_diff)
+            relative_diff_list.append(relative_diff)
 
         xy_data = orm.XyData()
         xy_data.set_x(np.array(ecutwfc_list), 'wavefunction cutoff', 'Rydberg')
-        xy_data.set_y(np.array(relative_values),
-                      'Relative values of cohesive energy', '%')
+        xy_data.set_y(
+            [np.array(absolute_diff_list),
+             np.array(relative_diff_list)], [
+                 'Relative values of cohesive energy',
+                 'Relative values of cohesive energy'
+             ], ['eV/atom', '%'])
 
         output_parameters = orm.Dict(
             dict={
                 'ecutwfc_list': ecutwfc_list,
                 'ecutrho_list': ecutrho_list,
-                'cohesive_energies': cohesive_energies,
-                'relative_values': relative_values,
+                'absolute_diff': absolute_diff_list,
+                'relative_diff': relative_diff_list,
                 'cutoff_unit': 'Ry',
                 'cohesive_energy_unit': 'eV/atom',
                 'relative_unit': '%'
