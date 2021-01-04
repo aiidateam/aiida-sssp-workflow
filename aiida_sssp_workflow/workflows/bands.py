@@ -135,6 +135,8 @@ class BandsWorkChain(WorkChain):
                                         self.inputs.parameters.pw.get_dict())
         pw_bands_parameters = update_dict(bands_parameters,
                                           self.inputs.parameters.pw.get_dict())
+        pw_bands_parameters['SYSTEM'].pop(
+            'nbnd', None)  # Since nbnd can not sit with nband_factor
         self.ctx.pw_scf_parameters = orm.Dict(dict=pw_scf_parameters)
         self.ctx.pw_bands_parameters = orm.Dict(dict=pw_bands_parameters)
 

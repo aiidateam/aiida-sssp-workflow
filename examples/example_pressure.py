@@ -49,9 +49,9 @@ if __name__ == '__main__':
 
     upf_sg15 = {}
     # # sg15/Au_ONCV_PBE-1.2.upf
-    upf_sg15['au'] = load_node('62e411c5-b0ab-4d08-875c-6fa4f74eb74e')
+    # upf_sg15['au'] = load_node('2c467668-2f38-4a8c-8b57-69d67a3fb2a4')
     # sg15/Si_ONCV_PBE-1.2.upf
-    upf_sg15['si'] = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')
+    upf_sg15['si'] = load_node('39e55083-3fc7-4405-8b3b-54a2c940dc67')
 
     for element, upf in upf_sg15.items():
         dual = 4.0

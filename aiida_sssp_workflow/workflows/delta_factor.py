@@ -1,29 +1,19 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-import importlib_resources
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.engine import WorkChain, ToContext, calcfunction, workfunction
+from aiida.engine import WorkChain, ToContext, calcfunction
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
 # TODO concise import
 from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element, \
     MAGNETIC_ELEMENTS, \
     RARE_EARTH_ELEMENTS, \
     helper_parse_upf
+from .helper import get_pw_inputs_from_pseudo
 
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
-
-
-@workfunction
-def helper_create_standard_cif_from_element(element: orm.Str) -> orm.CifData:
-    filename = get_standard_cif_filename_from_element(element.value)
-    cif_data, created = orm.CifData.get_or_create(filename)
-    assert created is True
-
-    return cif_data
 
 
 @calcfunction
@@ -199,61 +189,37 @@ class DeltaFactorWorkChain(WorkChain):
 
     def validate_structure_and_pseudo(self):
         """validate structure"""
-        from aiida.common.files import md5_file
-
         upf_info = helper_parse_upf(self.inputs.pseudo)
         self.ctx.element = orm.Str(upf_info['element'])
 
-        pseudos = {self.ctx.element.value: self.inputs.pseudo}
+        res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo,
+                                        primitive_cell=False)
+
+        structure = res['structure']
+        base_pw_parameters = res['base_pw_parameters']
+        self.ctx.pw_parameters = orm.Dict(dict=update_dict(
+            self.ctx.pw_parameters.get_dict(), base_pw_parameters))
+        self.ctx.pseudos = res['pseudos']
+
         if self.ctx.element.value in RARE_EARTH_ELEMENTS:
-            # If rare-earth add psp of N
-            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                             'N.pbe-n-radius_5.UPF')
-            with fpath as path:
-                filename = str(path)
-                upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
-                pseudos['N'] = upf_nitrogen
-
-            z_valence_RE = upf_info['z_valence']  # pylint: disable=invalid-name
-            z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']  # pylint: disable=invalid-name
-            nbands = (z_valence_N + z_valence_RE) // 2
-            nbands_factor = 2
-
-            # TODO degauss need to be 0.002 to conform with WIEN2K results
-            parameters = {
+            extra_parameters = {
                 'SYSTEM': {
                     'nspin': 2,
                     'starting_magnetization': {
                         self.ctx.element.value: 0.2,
                         'N': 0.0,
                     },
-                    'nbnd': int(nbands * nbands_factor),
                 },
             }
             self.ctx.pw_parameters = orm.Dict(dict=update_dict(
-                self.ctx.pw_parameters.get_dict(), parameters))
-        self.ctx.pseudos = pseudos
-        self.report(f'pseudos is {pseudos}')
+                self.ctx.pw_parameters.get_dict(), extra_parameters))
 
         if 'structure' not in self.inputs:
-            filename = get_standard_cif_filename_from_element(
-                self.ctx.element.value)
-
-            md5 = md5_file(filename)
-            cifs = orm.CifData.from_md5(md5)
-            if not cifs:
-                # cif not stored, create it with calcfunction and return it
-                cif_data = helper_create_standard_cif_from_element(
-                    self.ctx.element)
-            else:
-                # The Cif is already store let's return it
-                cif_data = orm.CifData.get_or_create(filename)[0]
-
             if self.ctx.element.value not in MAGNETIC_ELEMENTS:
-                self.ctx.structure = cif_data.get_structure()
+                self.ctx.structure = structure
             else:
                 # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
-                structure = cif_data.get_structure()
+                structure = self.ctx.structure
                 res = helper_get_magnetic_inputs(structure)
                 self.ctx.structure = res['structure']
                 parameters = res['parameters']
@@ -325,6 +291,7 @@ class DeltaFactorWorkChain(WorkChain):
     def run_delta_calc(self):
         """calculate the delta factor"""
         res = self.ctx.birch_murnaghan_fit_result
+
         inputs = {
             'element': self.ctx.element,
             'v0': orm.Float(res['v0']),

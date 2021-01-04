@@ -12,6 +12,7 @@ VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 def run_test(pw_code, ph_code, upf, dual):
     ecutwfc = np.array(
         [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150, 200])
+    ecutwfc = np.array([30, 35, 40, 45, 50, 55, 200])
     ecutrho = ecutwfc * dual
     PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))

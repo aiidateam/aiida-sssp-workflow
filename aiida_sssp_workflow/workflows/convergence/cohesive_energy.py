@@ -2,17 +2,13 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
-import importlib_resources
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, append_
 from aiida import orm
 from aiida.plugins import WorkflowFactory
 
-from aiida.common.files import md5_file
-from aiida_sssp_workflow.workflows.delta_factor import helper_parse_upf, \
-    get_standard_cif_filename_from_element, \
-    helper_create_standard_cif_from_element, \
-    RARE_EARTH_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import update_dict
+from ..helper import get_pw_inputs_from_pseudo
 
 CohesiveEnergyWorkChain = WorkflowFactory('sssp_workflow.cohesive_energy')
 
@@ -101,57 +97,11 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
             return self.exit_codes.ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS
 
     def validate_structure(self):
-        upf_info = helper_parse_upf(self.inputs.pseudo)
-        element = orm.Str(upf_info['element'])
+        res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo)
 
-        pseudos = {element.value: self.inputs.pseudo}
-        self.ctx.element = element
-
-        if element.value == 'F':
-            self.ctx.element = orm.Str('SiF4')
-
-            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                             'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
-            with fpath as path:
-                filename = str(path)
-                upf_silicon = orm.UpfData.get_or_create(filename)[0]
-                pseudos['Si'] = upf_silicon
-
-        pw_parameters = {}
-        if element.value in RARE_EARTH_ELEMENTS:
-            fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                             'N.pbe-n-radius_5.UPF')
-            with fpath as path:
-                filename = str(path)
-                upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
-                pseudos['N'] = upf_nitrogen
-
-            z_valence_RE = upf_info['z_valence']  # pylint: disable=invalid-name
-            z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']  # pylint: disable=invalid-name
-            nbands = (z_valence_N + z_valence_RE) // 2
-            nbands_factor = 2
-            pw_parameters = {
-                'SYSTEM': {
-                    'nbnd': int(nbands * nbands_factor),
-                },
-            }
-
-        filename = get_standard_cif_filename_from_element(
-            self.ctx.element.value)
-
-        md5 = md5_file(filename)
-        cifs = orm.CifData.from_md5(md5)
-        if not cifs:
-            # cif not stored, create it with calcfunction and return it
-            cif_data = helper_create_standard_cif_from_element(
-                self.ctx.element)
-        else:
-            # The Cif is already store let's return it
-            cif_data = orm.CifData.get_or_create(filename)[0]
-
-        self.ctx.structure = cif_data.get_structure(primitive_cell=True)
-        self.ctx.pseudos = pseudos
-        self.ctx.pw_parameters = pw_parameters
+        self.ctx.structure = res['structure']
+        self.ctx.pseudos = res['pseudos']
+        self.ctx.base_pw_parameters = res['base_pw_parameters']
 
     def get_inputs(self, ecutwfc, ecutrho):
         _PW_BULK_PARAS = {   # pylint: disable=invalid-name
@@ -184,8 +134,8 @@ class ConvergenceCohesiveEnergyWorkChain(WorkChain):
             'structure': self.ctx.structure,
             'parameters': {
                 'pw_bulk':
-                orm.Dict(
-                    dict=update_dict(_PW_BULK_PARAS, self.ctx.pw_parameters)),
+                orm.Dict(dict=update_dict(_PW_BULK_PARAS,
+                                          self.ctx.base_pw_parameters)),
                 'pw_atom':
                 orm.Dict(dict=_PW_ATOM_PARAS),
                 'kpoints_distance':

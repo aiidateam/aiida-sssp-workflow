@@ -18,7 +18,7 @@ def run_delta(code, upf, is_nc=False):
     else:
         dual = 8
 
-    ecutwfc = 200
+    ecutwfc = 200.0
     ecutrho = ecutwfc * dual
     inputs = AttributeDict({
         'code':
@@ -54,28 +54,11 @@ if __name__ == '__main__':
 
     code = load_code('qe-6.6-pw@daint-mc')
 
-    # upf_gbrv = {}
-    # # GBRV_pbe/au_pbe_v1.uspp.F.UPF
-    # upf_gbrv['au'] = load_node('51f62644-fb95-4b04-9c31-ee732b6d8155')
-    # # GBRV_pbe/o_pbe_v1.2.uspp.F.UPF
-    # upf_gbrv['o'] = load_node('005f1eaa-6746-41f2-8b12-38f6dabe4f61')
-    # # GBRV_pbe/si_pbe_v1.uspp.F.UPF
-    # upf_gbrv['si'] = load_node('15f938a1-9466-4a41-9022-4c6f06cf4e20')
-    #
-    # for element, upf in upf_gbrv.items():
-    #     node = run_delta(code, upf, is_nc=False)
-    #     node.description = f'GBRV_pbe/{element}'
-    #     print(node)
-
     upf_sg15 = {}
-    # sg15/Au_ONCV_PBE-1.2.upf
-    upf_sg15['au'] = load_node('62e411c5-b0ab-4d08-875c-6fa4f74eb74e')
-    # # sg15/O_ONCV_PBE-1.2.upf
-    # upf_sg15['o'] = load_node('52e4e647-d6ef-43c6-b8a1-adfb54bff07e')
+    # # sg15/Au_ONCV_PBE-1.2.upf
+    # upf_sg15['au'] = load_node('2c467668-2f38-4a8c-8b57-69d67a3fb2a4')
     # sg15/Si_ONCV_PBE-1.2.upf
-    upf_sg15['si'] = load_node('98f04e42-6da8-4960-acfa-0161e0e339a5')
-    # # sg15/Xe_ONCV_PBE-1.2.upf
-    # upf_sg15['xe'] = load_node('3a3c2612-9cdc-4fc9-bd37-589fa87fab06')
+    upf_sg15['si'] = load_node('39e55083-3fc7-4405-8b3b-54a2c940dc67')
 
     for element, upf in upf_sg15.items():
         node = run_delta(code, upf, is_nc=True)
