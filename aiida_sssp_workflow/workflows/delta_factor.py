@@ -84,14 +84,6 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
     }
 
 
-PW_PARAS = lambda: orm.Dict(dict={
-    'SYSTEM': {
-        'ecutrho': 1600,
-        'ecutwfc': 200,
-    },
-})
-
-
 class DeltaFactorWorkChain(WorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
@@ -106,7 +98,7 @@ class DeltaFactorWorkChain(WorkChain):
         },
     }
 
-    _MAX_WALLCLOCK_SECONDS = 1800 * 2
+    _MAX_WALLCLOCK_SECONDS = 1800 * 3
 
     @classmethod
     def define(cls, spec):
@@ -131,8 +123,22 @@ class DeltaFactorWorkChain(WorkChain):
         spec.input_namespace('parameters', help='Para')
         spec.input('parameters.pw',
                    valid_type=orm.Dict,
-                   default=PW_PARAS,
+                   required=False,
                    help='parameters for pwscf.')
+        spec.input(
+            'parameters.ecutwfc',
+            valid_type=(orm.Float, orm.Int),
+            default=lambda: orm.Float(200),
+            help=
+            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
+        )
+        spec.input(
+            'parameters.ecutrho',
+            valid_type=(orm.Float, orm.Int),
+            required=False,
+            help=
+            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
+        )
         spec.input('parameters.kpoints_distance',
                    valid_type=orm.Float,
                    default=lambda: orm.Float(0.1),
@@ -183,8 +189,30 @@ class DeltaFactorWorkChain(WorkChain):
 
         pw_parameters = self._PW_PARAMETERS
 
-        self.ctx.pw_parameters = orm.Dict(dict=update_dict(
-            pw_parameters, self.inputs.parameters.pw.get_dict()))
+        if 'pw' in self.inputs.parameters:
+            pw_parameters = update_dict(pw_parameters,
+                                        self.inputs.parameters.pw.get_dict())
+
+        parameters = {
+            'SYSTEM': {
+                'ecutwfc': self.inputs.parameters.ecutwfc,
+            },
+        }
+        if 'ecutrho' in self.inputs.parameters:
+            parameters['SYSTEM']['ecutrho'] = self.inputs.parameters.ecutrho
+        else:
+            upf_header = helper_parse_upf(self.inputs.pseudo)
+            if upf_header['pseudo_type'] in ['NC', 'SL']:
+                dual = 4.0
+            else:
+                dual = 8.0
+            parameters['SYSTEM'][
+                'ecutrho'] = self.inputs.parameters.ecutwfc * dual
+
+        pw_parameters = update_dict(pw_parameters, parameters)
+
+        self.ctx.pw_parameters = pw_parameters
+
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure_and_pseudo(self):
@@ -197,8 +225,8 @@ class DeltaFactorWorkChain(WorkChain):
 
         structure = res['structure']
         base_pw_parameters = res['base_pw_parameters']
-        self.ctx.pw_parameters = orm.Dict(dict=update_dict(
-            self.ctx.pw_parameters.get_dict(), base_pw_parameters))
+        self.ctx.pw_parameters = orm.Dict(
+            dict=update_dict(self.ctx.pw_parameters, base_pw_parameters))
         self.ctx.pseudos = res['pseudos']
 
         if self.ctx.element.value in RARE_EARTH_ELEMENTS:

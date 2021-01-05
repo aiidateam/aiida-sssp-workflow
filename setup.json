@@ -27,7 +27,7 @@
             "sssp_workflow = aiida_sssp_workflow.parsers:DiffParser"
         ],
         "aiida.cmdline.data": [
-            "sssp_workflow = aiida_sssp_workflow.cli:data_cli"
+            "sssp_workflow = aiida_sssp_workflow.cli.cli:data_cli"
         ],
         "aiida.workflows": [
             "sssp_workflow.eos = aiida_sssp_workflow.workflows.eos:EquationOfStateWorkChain",
@@ -41,6 +41,9 @@
             "sssp_workflow.convergence.pressure = aiida_sssp_workflow.workflows.convergence.pressure:ConvergencePressureWorkChain",
             "sssp_workflow.convergence.bands = aiida_sssp_workflow.workflows.convergence.bands:ConvergenceBandsWorkChain",
             "sssp_workflow.verification = aiida_sssp_workflow.workflows.verifications:VerificationWorkChain"
+        ],
+        "console_scripts": [
+            "aiida-sssp-workflow = aiida_sssp_workflow.cli:cmd_root"
         ]
     },
     "include_package_data": true,

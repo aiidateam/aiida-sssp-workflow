@@ -12,14 +12,7 @@ DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
 
 
 def run_delta(code, upf, is_nc=False):
-
-    if is_nc:
-        dual = 4
-    else:
-        dual = 8
-
     ecutwfc = 200.0
-    ecutrho = ecutwfc * dual
     inputs = AttributeDict({
         'code':
         code,
@@ -35,13 +28,7 @@ def run_delta(code, upf, is_nc=False):
                 'withmpi': True,
             }),
         'parameters': {
-            'pw':
-            orm.Dict(dict={
-                'SYSTEM': {
-                    'ecutwfc': ecutwfc,
-                    'ecutrho': ecutrho,
-                },
-            })
+            'ecutwfc': orm.Float(ecutwfc),
         },
     })
 
