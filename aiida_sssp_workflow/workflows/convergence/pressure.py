@@ -71,20 +71,7 @@ def helper_pressure_difference(input_parameters: orm.Dict,
 
 class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on pressure of input structure"""
-
-    # hard code parameters of evaluate workflow
-    _DEGUASS = 0.00735
-    _OCCUPATIONS = 'smearing'
-    _SMEARING = 'marzari-vanderbilt'
-    _KDISTANCE = 0.15
-    _CONV_THR = 1e-10
-
-    # hard code parameters of convergence workflow
-    _TOLERANCE = 1e-1
-    _CONV_THR_CONV = 1e-1
-    _CONV_WINDOW = 3
-
-    _ABSOLUTE_UNIT = 'GPascal'
+    # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def define(cls, spec):
@@ -97,6 +84,21 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
             valid_type=orm.Dict,
             help=
             'birch murnaghan fit results used in residual volume evaluation.')
+
+    def setup_protocol(self):
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+        protocol_name = self.inputs.protocol.value
+        protocol = self._get_protocol()[protocol_name]
+        protocol = protocol['convergence']['pressure']
+        self._DEGUASS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR_EVA = protocol['electron_conv_thr']
+        self._KDISTANCE = protocol['kpoints_distance']
+
+        self._TOLERANCE = protocol['tolerance']
+        self._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self._CONV_WINDOW = protocol['convergence_window']
 
     def get_create_process(self):
         return PressureWorkChain
@@ -123,7 +125,7 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
                 'smearing': self._SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR,
+                'conv_thr': self._CONV_THR_EVA,
             },
         }
 

@@ -43,20 +43,7 @@ PARA_ECUTRHO_LIST = lambda: orm.List(list=[
 
 class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
-
-    # hard code parameters of evaluate workflow
-    _DEGUASS = 0.00735
-    _OCCUPATIONS = 'smearing'
-    _BULK_SMEARING = 'marzari-vanderbilt'
-    _ATOM_SMEARING = 'gaussian'
-    _CONV_THR_EVA = 1e-10
-    _KDISTANCE = 0.15
-    _VACUUM_LENGTH = 12.0
-
-    # hard code parameters of convergence workflow
-    _TOLERANCE = 1e-1
-    _CONV_THR_CONV = 1e-1
-    _CONV_WINDOW = 3
+    # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def define(cls, spec):
@@ -64,6 +51,23 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
         spec.input('code',
                    valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
+
+    def setup_protocol(self):
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+        protocol_name = self.inputs.protocol.value
+        protocol = self._get_protocol()[protocol_name]
+        protocol = protocol['convergence']['cohesive_energy']
+        self._DEGUASS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._BULK_SMEARING = protocol['bulk_smearing']
+        self._ATOM_SMEARING = protocol['atom_smearing']
+        self._CONV_THR_EVA = protocol['electron_conv_thr']
+        self._KDISTANCE = protocol['kpoints_distance']
+        self._VACUUM_LENGTH = protocol['vaccum_length']
+
+        self._TOLERANCE = protocol['tolerance']
+        self._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self._CONV_WINDOW = protocol['convergence_window']
 
     def get_create_process(self):
         return CohesiveEnergyWorkChain
@@ -78,7 +82,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
         }
 
     def get_converge_y(self):
-        return 'relative_diff', '%'
+        return 'absolute_diff', 'eV/atom'
 
     def get_create_process_inputs(self):
         _PW_BULK_PARAS = {   # pylint: disable=invalid-name

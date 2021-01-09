@@ -27,9 +27,6 @@ def run_delta(code, upf, is_nc=False):
                 'max_wallclock_seconds': 1800 * 3,
                 'withmpi': True,
             }),
-        'parameters': {
-            'ecutwfc': orm.Float(ecutwfc),
-        },
     })
 
     node = submit(DeltaFactorWorkChain, **inputs)

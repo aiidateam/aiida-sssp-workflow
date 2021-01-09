@@ -4,6 +4,8 @@ The base convergence WorkChain
 """
 from abc import ABCMeta, abstractmethod
 import typing as ty
+import pathlib
+import yaml
 
 from aiida_tools.process_inputs import get_fullname
 
@@ -12,6 +14,7 @@ from aiida import orm
 from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
+from aiida_sssp_workflow.utils import helper_parse_upf
 from ..helper import get_pw_inputs_from_pseudo
 
 CreateEvaluateWorkChain = WorkflowFactory('optimize.wrappers.create_evaluate')
@@ -49,6 +52,10 @@ class BaseConvergenceWorkChain(WorkChain):
                    valid_type=orm.Dict,
                    required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
+        spec.input('protocol',
+                   valid_type=orm.Str,
+                   default=lambda: orm.Str('efficiency'),
+                   help='The protocol to use for the workchain.')
         spec.input_namespace('parameters', help='Para')
         spec.input('parameters.ecutrho_list',
                    valid_type=orm.List,
@@ -64,6 +71,7 @@ class BaseConvergenceWorkChain(WorkChain):
                    default=lambda: orm.List(list=[200, 1600]),
                    help='ecutwfc/ecutrho pair for reference calculation.')
         spec.outline(
+            cls.setup_protocol,
             cls.init_step,
             cls.setup,
             cls.validate_structure,
@@ -91,6 +99,11 @@ class BaseConvergenceWorkChain(WorkChain):
                     valid_type=orm.Dict,
                     required=False,
                     help='The result point of convergence test.')
+        spec.output(
+            'output_pseudo_header',
+            valid_type=orm.Dict,
+            required=True,
+            help='The header(important parameters) of the pseudopotential.')
         spec.exit_code(
             400,
             'ERROR_SUB_PROCESS_FAILED',
@@ -105,6 +118,23 @@ class BaseConvergenceWorkChain(WorkChain):
             'ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS',
             message='The ecutwfc_list and ecutrho_list have incompatible size.'
         )
+
+    def _get_protocol(self):
+        """Load and read protocol from faml file to a verbose dict"""
+        with open(
+                str(
+                    pathlib.Path(__file__).resolve().parents[1] /
+                    'protocol.yml')) as handle:
+            self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
+
+            return self._protocol
+
+    @abstractmethod
+    def setup_protocol(self):
+        """
+        For different convergence sub-workflow implement only needed parameters
+        from protocol.
+        """
 
     @abstractmethod
     def get_create_process(self):
@@ -151,6 +181,12 @@ class BaseConvergenceWorkChain(WorkChain):
         self.ctx.ecutrho_list = self.inputs.parameters.ecutrho_list.get_list()
         if not len(self.ctx.ecutwfc_list) == len(self.ctx.ecutrho_list):
             return self.exit_codes.ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS
+
+        # parse pseudo and output its header information
+        upf_info = helper_parse_upf(self.inputs.pseudo)
+        self.ctx.element = orm.Str(upf_info['element'])
+
+        self.out('output_pseudo_header', orm.Dict(dict=upf_info).store())
 
     def validate_structure(self):
         res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo)

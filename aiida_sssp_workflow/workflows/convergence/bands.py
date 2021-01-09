@@ -43,27 +43,15 @@ def helper_cohesive_energy_difference(input_band_structure: orm.BandsData,
             'eta_10': res.get('eta_10', None).value,
             'max_diff_v': res.get('max_diff_v', None).value,
             'max_diff_10': res.get('max_diff_10', None).value,
+            'bands_unit': 'eV'
         }).store()
 
 
 class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
-
-    # hard code parameters of evaluate workflow
-    _DEGUASS = 0.00735
-    _OCCUPATIONS = 'smearing'
-    _SMEARING = 'marzari-vanderbilt'
-    _CONV_THR = 1e-10
-    _SCF_KDISTANCE = 0.15
-    _BAND_KDISTANCE = 0.20
-    _ININ_NBND_FACTOR = 2.0
+    # pylint: disable=too-many-instance-attributes
 
     _RY_TO_EV = 13.6056980659
-
-    # hard code parameters of convergence workflow
-    _TOLERANCE = 1e-1
-    _CONV_THR_CONV = 1e-1
-    _CONV_WINDOW = 3
 
     @classmethod
     def define(cls, spec):
@@ -71,6 +59,23 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         spec.input('code',
                    valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
+
+    def setup_protocol(self):
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+        protocol_name = self.inputs.protocol.value
+        protocol = self._get_protocol()[protocol_name]
+        protocol = protocol['convergence']['bands_distance']
+        self._DEGUASS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR_EVA = protocol['electron_conv_thr']
+        self._SCF_KDISTANCE = protocol['scf_kpoints_distance']
+        self._BAND_KDISTANCE = protocol['band_kpoints_distance']
+        self._ININ_NBND_FACTOR = protocol['init_nbnd_factor']
+
+        self._TOLERANCE = protocol['tolerance']
+        self._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self._CONV_WINDOW = protocol['convergence_window']
 
     def init_step(self):
         element = self.inputs.pseudo.element
@@ -84,18 +89,18 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
 
     def get_parsed_results(self):
         return {
-            'eta_v': ('The difference eta of valence bands', 'dl'),
+            'eta_v': ('The difference eta of valence bands', 'eV'),
             'eta_10':
             ('The difference eta of valence bands and conduct bands up to 10.0eV',
-             'dl'),
-            'max_diff_v': ('The max difference of valence bands', 'dl'),
+             'eV'),
+            'max_diff_v': ('The max difference of valence bands', 'eV'),
             'max_diff_10':
             ('The max difference of valence bands and conduct bands up to 10.0eV',
-             'dl'),
+             'eV'),
         }
 
     def get_converge_y(self):
-        return 'eta_v', 'dl'
+        return 'eta_10', 'eV'
 
     def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name
@@ -105,7 +110,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
                 'smearing': self._SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR,
+                'conv_thr': self._CONV_THR_EVA,
             },
         }
 

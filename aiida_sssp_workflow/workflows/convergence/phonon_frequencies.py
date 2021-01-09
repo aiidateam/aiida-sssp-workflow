@@ -56,28 +56,7 @@ PARA_ECUTRHO_LIST = lambda: orm.List(list=[
 
 class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
-
-    # hard code parameters of evaluate workflow
-    _DEGUASS = 0.00735
-    _OCCUPATIONS = 'smearing'
-    _SMEARING = 'marzari-vanderbilt'
-    _CONV_THR = 1e-10
-    _QPOINTS_LIST = [[0.5, 0.5, 0.5]]
-    _KDISTANCE = 0.15
-
-    _PH_PARAMETERS = {
-        'INPUTPH': {
-            'tr2_ph': 1e-16,
-            'epsil': False,
-        }
-    }
-
-    # hard code parameters of convergence workflow
-    _TOLERANCE = 1e-1
-    _CONV_THR_CONV = 1e-1
-    _CONV_WINDOW = 3
-
-    _ABSOLUTE_UNIT = 'cm-1'
+    # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def define(cls, spec):
@@ -88,6 +67,26 @@ class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
         spec.input('ph_code',
                    valid_type=orm.Code,
                    help='The `ph.x` code use for the `PhCalculation`.')
+
+    def setup_protocol(self):
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+        protocol_name = self.inputs.protocol.value
+        protocol = self._get_protocol()[protocol_name]
+        protocol = protocol['convergence']['phonon_frequencies']
+        self._DEGUASS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR_EVA = protocol['electron_conv_thr']
+        self._QPOINTS_LIST = protocol['qpoints_list']
+        self._KDISTANCE = protocol['kpoints_distance']
+
+        # PH parameters
+        self._TR2_PH = protocol['ph']['tr2_ph']
+        self._EPSILON = protocol['ph']['epsilon']
+
+        self._TOLERANCE = protocol['tolerance']
+        self._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self._CONV_WINDOW = protocol['convergence_window']
 
     def get_create_process(self):
         return PhononFrequenciesWorkChain
@@ -117,10 +116,15 @@ class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
                 'smearing': self._SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR,
+                'conv_thr': self._CONV_THR_EVA,
             },
         }
-        _PH_PARAS = self._PH_PARAMETERS  # pylint: disable=invalid-name
+        _PH_PARAS = {  # pylint: disable=invalid-name
+            'INPUTPH': {
+                'tr2_ph': self._TR2_PH,
+                'epsil': self._EPSILON,
+            }
+        }
 
         inputs = {
             'pw_code': self.inputs.pw_code,

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
+import pathlib
+import yaml
+
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction
@@ -86,6 +89,7 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
 
 class DeltaFactorWorkChain(WorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
+    # pylint: disable=too-many-instance-attributes
 
     _PW_PARAMETERS = {
         'SYSTEM': {
@@ -116,6 +120,10 @@ class DeltaFactorWorkChain(WorkChain):
             valid_type=orm.StructureData,
             required=False,
             help='Ground state structure which the verification perform')
+        spec.input('protocol',
+                   valid_type=orm.Str,
+                   default=lambda: orm.Str('efficiency'),
+                   help='The protocol to use for the workchain.')
         spec.input('options',
                    valid_type=orm.Dict,
                    required=False,
@@ -128,7 +136,7 @@ class DeltaFactorWorkChain(WorkChain):
         spec.input(
             'parameters.ecutwfc',
             valid_type=(orm.Float, orm.Int),
-            default=lambda: orm.Float(200),
+            required=False,
             help=
             'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
         )
@@ -141,15 +149,15 @@ class DeltaFactorWorkChain(WorkChain):
         )
         spec.input('parameters.kpoints_distance',
                    valid_type=orm.Float,
-                   default=lambda: orm.Float(0.1),
+                   required=False,
                    help='Global kpoints setting.')
         spec.input('parameters.scale_count',
                    valid_type=orm.Int,
-                   default=lambda: orm.Int(7),
+                   required=False,
                    help='Numbers of scale points in eos step.')
         spec.input('parameters.scale_increment',
                    valid_type=orm.Float,
-                   default=lambda: orm.Float(0.02),
+                   required=False,
                    help='The scale increment in eos step.')
         spec.input(
             'clean_workdir',
@@ -174,6 +182,11 @@ class DeltaFactorWorkChain(WorkChain):
                     valid_type=orm.Dict,
                     required=True,
                     help='The delta factor of the pseudopotential.')
+        spec.output(
+            'output_pseudo_header',
+            valid_type=orm.Dict,
+            required=True,
+            help='The header(important parameters) of the pseudopotential.')
         spec.output('output_birch_murnaghan_fit',
                     valid_type=orm.Dict,
                     required=True,
@@ -183,11 +196,64 @@ class DeltaFactorWorkChain(WorkChain):
             'ERROR_SUB_PROCESS_FAILED_EOS',
             message='The `EquationOfStateWorkChain` sub process failed.')
 
+    def _get_protocol(self):
+        """Load and read protocol from faml file to a verbose dict"""
+        with open(
+                str(
+                    pathlib.Path(__file__).resolve().parents[0] /
+                    'protocol.yml')) as handle:
+            self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
+
+            return self._protocol
+
     def setup(self):
         """Input validation"""
-        # TODO set ecutwfc and ecutrho according to certain protocol
+        # pylint: disable=invalid-name, attribute-defined-outside-init
 
-        pw_parameters = self._PW_PARAMETERS
+        # parse pseudo and output its header information
+        upf_info = helper_parse_upf(self.inputs.pseudo)
+        self.ctx.element = orm.Str(upf_info['element'])
+        self.out('output_pseudo_header', orm.Dict(dict=upf_info).store())
+
+        # Read from protocol if parameters not set from inputs
+        protocol_name = self.inputs.protocol.value
+        protocol = self._get_protocol()[protocol_name]
+        protocol = protocol['delta_factor']
+        self._DEGAUSS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR = protocol['electron_conv_thr']
+
+        if 'kpoints_distance' in self.inputs.parameters:
+            self._KDISTANCE = self.inputs.parameters.kpoints_distance.value
+        else:
+            self._KDISTANCE = protocol['kpoints_distance']
+
+        if 'ecutwfc' in self.inputs.parameters:
+            self._ECUTWFC = self.inputs.parameters.ecutwfc.value
+        else:
+            self._ECUTWFC = protocol['ecutwfc']
+
+        if 'scale_count' in self.inputs.parameters:
+            self._SCALE_COUNT = self.inputs.parameters.scale_count.value
+        else:
+            self._SCALE_COUNT = protocol['scale_count']
+
+        if 'scale_increment' in self.inputs.parameters:
+            self._SCALE_INCREMENT = self.inputs.parameters.scale_increment.value
+        else:
+            self._SCALE_INCREMENT = protocol['scale_increment']
+
+        pw_parameters = {
+            'SYSTEM': {
+                'degauss': self._DEGAUSS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._SMEARING,
+            },
+            'ELECTRONS': {
+                'conv_thr': self._CONV_THR,
+            },
+        }
 
         if 'pw' in self.inputs.parameters:
             pw_parameters = update_dict(pw_parameters,
@@ -195,9 +261,11 @@ class DeltaFactorWorkChain(WorkChain):
 
         parameters = {
             'SYSTEM': {
-                'ecutwfc': self.inputs.parameters.ecutwfc,
+                'ecutwfc': self._ECUTWFC,
             },
         }
+        # set the ecutrho according to the type of pseudopotential
+        # dual 4 for NC and 8 for all other type of PP.
         if 'ecutrho' in self.inputs.parameters:
             parameters['SYSTEM']['ecutrho'] = self.inputs.parameters.ecutrho
         else:
@@ -206,20 +274,16 @@ class DeltaFactorWorkChain(WorkChain):
                 dual = 4.0
             else:
                 dual = 8.0
-            parameters['SYSTEM'][
-                'ecutrho'] = self.inputs.parameters.ecutwfc * dual
+            parameters['SYSTEM']['ecutrho'] = self._ECUTWFC * dual
 
         pw_parameters = update_dict(pw_parameters, parameters)
 
         self.ctx.pw_parameters = pw_parameters
 
-        self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
+        self.ctx.kpoints_distance = self._KDISTANCE
 
     def validate_structure_and_pseudo(self):
         """validate structure"""
-        upf_info = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.element = orm.Str(upf_info['element'])
-
         res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo,
                                         primitive_cell=False)
 
@@ -267,10 +331,14 @@ class DeltaFactorWorkChain(WorkChain):
     def run_eos(self):
         """run eos workchain"""
         inputs = AttributeDict({
-            'structure': self.ctx.structure,
-            'kpoints_distance': self.ctx.kpoints_distance,
-            'scale_count': self.inputs.parameters.scale_count,
-            'scale_increment': self.inputs.parameters.scale_increment,
+            'structure':
+            self.ctx.structure,
+            'kpoints_distance':
+            orm.Float(self._KDISTANCE),
+            'scale_count':
+            orm.Int(self._SCALE_COUNT),
+            'scale_increment':
+            orm.Float(self._SCALE_INCREMENT),
             'metadata': {
                 'call_link_label': 'eos'
             },
