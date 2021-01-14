@@ -1,16 +1,21 @@
 {
     "name": "aiida-sssp-workflow",
-    "author": "The AiiDA Team",
+    "author": "Jason Yu",
     "author_email": "morty.yeu@gmail.com",
-    "description": "SSSP verification workflows",
+    "description": "AiiDA plugin SSSP verification workflows",
     "url": "https://github.com/aiidateam/aiida-sssp-workflow",
+    "python_requires": ">=3.7",
     "license": "MIT",
     "classifiers": [
         "Programming Language :: Python",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Framework :: AiiDA"
+        "Framework :: AiiDA",
+        "Environment :: Plugins",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Topic :: Scientific/Engineering :: Physics"
     ],
     "version": "0.1.0a0",
     "entry_points": {
