@@ -1,29 +1,24 @@
-name: Publish on PyPI
+name: Publish Python distributions 📦 to PyPI and TestPyPI
 
-on:
-  push:
-    tags:
-      # After vMajor.Minor.Patch _anything_ is allowed (without "/") !
-      - v[0-9]+.[0-9]+.[0-9]+*
+on: push
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: github.repository == 'aiidateam/aiida-sssp-workflow' && startsWith(github.ref, 'refs/tags/v')
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up Python 3.7
+    - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.8
 
     - name: Upgrade setuptools and install package
       run: |
-        python -m pip install --upgrade pip setuptools
-        python -m pip install -e .
+        python -m pip install --upgrade pip
+        pip install twine
 
     - name: Assert package version
       env:
@@ -31,10 +26,23 @@ jobs:
       run: python ./.github/check_version.py
 
     - name: Build source distribution
-      run: python ./setup.py sdist
-
-    - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: RalfG/python-wheels-manylinux-build@v0.3.3-manylinux2010_x86_64
       with:
-        user: __token__
-        password: ${{ secrets.pypi_token }}
+        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
+        build-requirements: 'cython numpy'
+        pip-wheel-args: '-w ./wheelhouse --no-deps'
+
+    - name: Publish distribution 📦 to Test PyPI
+      env:
+        TWINE_USERNAME: '__token__'
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      run: |
+        twine upload --repository-url https://test.pypi.org/legacy/ wheelhouse/*-manylinux*.whl
+
+    - name: Publish distribution 📦 to PyPI
+      if: startsWith(github.ref, 'refs/tags')
+      env:
+        TWINE_USERNAME: '__token__'
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        twine upload wheelhouse/*-manylinux*.whl

@@ -15,9 +15,10 @@
         "Environment :: Plugins",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    "version": "0.1.0a0",
+    "version": "0.1.0a1",
     "entry_points": {
         "aiida.data": [
             "sssp_workflow = aiida_sssp_workflow.data:DiffParameters"
@@ -59,7 +60,7 @@
         "aiida-quantumespresso~=3.2",
         "aiida-codtools~=2.1",
         "aiida-optimize~=0.4",
-        "numpy~=1.17",
+        "numpy",
         "ase~=3.20",
         "seekpath~=1.9",
         "importlib-resources~=3.3",
