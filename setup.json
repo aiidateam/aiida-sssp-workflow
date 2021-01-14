@@ -18,7 +18,7 @@
         "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    "version": "0.1.0a1",
+    "version": "0.1.0b0",
     "entry_points": {
         "aiida.data": [
             "sssp_workflow = aiida_sssp_workflow.data:DiffParameters"
