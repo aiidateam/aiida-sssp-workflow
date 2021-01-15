@@ -26,6 +26,20 @@ KPOINTS_DISTANCE = OverridableOption(
     'The minimal distance between k-points in reciprocal space in inverse Ångström.'
 )
 
+PROTOCOL = OverridableOption('-P',
+                             '--protocol',
+                             type=click.STRING,
+                             default='efficiency',
+                             show_default=True,
+                             help='The protocol used in verification.')
+
+DUAL = OverridableOption('-D',
+                         '--dual',
+                         type=click.INT,
+                         default=8,
+                         show_default=True,
+                         help='The dual between ecutwfc and ecutrho.')
+
 SCALE_COUNT = OverridableOption('-C',
                                 '--scale-count',
                                 type=click.INT,

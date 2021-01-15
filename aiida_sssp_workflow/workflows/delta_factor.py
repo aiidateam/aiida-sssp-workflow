@@ -6,17 +6,14 @@ import yaml
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction
-from aiida.plugins import WorkflowFactory, CalculationFactory
 
-# TODO concise import
 from aiida_sssp_workflow.utils import update_dict, \
     MAGNETIC_ELEMENTS, \
     RARE_EARTH_ELEMENTS, \
     helper_parse_upf
 from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
-
-calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
-EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
+from aiida_sssp_workflow.calculations.calculate_delta import calculate_delta
+from aiida_sssp_workflow.workflows.eos import EquationOfStateWorkChain
 
 
 @calcfunction

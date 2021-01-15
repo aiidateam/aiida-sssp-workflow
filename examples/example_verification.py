@@ -12,7 +12,7 @@ VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 def run_test(pw_code, ph_code, upf, dual):
     ecutwfc = np.array(
         [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150, 200])
-    ecutwfc = np.array([30, 35, 40, 45, 50, 55, 200])
+    # ecutwfc = np.array([30, 35, 40, 45, 50, 55, 200])
     ecutrho = ecutwfc * dual
     PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))
@@ -24,7 +24,7 @@ def run_test(pw_code, ph_code, upf, dual):
         'parameters': {
             'ecutwfc_list': PARA_ECUTWFC_LIST,
             'ecutrho_list': PARA_ECUTRHO_LIST,
-            'dual': orm.Float(dual),
+            'ref_cutoff_pair': orm.List(list=[200, 200 * dual])
         },
     })
     node = submit(VerificationWorkChain, **inputs)
@@ -35,8 +35,8 @@ def run_test(pw_code, ph_code, upf, dual):
 if __name__ == '__main__':
     from aiida.orm import load_code, load_node
 
-    pw_code = load_code('qe-6.6-pw@daint-mc')
-    ph_code = load_code('qe-6.6-ph@daint-mc')
+    pw_code = load_code('qe-6.5-pw@daint-mc')
+    ph_code = load_code('qe-6.5-ph@daint-mc')
 
     # upf_gbrv = {}
     # # GBRV_pbe/si_pbe_v1.uspp.F.UPF
@@ -59,9 +59,9 @@ if __name__ == '__main__':
 
     upf_sg15 = {}
     # # sg15/Au_ONCV_PBE-1.2.upf
-    # upf_sg15['au'] = load_node('2c467668-2f38-4a8c-8b57-69d67a3fb2a4')
+    upf_sg15['au'] = load_node('c2181847-ad83-4c8e-9264-abd47c0e852d')
     # sg15/Si_ONCV_PBE-1.2.upf
-    upf_sg15['si'] = load_node('39e55083-3fc7-4405-8b3b-54a2c940dc67')
+    # upf_sg15['si'] = load_node('39e55083-3fc7-4405-8b3b-54a2c940dc67')
     # # sg15/Xe_ONCV_PBE-1.2.upf
     # upf_sg15['xe'] = load_node('73c56fb5-c28a-4d9d-9f22-ad3b4b571069')
     # # sg15/Fe_ONCV_PBE-1.2.upf
