@@ -19,7 +19,8 @@ from aiida_sssp_workflow.workflows.eos import EquationOfStateWorkChain
 @calcfunction
 def helper_get_magnetic_inputs(structure: orm.StructureData):
     """
-    docstring
+    To set initial magnet to the magnetic system, need to set magnetic order to
+    every magnetic element site, with certain pw starting_mainetization parameters.
     """
     MAG_INIT_Mn = {"Mn1": 0.5, "Mn2": -0.3, "Mn3": 0.5, "Mn4": -0.3}  # pylint: disable=invalid-name
     MAG_INIT_O = {"O1": 0.5, "O2": 0.5, "O3": -0.5, "O4": -0.5}  # pylint: disable=invalid-name
@@ -36,7 +37,8 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
     # ferromagnetic
     if kind_name in ['Fe', 'Co', 'Ni']:
         for i, site in enumerate(structure.sites):
-            mag_structure.append_site(site=site)
+            mag_structure.append_atom(position=site.position,
+                                      symbols=kind_name)
 
         parameters = orm.Dict(dict={
             'SYSTEM': {
@@ -308,7 +310,6 @@ class DeltaFactorWorkChain(WorkChain):
                 self.ctx.structure = structure
             else:
                 # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
-                structure = self.ctx.structure
                 res = helper_get_magnetic_inputs(structure)
                 self.ctx.structure = res['structure']
                 parameters = res['parameters']
