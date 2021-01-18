@@ -1,96 +1,122 @@
-""" Helper functions for automatically setting up computer & code.
-Helper functions for setting up 
-
- 1. An AiiDA localhost computer
- 2. A "diff" code on localhost
- 
-Note: Point 2 is made possible by the fact that the ``diff`` executable is
-available in the PATH on almost any UNIX system.
 """
-import tempfile
-import shutil
+Module comtain helper functions for workflows
+"""
+import importlib_resources
 
-LOCALHOST_NAME = 'localhost-test'
+from aiida import orm
+from aiida.engine import calcfunction
+from aiida.tools.data.structure import spglib_tuple_to_structure, structure_to_spglib_tuple
+import seekpath
 
-executables = {
-    'sssp_workflow': 'diff',
-}
+from aiida_sssp_workflow.utils import helper_parse_upf, \
+    RARE_EARTH_ELEMENTS, \
+    get_standard_cif_filename_from_element
 
 
-def get_path_to_executable(executable):
-    """ Get path to local executable.
-    :param executable: Name of executable in the $PATH variable
-    :type executable: str
-    :return: path to executable
-    :rtype: str
+@calcfunction
+def helper_get_primitive_structure(structure,
+                                   **parameters) -> orm.StructureData:
     """
-    path = shutil.which(executable)
-    if path is None:
-        raise ValueError(
-            "'{}' executable not found in PATH.".format(executable))
-    return path
+    :param structure: The AiiDA StructureData for which we want to obtain
+        the primitive structure.
 
+    :param parameters: A dictionary whose key-value pairs are passed as
+        additional kwargs to the ``seekpath.get_explicit_k_path`` function.
 
-def get_computer(name=LOCALHOST_NAME, workdir=None):
-    """Get AiiDA computer.
-    Loads computer 'name' from the database, if exists.
-    Sets up local computer 'name', if it isn't found in the DB.
-    
-    :param name: Name of computer to load or set up.
-    :param workdir: path to work directory 
-        Used only when creating a new computer.
-    :return: The computer node 
-    :rtype: :py:class:`aiida.orm.Computer` 
     """
-    from aiida.orm import Computer
-    from aiida.common.exceptions import NotExistent
+    structure_tuple, kind_info, kinds = structure_to_spglib_tuple(structure)
 
-    try:
-        computer = Computer.objects.get(name=name)
-    except NotExistent:
-        if workdir is None:
-            workdir = tempfile.mkdtemp()
+    rawdict = seekpath.get_explicit_k_path(structure=structure_tuple,
+                                           **parameters)
 
-        computer = Computer(
-            name=name,
-            description='localhost computer set up by aiida_diff tests',
-            hostname=name,
-            workdir=workdir,
-            transport_type='local',
-            scheduler_type='direct')
-        computer.store()
-        computer.set_minimum_job_poll_interval(0.)
-        computer.configure()
+    # Replace primitive structure with AiiDA StructureData
+    primitive_lattice = rawdict.pop('primitive_lattice')
+    primitive_positions = rawdict.pop('primitive_positions')
+    primitive_types = rawdict.pop('primitive_types')
+    primitive_tuple = (primitive_lattice, primitive_positions, primitive_types)
+    primitive_structure = spglib_tuple_to_structure(primitive_tuple, kind_info,
+                                                    kinds)
 
-    return computer
+    return primitive_structure
 
 
-def get_code(entry_point, computer):
-    """Get local code.
-    Sets up code for given entry point on given computer.
-    
-    :param entry_point: Entry point of calculation plugin
-    :param computer: (local) AiiDA computer
-    :return: The code node 
-    :rtype: :py:class:`aiida.orm.Code` 
+def get_pw_inputs_from_pseudo(pseudo, primitive_cell=True):
     """
-    from aiida.orm import Code
+    helper method used to generate base pw inputs(structure, pseudos, pw_parameters)
+    lanthanides elements are supported with Rare-Nithides.
+    """
+    upf_info = helper_parse_upf(pseudo)
+    element = orm.Str(upf_info['element'])
 
-    try:
-        executable = executables[entry_point]
-    except KeyError:
-        raise KeyError(
-            "Entry point '{}' not recognized. Allowed values: {}".format(
-                entry_point, list(executables.keys())))
+    pseudos = {element.value: pseudo}
 
-    codes = Code.objects.find(filters={'label': executable})  # pylint: disable=no-member
-    if codes:
-        return codes[0]
+    if element.value == 'F':
+        element = orm.Str('SiF4')
 
-    path = get_path_to_executable(executable)
-    code = Code(
-        input_plugin_name=entry_point,
-        remote_computer_exec=[computer, path],
-    )
-    code.label = executable
-    return code.store()
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+                                         'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
+        with fpath as path:
+            filename = str(path)
+            upf_silicon = orm.UpfData.get_or_create(filename)[0]
+            pseudos['Si'] = upf_silicon
+
+    pw_parameters = {}
+    if element.value in RARE_EARTH_ELEMENTS:
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+                                         'N.pbe-n-radius_5.UPF')
+        with fpath as path:
+            filename = str(path)
+            upf_nitrogen = orm.UpfData.get_or_create(filename)[0]
+            pseudos['N'] = upf_nitrogen
+
+        z_valence_RE = upf_info['z_valence']  # pylint: disable=invalid-name
+        z_valence_N = helper_parse_upf(upf_nitrogen)['z_valence']  # pylint: disable=invalid-name
+        nbands = (z_valence_N + z_valence_RE) // 2
+        nbands_factor = 2
+        pw_parameters = {
+            'SYSTEM': {
+                'nbnd': int(nbands * nbands_factor),
+            },
+        }
+
+    filename = get_standard_cif_filename_from_element(element.value)
+
+    cif_data = orm.CifData.get_or_create(filename)[0]
+
+    return {
+        'structure': cif_data.get_structure(primitive_cell=primitive_cell),
+        'pseudos': pseudos,
+        'base_pw_parameters': pw_parameters,
+    }
+
+
+def helper_get_v0_b0_b1(element: str):
+    import re
+    from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+
+    if element == 'F':
+        # Use SiF4 as reference of fluorine(F)
+        return 19.3583, 74.0411, 4.1599
+
+    if element in RARE_EARTH_ELEMENTS:
+        element_str = f'{element}N'
+    else:
+        element_str = element
+
+    regex = re.compile(
+        rf"""{element_str}\s*
+                        (?P<V0>\d*.\d*)\s*
+                        (?P<B0>\d*.\d*)\s*
+                        (?P<B1>\d*.\d*)""", re.VERBOSE)
+    if element not in RARE_EARTH_ELEMENTS:
+        match = regex.search(WIEN2K_REF)
+        V0 = match.group('V0')
+        B0 = match.group('B0')
+        B1 = match.group('B1')
+    else:
+        match = regex.search(WIEN2K_REN_REF)
+        V0 = match.group('V0')
+        B0 = match.group('B0')
+        B1 = match.group('B1')
+
+    return float(V0), float(B0), float(B1)

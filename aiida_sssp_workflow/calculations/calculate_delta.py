@@ -11,6 +11,7 @@ from aiida.engine import calcfunction
 from aiida import orm
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+from aiida_sssp_workflow.helpers import helper_get_v0_b0_b1
 
 # pylint: disable=invalid-name
 
@@ -21,7 +22,7 @@ RARE_EARTH_ELEMENTS = [
 
 
 @calcfunction
-def calculate_delta(element, v0, b0, bp) -> orm.Dict:
+def calculate_delta(element, V0, B0, B1) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
@@ -34,15 +35,16 @@ def calculate_delta(element, v0, b0, bp) -> orm.Dict:
 
     data_ref = np.loadtxt(wien2k_ref,
                           dtype={
-                              'names': ('element', 'V0', 'B0', 'BP'),
+                              'names': ('element', 'V0', 'B0', 'B1'),
                               'formats': ('U2', np.float, np.float, np.float)
                           })
+    ref_V0, ref_B0, ref_B1 = helper_get_v0_b0_b1(element.value)
 
     # Here use dtype U2 to truncate REN to RE
     data_tested = np.array(
-        [(element.value, v0.value, b0.value, bp.value)],
+        [(element.value, V0.value, B0.value, B1.value)],
         dtype={
-            'names': ('element', 'V0', 'B0', 'BP'),
+            'names': ('element', 'V0', 'B0', 'B1'),
             'formats': ('U2', np.float, np.float, np.float),
         })
 
@@ -62,7 +64,8 @@ def calculate_delta(element, v0, b0, bp) -> orm.Dict:
             'delta_unit': 'meV/atom',
             'delta_relative': Deltarel[0],
             'delta_relative_unit': '%',
-            'birch_murnaghan_inputs': [v0, b0, bp],
+            'birch_murnaghan_results': [V0, B0, B1],
+            'reference_wien2k_V0_B0_B1': [ref_V0, ref_B0, ref_B1]
         })
 
 
@@ -88,12 +91,12 @@ def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
         searchnr = elw.index(eloverlap[i])
         v0w[i] = data_w['V0'][searchnr]
         b0w[i] = data_w['B0'][searchnr] * 10.**9. / 1.602176565e-19 / 10.**30.
-        b1w[i] = data_w['BP'][searchnr]
+        b1w[i] = data_w['B1'][searchnr]
 
         searchnr = elf.index(eloverlap[i])
         v0f[i] = data_f['V0'][searchnr]
         b0f[i] = data_f['B0'][searchnr] * 10.**9. / 1.602176565e-19 / 10.**30.
-        b1f[i] = data_f['BP'][searchnr]
+        b1f[i] = data_f['B1'][searchnr]
 
     vref = 30.
     bref = 100. * 10.**9. / 1.602176565e-19 / 10.**30.

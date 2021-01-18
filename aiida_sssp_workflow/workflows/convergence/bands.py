@@ -5,13 +5,11 @@ Convergence test on bands of a given pseudopotential
 from aiida.common import AttributeDict
 from aiida.engine import workfunction
 from aiida import orm
-from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict, NONMETAL_ELEMENTS
+from aiida_sssp_workflow.workflows.bands import BandsWorkChain
 from aiida_sssp_workflow.calculations.calculate_bands_distance import calculate_bands_distance
 from .base import BaseConvergenceWorkChain
-
-BandsWorkChain = WorkflowFactory('sssp_workflow.bands')
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[
     20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,

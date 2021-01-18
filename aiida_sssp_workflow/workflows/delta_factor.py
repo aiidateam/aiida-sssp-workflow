@@ -13,7 +13,7 @@ from aiida_sssp_workflow.utils import update_dict, \
     MAGNETIC_ELEMENTS, \
     RARE_EARTH_ELEMENTS, \
     helper_parse_upf
-from .helper import get_pw_inputs_from_pseudo
+from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
 
 calculate_delta = CalculationFactory('sssp_workflow.calculate_delta')
 EquationOfStateWorkChain = WorkflowFactory('sssp_workflow.eos')
@@ -390,9 +390,9 @@ class DeltaFactorWorkChain(WorkChain):
 
         inputs = {
             'element': self.ctx.element,
-            'v0': orm.Float(res['v0']),
-            'b0': orm.Float(res['b0']),
-            'bp': orm.Float(res['bp']),
+            'V0': orm.Float(res['V0']),
+            'B0': orm.Float(res['B0']),
+            'B1': orm.Float(res['B1']),
         }
         self.ctx.output_parameters = calculate_delta(**inputs)
 

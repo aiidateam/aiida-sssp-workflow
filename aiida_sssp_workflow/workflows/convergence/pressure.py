@@ -4,12 +4,10 @@ Convergence test on cohesive energy of a given pseudopotential
 """
 from aiida.engine import calcfunction
 from aiida import orm
-from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.workflows.pressure import PressureWorkChain
 from .base import BaseConvergenceWorkChain
-
-PressureWorkChain = WorkflowFactory('sssp_workflow.pressure_evaluation')
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[
     20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,

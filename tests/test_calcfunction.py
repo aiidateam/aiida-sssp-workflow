@@ -39,6 +39,7 @@ def test_birch_murnaghan_fit():
     assert 'bulk_modulus0' in res
     assert 'bulk_deriv0' in res
     assert 'residuals0' in res
+    assert 'energy0' in res
     assert res['volume0_unit'].value == 'A^3/atom'
     assert res['bulk_modulus0_unit'].value == 'GPa'
 
@@ -49,9 +50,9 @@ def test_calculate_delta():
 
     inputs = {
         'element': orm.Str('Si'),
-        'v0': orm.Float(20.4530),
-        'b0': orm.Float(88.545),
-        'bp': orm.Float(4.31),
+        'V0': orm.Float(20.4530),
+        'B0': orm.Float(88.545),
+        'B1': orm.Float(4.31),
     }  # Si line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
     assert res['delta'] == 0.0
@@ -64,9 +65,9 @@ def test_calculate_delta_H():  # pylint: disable=invalid-name
 
     inputs = {
         'element': orm.Str('H'),
-        'v0': orm.Float(17.3883),
-        'b0': orm.Float(10.284),
-        'bp': orm.Float(2.71),
+        'V0': orm.Float(17.3883),
+        'B0': orm.Float(10.284),
+        'B1': orm.Float(2.71),
     }  # Si line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
     assert res['delta'] == 0.0
@@ -78,9 +79,9 @@ def test_calculate_delta_rare_earth():
 
     inputs = {
         'element': orm.Str('La'),
-        'v0': orm.Float(18.77799),
-        'b0': orm.Float(122.037),
-        'bp': orm.Float(4.461),
+        'V0': orm.Float(18.77799),
+        'B0': orm.Float(122.037),
+        'B1': orm.Float(4.461),
     }  # LaN line of the file so that the delta will be exactly zero
     res = calculate_delta(**inputs)
     assert res['delta'] == 0.0
@@ -90,22 +91,22 @@ def test_get_v0_b0_b1():
     """
     doc
     """
-    from aiida_sssp_workflow.workflows.helper import helper_get_v0_b0_b1
+    from aiida_sssp_workflow.helpers import helper_get_v0_b0_b1
 
-    res = helper_get_v0_b0_b1(orm.Str('Si'))
-    assert res['V0'].value == 20.4530
-    assert res['B0'].value == 88.545
-    assert res['B1'].value == 4.31
+    V0, B0, B1 = helper_get_v0_b0_b1('Si')
+    assert V0 == 20.4530
+    assert B0 == 88.545
+    assert B1 == 4.31
 
-    res = helper_get_v0_b0_b1(orm.Str('La'))
-    assert res['V0'].value == 18.77799
-    assert res['B0'].value == 122.037
-    assert res['B1'].value == 4.461
+    V0, B0, B1 = helper_get_v0_b0_b1('La')
+    assert V0 == 18.77799
+    assert B0 == 122.037
+    assert B1 == 4.461
 
-    res = helper_get_v0_b0_b1(orm.Str('F'))
-    assert res['V0'].value == 19.3583
-    assert res['B0'].value == 74.0411
-    assert res['B1'].value == 4.1599
+    V0, B0, B1 = helper_get_v0_b0_b1('F')
+    assert V0 == 19.3583
+    assert B0 == 74.0411
+    assert B1 == 4.1599
 
 
 def test_get_volume_from_pressure_birch_murnaghan():

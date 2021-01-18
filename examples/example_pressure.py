@@ -20,11 +20,11 @@ def run_test(code, upf, dual):
     PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))
 
     element = upf.element
-    res = helper_get_v0_b0_b1(orm.Str(element))
+    V0, B0, B1 = helper_get_v0_b0_b1(element)
     v0_b0_b1 = {
-        'V0': res['V0'].value,
-        'B0': res['B0'].value,
-        'B1': res['B1'].value,
+        'V0': V0,
+        'B0': B0,
+        'B1': B1,
     }
 
     inputs = AttributeDict({

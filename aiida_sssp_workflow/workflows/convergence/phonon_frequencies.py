@@ -4,13 +4,10 @@ Convergence test on cohesive energy of a given pseudopotential
 """
 from aiida.engine import calcfunction
 from aiida import orm
-from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.workflows.phonon_frequencies import PhononFrequenciesWorkChain
 from .base import BaseConvergenceWorkChain
-
-PhononFrequenciesWorkChain = WorkflowFactory(
-    'sssp_workflow.phonon_frequencies')
 
 
 @calcfunction
