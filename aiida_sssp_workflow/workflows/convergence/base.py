@@ -15,7 +15,7 @@ from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
 from aiida_sssp_workflow.utils import helper_parse_upf
-from ..helper import get_pw_inputs_from_pseudo
+from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
 
 CreateEvaluateWorkChain = WorkflowFactory('optimize.wrappers.create_evaluate')
 OptimizationWorkChain = WorkflowFactory('optimize.optimize')

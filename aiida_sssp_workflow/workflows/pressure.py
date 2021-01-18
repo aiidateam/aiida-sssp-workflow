@@ -37,7 +37,7 @@ PW_PARAS = lambda: orm.Dict(dict={
 })
 
 
-class PressureEvaluationWorkChain(WorkChain):
+class PressureWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
     _PW_PARAMETERS = {

@@ -182,9 +182,9 @@ class VerificationWorkChain(WorkChain):
         workchain_delta_factor = self.ctx.workchain_delta_factor
         res = workchain_delta_factor.outputs.output_birch_murnaghan_fit
         v0_b0_b1 = {
-            'V0': res['v0'],
-            'B0': res['b0'],
-            'B1': res['bp'],
+            'V0': res['V0'],
+            'B0': res['B0'],
+            'B1': res['B1'],
         }
         self.out('output_delta_factor',
                  workchain_delta_factor.outputs.output_parameters)

@@ -178,9 +178,10 @@ class EquationOfStateWorkChain(WorkChain):
         res = birch_murnaghan_fit(
             orm.Dict(dict=volume_energy))
         output_birch_murnaghan_fit = {
-            'v0': res['volume0'],
-            'b0': res['bulk_modulus0'],
-            'bp': res['bulk_deriv0'],
+            'V0': res['volume0'],
+            'B0': res['bulk_modulus0'],
+            'B1': res['bulk_deriv0'],
+            'E0': res['energy0']
         }
 
         output_parameters = {

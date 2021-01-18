@@ -4,12 +4,10 @@ Convergence test on cohesive energy of a given pseudopotential
 """
 from aiida.engine import calcfunction
 from aiida import orm
-from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.workflows.cohesive_energy import CohesiveEnergyWorkChain
 from .base import BaseConvergenceWorkChain
-
-CohesiveEnergyWorkChain = WorkflowFactory('sssp_workflow.cohesive_energy')
 
 
 @calcfunction
