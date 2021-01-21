@@ -63,7 +63,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['convergence']['bands_distance']
-        self._DEGUASS = protocol['degauss']
+        self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
         self._CONV_THR_EVA = protocol['electron_conv_thr']
@@ -103,7 +103,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
     def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGUASS,
+                'degauss': self._DEGAUSS,
                 'occupations': self._OCCUPATIONS,
                 'smearing': self._SMEARING,
             },
@@ -137,7 +137,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         res = {
             'ref_band_parameters': ref_workchain.outputs.band_parameters,
             'ref_band_structure': ref_workchain.outputs.band_structure,
-            'smearing': orm.Float(self._DEGUASS * self._RY_TO_EV),
+            'smearing': orm.Float(self._DEGAUSS * self._RY_TO_EV),
             'is_metal': orm.Bool(self.ctx.is_metal),
         }
 

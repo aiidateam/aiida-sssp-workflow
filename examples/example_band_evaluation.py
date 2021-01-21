@@ -1,30 +1,33 @@
 #!/usr/bin/env python
-import numpy as np
 
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.plugins import WorkflowFactory
 from aiida.engine import submit
+from aiida.plugins import WorkflowFactory
 
-ConvergenceBandsWorkChain = WorkflowFactory('sssp_workflow.convergence.bands')
+from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
+
+BandsWorkChain = WorkflowFactory('sssp_workflow.evaluation.bands')
 
 
-def run_test(code, upf, dual):
-    ecutwfc = np.array([30, 35, 40, 45, 50, 55, 60, 200])
-    ecutrho = ecutwfc * dual
-    PARA_ECUTWFC_LIST = orm.List(list=list(ecutwfc))
-    PARA_ECUTRHO_LIST = orm.List(list=list(ecutrho))
+def run_test(code, pseudo, dual):
+    res = get_pw_inputs_from_pseudo(pseudo=pseudo)
+
+    structure = res['structure']
+    pseudos = res['pseudos']
 
     inputs = AttributeDict({
         'code': code,
-        'pseudo': upf,
+        'pseudos': pseudos,
+        'structure': structure,
         'parameters': {
-            'ecutwfc_list': PARA_ECUTWFC_LIST,
-            'ecutrho_list': PARA_ECUTRHO_LIST,
-            'ref_cutoff_pair': orm.List(list=[200, 200 * dual])
+            'ecutwfc': orm.Float(200),
+            'ecutrho': orm.Float(200 * dual),
+            'run_band_structure': orm.Bool(True),
+            'nbands_factor': orm.Float(2)
         },
     })
-    node = submit(ConvergenceBandsWorkChain, **inputs)
+    node = submit(BandsWorkChain, **inputs)
 
     return node
 

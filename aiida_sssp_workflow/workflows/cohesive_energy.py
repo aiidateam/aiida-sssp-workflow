@@ -267,13 +267,13 @@ class CohesiveEnergyWorkChain(WorkChain):
             })
             atom_inputs.pw.metadata.options = options
 
-            # TODO following is mandatory for lanthanides, should be check again, whether needed for other elements.
-            if element in RARE_EARTH_ELEMENTS:
+            # TODO n_machine = 4 mandatory for lanthanides.
+            if self.inputs.parameters.ecutwfc.value > 100:
                 self.report(
-                    'Big cell in isolate lanthenides atom calculation with large cuttoff require more RAM.'
+                    'High ecutwfc may require more RAM. Simply increase the node.'
                 )
                 atom_inputs.pw.metadata.options['resources'][
-                    'num_machines'] = 4
+                    'num_machines'] = 2
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.to_context(

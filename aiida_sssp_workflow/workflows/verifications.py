@@ -7,6 +7,9 @@ from aiida.engine import WorkChain
 
 from aiida.plugins import WorkflowFactory
 
+from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
+
+BandsWorkChain = WorkflowFactory('sssp_workflow.evaluation.bands')
 DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
 ConvergenceCohesiveEnergy = WorkflowFactory(
     'sssp_workflow.convergence.cohesive_energy')
@@ -95,6 +98,9 @@ class VerificationWorkChain(WorkChain):
         spec.output_namespace('convergence_bands',
                               dynamic=True,
                               help='results of convergence bands calculation.')
+        spec.output_namespace('band_structure',
+                              dynamic=True,
+                              help='results of band structure calculation.')
 
         spec.exit_code(
             811,
@@ -115,8 +121,9 @@ class VerificationWorkChain(WorkChain):
         """
         In this stage run:
         1) delta factor calculation, the results also used for pressure convergence
-        2) phonon frequencise convergence since ph.x calculation depend on the workdir
+        2) phonon frequencies convergence since ph.x calculation depend on the workdir
         3) bands distance convergence.
+        4) band_structure evaluation to get seekpath band structure
         """
         # run delta factor
         inputs = {
@@ -172,6 +179,32 @@ class VerificationWorkChain(WorkChain):
         self.report(f'submit workchain bands convergence pk={running.pk}')
         self.to_context(w02=running)
         self.ctx.workchains['convergence_bands'] = running
+
+        # running band structure
+        res = get_pw_inputs_from_pseudo(pseudo=self.ctx.pseudo)
+
+        structure = res['structure']
+        pseudos = res['pseudos']
+
+        cutoff_pair = self.inputs.parameters.ref_cutoff_pair.get_list()
+        ecutwfc = cutoff_pair[0]
+        ecutrho = cutoff_pair[1]
+
+        inputs = {
+            'code': self.inputs.pw_code,
+            'pseudos': pseudos,
+            'structure': structure,
+            'parameters': {
+                'ecutwfc': orm.Float(ecutwfc),
+                'ecutrho': orm.Float(ecutrho),
+                'run_band_structure': orm.Bool(True),
+                'nbands_factor': orm.Float(2)
+            },
+        }
+        running = self.submit(BandsWorkChain, **inputs)
+        self.report(f'submit workchain band structure pk={running.pk}')
+        self.to_context(w_band_structure=running)
+        self.ctx.workchains['band_structure'] = running
 
     def run_stage2(self):
         """

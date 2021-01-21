@@ -5,8 +5,7 @@ WorkChain calculate the bands for certain pseudopotential
 import numpy as np
 
 from aiida import orm
-from aiida.common import AttributeDict
-from aiida.engine import WorkChain, ToContext, while_
+from aiida.engine import WorkChain, ToContext, while_, if_
 from aiida.plugins import WorkflowFactory, CalculationFactory
 
 from aiida_sssp_workflow.utils import update_dict
@@ -43,11 +42,9 @@ class BandsWorkChain(WorkChain):
 
     _BAND_PARAMETERS = {
         'SYSTEM': {
-            # ############## NOT REALLY TAKE EFFECT ##########
-            # 'degauss': 0.02,
-            # 'occupations': 'smearing',
-            # 'smearing': 'marzari-vanderbilt',
-            # #############
+            'degauss': 0.00735,
+            'occupations': 'smearing',
+            'smearing': 'marzari-vanderbilt',
             "noinv": True,
             "nosym": True,
         },
@@ -84,10 +81,16 @@ class BandsWorkChain(WorkChain):
                    required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw',
-                   valid_type=orm.Dict,
-                   default=PW_PARAS,
-                   help='parameters for pw.x.')
+        spec.input(
+            'parameters.pw',
+            valid_type=orm.Dict,
+            required=False,
+            help=
+            'parameters for pw.x, if not set use the default hard code one.')
+        spec.input(
+            'parameters.run_band_structure',
+            default=lambda: orm.Bool(False),
+            help='If True, run to get refined band structure along path.')
         spec.input(
             'parameters.ecutwfc',
             valid_type=(orm.Float, orm.Int),
@@ -121,8 +124,15 @@ class BandsWorkChain(WorkChain):
                 cls.run_bands,
                 cls.inspect_bands,
             ),
+            if_(cls.should_band_structure)(
+                cls.run_band_structure,
+                cls.inspect_band_structure,
+            ),
             cls.results,
         )
+        spec.output_namespace('seekpath_band_structure',
+                              dynamic=True,
+                              help='output of band structure along seekpath.')
         spec.output('scf_parameters',
                     valid_type=orm.Dict,
                     help='The output parameters of the SCF `PwBaseWorkChain`.')
@@ -142,15 +152,20 @@ class BandsWorkChain(WorkChain):
 
     def setup(self):
         """Input validation"""
-        # TODO set ecutwfc and ecutrho according to certain protocol
         scf_parameters = self._SCF_PARAMETERS
         bands_parameters = self._BAND_PARAMETERS
-        pw_scf_parameters = update_dict(scf_parameters,
-                                        self.inputs.parameters.pw.get_dict())
+
+        if 'pw' in self.inputs.parameters:
+            self.ctx.pw_parameters = self.inputs.parameters.pw.get_dict()
+        else:
+            self.ctx.pw_parameters = {}
+
+        pw_scf_parameters = update_dict(scf_parameters, self.ctx.pw_parameters)
         pw_bands_parameters = update_dict(bands_parameters,
-                                          self.inputs.parameters.pw.get_dict())
-        pw_bands_parameters['SYSTEM'].pop(
-            'nbnd', None)  # Since nbnd can not sit with nband_factor
+                                          self.ctx.pw_parameters)
+
+        # nbnd can not sit with nband_factor and nbnd might be set somewhere
+        pw_bands_parameters['SYSTEM'].pop('nbnd', None)
 
         if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
             parameters = {
@@ -184,7 +199,7 @@ class BandsWorkChain(WorkChain):
         bands_shift = self._BANDS_SHIFT  # hard code for the time being
         return self.ctx.lowest_highest_eigenvalue < bands_shift
 
-    def run_bands(self):
+    def _get_band_inputs(self):
         if 'options' in self.inputs:
             options = self.inputs.options.get_dict()
         else:
@@ -195,7 +210,7 @@ class BandsWorkChain(WorkChain):
                 with_mpi=True,
                 max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS)
 
-        inputs = AttributeDict({
+        inputs = {
             'structure': self.inputs.structure,
             'scf': {
                 'pw': {
@@ -220,9 +235,15 @@ class BandsWorkChain(WorkChain):
                     },
                 },
             },
-            'nbands_factor': self.ctx.nbands_factor,
-            'bands_kpoints': self.ctx.bands_kpoints,
-        })
+        }
+
+        return inputs
+
+    def run_bands(self):
+        inputs = self._get_band_inputs()
+        inputs['nbands_factor'] = self.ctx.nbands_factor
+        inputs['bands_kpoints'] = self.ctx.bands_kpoints
+
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f'Running pw bands calculation pk={running.pk}')
         return ToContext(workchain_bands=running)
@@ -245,6 +266,36 @@ class BandsWorkChain(WorkChain):
 
         self.ctx.nbands_factor += 1.0
         self.ctx.output_nbands_factor = self.ctx.nbands_factor - 1.0
+
+    def should_band_structure(self):
+        return self.inputs.parameters.run_band_structure.value
+
+    def run_band_structure(self):
+        inputs = self._get_band_inputs()
+        inputs['nbands_factor'] = self.ctx.output_nbands_factor
+        inputs[
+            'bands_kpoints_distance'] = self.inputs.parameters.bands_kpoints_distance
+
+        running = self.submit(PwBandsWorkChain, **inputs)
+        self.report(f'Running pw band structure calculation pk={running.pk}')
+        return ToContext(workchain_band_structure=running)
+
+    def inspect_band_structure(self):
+        workchain = self.ctx.workchain_band_structure
+
+        if not workchain.is_finished_ok:
+            self.report(
+                f'PwBandsWorkChain for bands structure failed with exit status {workchain.exit_status}'
+            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
+
+        self.report('pw band structure workchain successfully completed')
+        self.out('seekpath_band_structure.scf_parameters',
+                 workchain.outputs.scf_parameters)
+        self.out('seekpath_band_structure.band_parameters',
+                 workchain.outputs.band_parameters)
+        self.out('seekpath_band_structure.band_structure',
+                 workchain.outputs.band_structure)
 
     def results(self):
         self.report('pw bands workchain successfully completed')
