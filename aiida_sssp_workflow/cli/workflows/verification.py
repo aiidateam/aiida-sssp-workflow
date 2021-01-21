@@ -31,7 +31,8 @@ PH_CODE = OverridableOption(
     help='A single code identified by its ID, UUID or label.')
 
 REF_ECUTWFC = 200
-ecutwfc_list = np.array([30, 35, 40, 45, 50, 55, 200])
+ecutwfc_list = np.array(
+    [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150, 200])
 
 
 @cmd_launch.command('verification')

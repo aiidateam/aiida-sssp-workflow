@@ -55,7 +55,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['convergence']['cohesive_energy']
-        self._DEGUASS = protocol['degauss']
+        self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._BULK_SMEARING = protocol['bulk_smearing']
         self._ATOM_SMEARING = protocol['atom_smearing']
@@ -85,7 +85,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
     def get_create_process_inputs(self):
         _PW_BULK_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGUASS,
+                'degauss': self._DEGAUSS,
                 'occupations': self._OCCUPATIONS,
                 'smearing': self._BULK_SMEARING,
             },
@@ -95,7 +95,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
         }
         _PW_ATOM_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGUASS,
+                'degauss': self._DEGAUSS,
                 'occupations': self._OCCUPATIONS,
                 'smearing': self._ATOM_SMEARING,
             },
