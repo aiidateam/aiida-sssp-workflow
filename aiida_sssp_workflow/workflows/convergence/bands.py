@@ -35,14 +35,18 @@ def helper_cohesive_energy_difference(input_band_structure: orm.BandsData,
                                    smearing=smearing,
                                    is_metal=is_metal)
 
-    return orm.Dict(
-        dict={
-            'eta_v': res.get('eta_v', None).value,
-            'eta_10': res.get('eta_10', None).value,
-            'max_diff_v': res.get('max_diff_v', None).value,
-            'max_diff_10': res.get('max_diff_10', None).value,
-            'bands_unit': 'eV'
-        }).store()
+    # calculate_bands_distance returns:
+    #
+    # return orm.Dict(dict={
+    #     'eta_v': res.get('eta_v', None),
+    #     'shift_v': res.get('shift_v', None),
+    #     'max_diff_v': res.get('max_diff_v', None),
+    #     'eta_10': res.get('eta_10', None),
+    #     'shift_10': res.get('shift_10', None),
+    #     'max_diff_10': res.get('max_diff_10', None),
+    #     'bands_unit': 'eV',
+    # })
+    return res
 
 
 class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
@@ -63,17 +67,17 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['convergence']['bands_distance']
-        self._DEGAUSS = protocol['degauss']
-        self._OCCUPATIONS = protocol['occupations']
-        self._SMEARING = protocol['smearing']
-        self._CONV_THR_EVA = protocol['electron_conv_thr']
-        self._SCF_KDISTANCE = protocol['scf_kpoints_distance']
-        self._BAND_KDISTANCE = protocol['band_kpoints_distance']
-        self._ININ_NBND_FACTOR = protocol['init_nbnd_factor']
+        self.ctx._DEGAUSS = protocol['degauss']
+        self.ctx._OCCUPATIONS = protocol['occupations']
+        self.ctx._SMEARING = protocol['smearing']
+        self.ctx._CONV_THR_EVA = protocol['electron_conv_thr']
+        self.ctx._SCF_KDISTANCE = protocol['scf_kpoints_distance']
+        self.ctx._BAND_KDISTANCE = protocol['band_kpoints_distance']
+        self.ctx._ININ_NBND_FACTOR = protocol['init_nbnd_factor']
 
-        self._TOLERANCE = protocol['tolerance']
-        self._CONV_THR_CONV = protocol['convergence_conv_thr']
-        self._CONV_WINDOW = protocol['convergence_window']
+        self.ctx._TOLERANCE = protocol['tolerance']
+        self.ctx._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self.ctx._CONV_WINDOW = protocol['convergence_window']
 
     def init_step(self):
         element = self.inputs.pseudo.element
@@ -98,17 +102,17 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         }
 
     def get_converge_y(self):
-        return 'eta_10', 'eV'
+        return 'max_diff_10', 'eV'
 
     def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._SMEARING,
+                'degauss': self.ctx._DEGAUSS,
+                'occupations': self.ctx._OCCUPATIONS,
+                'smearing': self.ctx._SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR_EVA,
+                'conv_thr': self.ctx._CONV_THR_EVA,
             },
         }
 
@@ -121,11 +125,11 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
                 orm.Dict(
                     dict=update_dict(_PW_PARAS, self.ctx.base_pw_parameters)),
                 'scf_kpoints_distance':
-                orm.Float(self._SCF_KDISTANCE),
+                orm.Float(self.ctx._SCF_KDISTANCE),
                 'bands_kpoints_distance':
-                orm.Float(self._BAND_KDISTANCE),
+                orm.Float(self.ctx._BAND_KDISTANCE),
                 'nbands_factor':
-                orm.Float(self._ININ_NBND_FACTOR)
+                orm.Float(self.ctx._ININ_NBND_FACTOR)
             },
         })
 
@@ -137,7 +141,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         res = {
             'ref_band_parameters': ref_workchain.outputs.band_parameters,
             'ref_band_structure': ref_workchain.outputs.band_structure,
-            'smearing': orm.Float(self._DEGAUSS * self._RY_TO_EV),
+            'smearing': orm.Float(self.ctx._DEGAUSS * self._RY_TO_EV),
             'is_metal': orm.Bool(self.ctx.is_metal),
         }
 

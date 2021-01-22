@@ -55,17 +55,17 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['convergence']['cohesive_energy']
-        self._DEGAUSS = protocol['degauss']
-        self._OCCUPATIONS = protocol['occupations']
-        self._BULK_SMEARING = protocol['bulk_smearing']
-        self._ATOM_SMEARING = protocol['atom_smearing']
-        self._CONV_THR_EVA = protocol['electron_conv_thr']
-        self._KDISTANCE = protocol['kpoints_distance']
-        self._VACUUM_LENGTH = protocol['vaccum_length']
+        self.ctx._DEGAUSS = protocol['degauss']
+        self.ctx._OCCUPATIONS = protocol['occupations']
+        self.ctx._BULK_SMEARING = protocol['bulk_smearing']
+        self.ctx._ATOM_SMEARING = protocol['atom_smearing']
+        self.ctx._CONV_THR_EVA = protocol['electron_conv_thr']
+        self.ctx._KDISTANCE = protocol['kpoints_distance']
+        self.ctx._VACUUM_LENGTH = protocol['vaccum_length']
 
-        self._TOLERANCE = protocol['tolerance']
-        self._CONV_THR_CONV = protocol['convergence_conv_thr']
-        self._CONV_WINDOW = protocol['convergence_window']
+        self.ctx._TOLERANCE = protocol['tolerance']
+        self.ctx._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self.ctx._CONV_WINDOW = protocol['convergence_window']
 
     def get_create_process(self):
         return CohesiveEnergyWorkChain
@@ -85,22 +85,22 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
     def get_create_process_inputs(self):
         _PW_BULK_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._BULK_SMEARING,
+                'degauss': self.ctx._DEGAUSS,
+                'occupations': self.ctx._OCCUPATIONS,
+                'smearing': self.ctx._BULK_SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR_EVA,
+                'conv_thr': self.ctx._CONV_THR_EVA,
             },
         }
         _PW_ATOM_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._ATOM_SMEARING,
+                'degauss': self.ctx._DEGAUSS,
+                'occupations': self.ctx._OCCUPATIONS,
+                'smearing': self.ctx._ATOM_SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR_EVA,
+                'conv_thr': self.ctx._CONV_THR_EVA,
             },
         }
         inputs = {
@@ -114,9 +114,9 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
                 'pw_atom':
                 orm.Dict(dict=_PW_ATOM_PARAS),
                 'kpoints_distance':
-                orm.Float(self._KDISTANCE),
+                orm.Float(self.ctx._KDISTANCE),
                 'vacuum_length':
-                orm.Float(self._VACUUM_LENGTH),
+                orm.Float(self.ctx._VACUUM_LENGTH),
             },
         }
 

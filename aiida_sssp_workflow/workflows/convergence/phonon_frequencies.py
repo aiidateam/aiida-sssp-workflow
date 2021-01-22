@@ -70,20 +70,20 @@ class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['convergence']['phonon_frequencies']
-        self._DEGAUSS = protocol['degauss']
-        self._OCCUPATIONS = protocol['occupations']
-        self._SMEARING = protocol['smearing']
-        self._CONV_THR_EVA = protocol['electron_conv_thr']
-        self._QPOINTS_LIST = protocol['qpoints_list']
-        self._KDISTANCE = protocol['kpoints_distance']
+        self.ctx._DEGAUSS = protocol['degauss']
+        self.ctx._OCCUPATIONS = protocol['occupations']
+        self.ctx._SMEARING = protocol['smearing']
+        self.ctx._CONV_THR_EVA = protocol['electron_conv_thr']
+        self.ctx._QPOINTS_LIST = protocol['qpoints_list']
+        self.ctx._KDISTANCE = protocol['kpoints_distance']
 
         # PH parameters
-        self._TR2_PH = protocol['ph']['tr2_ph']
-        self._EPSILON = protocol['ph']['epsilon']
+        self.ctx._TR2_PH = protocol['ph']['tr2_ph']
+        self.ctx._EPSILON = protocol['ph']['epsilon']
 
-        self._TOLERANCE = protocol['tolerance']
-        self._CONV_THR_CONV = protocol['convergence_conv_thr']
-        self._CONV_WINDOW = protocol['convergence_window']
+        self.ctx._TOLERANCE = protocol['tolerance']
+        self.ctx._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self.ctx._CONV_WINDOW = protocol['convergence_window']
 
     def get_create_process(self):
         return PhononFrequenciesWorkChain
@@ -108,18 +108,18 @@ class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
     def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._SMEARING,
+                'degauss': self.ctx._DEGAUSS,
+                'occupations': self.ctx._OCCUPATIONS,
+                'smearing': self.ctx._SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR_EVA,
+                'conv_thr': self.ctx._CONV_THR_EVA,
             },
         }
         _PH_PARAS = {  # pylint: disable=invalid-name
             'INPUTPH': {
-                'tr2_ph': self._TR2_PH,
-                'epsil': self._EPSILON,
+                'tr2_ph': self.ctx._TR2_PH,
+                'epsil': self.ctx._EPSILON,
             }
         }
 
@@ -135,9 +135,9 @@ class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
                 'ph':
                 orm.Dict(dict=_PH_PARAS),
                 'kpoints_distance':
-                orm.Float(self._KDISTANCE),
+                orm.Float(self.ctx._KDISTANCE),
                 'qpoints':
-                orm.List(list=self._QPOINTS_LIST),
+                orm.List(list=self.ctx._QPOINTS_LIST),
             },
         }
 

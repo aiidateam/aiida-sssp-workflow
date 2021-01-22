@@ -88,15 +88,15 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['convergence']['pressure']
-        self._DEGAUSS = protocol['degauss']
-        self._OCCUPATIONS = protocol['occupations']
-        self._SMEARING = protocol['smearing']
-        self._CONV_THR_EVA = protocol['electron_conv_thr']
-        self._KDISTANCE = protocol['kpoints_distance']
+        self.ctx._DEGAUSS = protocol['degauss']
+        self.ctx._OCCUPATIONS = protocol['occupations']
+        self.ctx._SMEARING = protocol['smearing']
+        self.ctx._CONV_THR_EVA = protocol['electron_conv_thr']
+        self.ctx._KDISTANCE = protocol['kpoints_distance']
 
-        self._TOLERANCE = protocol['tolerance']
-        self._CONV_THR_CONV = protocol['convergence_conv_thr']
-        self._CONV_WINDOW = protocol['convergence_window']
+        self.ctx._TOLERANCE = protocol['tolerance']
+        self.ctx._CONV_THR_CONV = protocol['convergence_conv_thr']
+        self.ctx._CONV_WINDOW = protocol['convergence_window']
 
     def get_create_process(self):
         return PressureWorkChain
@@ -118,12 +118,12 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
     def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name
             'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._SMEARING,
+                'degauss': self.ctx._DEGAUSS,
+                'occupations': self.ctx._OCCUPATIONS,
+                'smearing': self.ctx._SMEARING,
             },
             'ELECTRONS': {
-                'conv_thr': self._CONV_THR_EVA,
+                'conv_thr': self.ctx._CONV_THR_EVA,
             },
         }
 
@@ -136,7 +136,7 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
                 orm.Dict(
                     dict=update_dict(_PW_PARAS, self.ctx.base_pw_parameters)),
                 'kpoints_distance':
-                orm.Float(self._KDISTANCE),
+                orm.Float(self.ctx._KDISTANCE),
             },
         }
 
