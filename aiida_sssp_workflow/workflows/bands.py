@@ -54,6 +54,7 @@ class BandsWorkChain(WorkChain):
     }
 
     _BANDS_SHIFT = 10.5
+    _SEEKPATH_DISTANCE = 0.1
     _SCF_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
     _BAND_CMDLINE_SETTING = {'CMDLINE': ['-nk', '4']}
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
@@ -273,8 +274,7 @@ class BandsWorkChain(WorkChain):
     def run_band_structure(self):
         inputs = self._get_band_inputs()
         inputs['nbands_factor'] = self.ctx.output_nbands_factor
-        inputs[
-            'bands_kpoints_distance'] = self.inputs.parameters.bands_kpoints_distance
+        inputs['bands_kpoints_distance'] = orm.Float(self._SEEKPATH_DISTANCE)
 
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f'Running pw band structure calculation pk={running.pk}')

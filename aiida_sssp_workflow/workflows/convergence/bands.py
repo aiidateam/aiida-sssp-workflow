@@ -35,14 +35,18 @@ def helper_cohesive_energy_difference(input_band_structure: orm.BandsData,
                                    smearing=smearing,
                                    is_metal=is_metal)
 
-    return orm.Dict(
-        dict={
-            'eta_v': res.get('eta_v', None).value,
-            'eta_10': res.get('eta_10', None).value,
-            'max_diff_v': res.get('max_diff_v', None).value,
-            'max_diff_10': res.get('max_diff_10', None).value,
-            'bands_unit': 'eV'
-        }).store()
+    # calculate_bands_distance returns:
+    #
+    # return orm.Dict(dict={
+    #     'eta_v': res.get('eta_v', None),
+    #     'shift_v': res.get('shift_v', None),
+    #     'max_diff_v': res.get('max_diff_v', None),
+    #     'eta_10': res.get('eta_10', None),
+    #     'shift_10': res.get('shift_10', None),
+    #     'max_diff_10': res.get('max_diff_10', None),
+    #     'bands_unit': 'eV',
+    # })
+    return res
 
 
 class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
@@ -98,7 +102,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         }
 
     def get_converge_y(self):
-        return 'eta_10', 'eV'
+        return 'max_diff_10', 'eV'
 
     def get_create_process_inputs(self):
         _PW_PARAS = {   # pylint: disable=invalid-name

@@ -281,7 +281,7 @@ class VerificationWorkChain(WorkChain):
                 not_finished_ok[wname] = workchain.pk
 
         if not_finished_ok:
-            self.exit_codes.WARNING_NOT_ALL_SUB_WORKFLOW_OK.format(
+            return self.exit_codes.WARNING_NOT_ALL_SUB_WORKFLOW_OK.format(
                 processes=not_finished_ok)
 
     def on_terminated(self):
