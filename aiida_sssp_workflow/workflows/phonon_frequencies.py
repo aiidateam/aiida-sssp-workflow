@@ -62,61 +62,32 @@ class PhononFrequenciesWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
+        """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('pw_code',
-                   valid_type=orm.Code,
-                   help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('ph_code',
-                   valid_type=orm.Code,
-                   help='The `ph.x` code use for the `PwCalculation`.')
-        spec.input_namespace(
-            'pseudos',
-            valid_type=orm.UpfData,
-            dynamic=True,
-            help=
-            'A mapping of `UpfData` nodes onto the kind name to which they should apply.'
-        )
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            required=True,
-            help='Ground state structure which the verification perform')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
+        spec.input('pw_code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
+        spec.input('ph_code', valid_type=orm.Code,
+                    help='The `ph.x` code use for the `PwCalculation`.')
+        spec.input_namespace('pseudos', valid_type=orm.UpfData, dynamic=True,
+                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
+        spec.input('structure', valid_type=orm.StructureData, required=True,
+                    help='Ground state structure which the verification perform')
+        spec.input('options', valid_type=orm.Dict, required=False,
+                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw',
-                   valid_type=orm.Dict,
-                   default=PW_PARAS,
-                   help='parameters for pw.x.')
-        spec.input('parameters.ph',
-                   valid_type=orm.Dict,
-                   default=PH_PARAS,
-                   help='parameters for ph.x.')
-        spec.input(
-            'parameters.ecutwfc',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
-        )
-        spec.input(
-            'parameters.ecutrho',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
-        )
-        spec.input('parameters.qpoints',
-                   valid_type=orm.List,
-                   default=lambda: orm.List(list=[[0., 0., 0.]]),
-                   help='qpoints')
-        spec.input(
-            'parameters.kpoints_distance',
-            valid_type=orm.Float,
-            default=lambda: orm.Float(0.15),
-            help='Kpoints distance setting for bulk energy calculation.')
+        spec.input('parameters.pw', valid_type=orm.Dict, default=PW_PARAS,
+                    help='parameters for pw.x.')
+        spec.input('parameters.ph', valid_type=orm.Dict, default=PH_PARAS,
+                    help='parameters for ph.x.')
+        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('parameters.qpoints', valid_type=orm.List, default=lambda: orm.List(list=[[0., 0., 0.]]),
+                    help='qpoints')
+        spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.15),
+                    help='Kpoints distance setting for bulk energy calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -126,16 +97,12 @@ class PhononFrequenciesWorkChain(WorkChain):
             cls.inspect_ph,
             cls.results,
         )
-        spec.output('output_parameters',
-                    valid_type=orm.Dict,
-                    required=True,
+        spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include phonon frequencies.')
-        spec.exit_code(201,
-                       'ERROR_SUB_PROCESS_FAILED_SCF',
-                       message='The `PwBaseWorkChain` sub process failed.')
-        spec.exit_code(211,
-                       'ERROR_NO_REMOTE_FOLDER',
-                       message='The remote folder node not exist')
+        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_SCF',
+                    message='The `PwBaseWorkChain` sub process failed.')
+        spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER',
+                    message='The remote folder node not exist')
 
     def setup(self):
         """Input validation"""

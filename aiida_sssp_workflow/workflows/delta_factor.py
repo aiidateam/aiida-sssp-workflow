@@ -22,9 +22,9 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
     To set initial magnet to the magnetic system, need to set magnetic order to
     every magnetic element site, with certain pw starting_mainetization parameters.
     """
-    MAG_INIT_Mn = {"Mn1": 0.5, "Mn2": -0.3, "Mn3": 0.5, "Mn4": -0.3}  # pylint: disable=invalid-name
-    MAG_INIT_O = {"O1": 0.5, "O2": 0.5, "O3": -0.5, "O4": -0.5}  # pylint: disable=invalid-name
-    MAG_INIT_Cr = {"Cr1": 0.5, "Cr2": -0.5}  # pylint: disable=invalid-name
+    MAG_INIT_Mn = {'Mn1': 0.5, 'Mn2': -0.3, 'Mn3': 0.5, 'Mn4': -0.3}  # pylint: disable=invalid-name
+    MAG_INIT_O = {'O1': 0.5, 'O2': 0.5, 'O3': -0.5, 'O4': -0.5}  # pylint: disable=invalid-name
+    MAG_INIT_Cr = {'Cr1': 0.5, 'Cr2': -0.5}  # pylint: disable=invalid-name
 
     mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
     kind_name = structure.get_kind_names()[0]
@@ -106,65 +106,33 @@ class DeltaFactorWorkChain(WorkChain):
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('code',
-                   valid_type=orm.Code,
-                   help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
-                   help='Pseudopotential to be verified')
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            required=False,
-            help='Ground state structure which the verification perform')
-        spec.input('protocol',
-                   valid_type=orm.Str,
-                   default=lambda: orm.Str('efficiency'),
-                   help='The protocol to use for the workchain.')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
+        spec.input('code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
+        spec.input('pseudo', valid_type=orm.UpfData, required=True,
+                    help='Pseudopotential to be verified')
+        spec.input('structure', valid_type=orm.StructureData, required=False,
+                    help='Ground state structure which the verification perform')
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
+                    help='The protocol to use for the workchain.')
+        spec.input('options', valid_type=orm.Dict, required=False,
+                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='parameters for pwscf.')
-        spec.input(
-            'parameters.ecutwfc',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
-        )
-        spec.input(
-            'parameters.ecutrho',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
-        )
-        spec.input('parameters.kpoints_distance',
-                   valid_type=orm.Float,
-                   required=False,
-                   help='Global kpoints setting.')
-        spec.input('parameters.scale_count',
-                   valid_type=orm.Int,
-                   required=False,
-                   help='Numbers of scale points in eos step.')
-        spec.input('parameters.scale_increment',
-                   valid_type=orm.Float,
-                   required=False,
-                   help='The scale increment in eos step.')
-        spec.input(
-            'clean_workdir',
-            valid_type=orm.Bool,
-            default=lambda: orm.Bool(False),
-            help=
-            'If `True`, work directories of all called calculation will be cleaned at the end of execution.'
-        )
+        spec.input('parameters.pw', valid_type=orm.Dict, required=False,
+                    help='parameters for pwscf.')
+        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('parameters.kpoints_distance', valid_type=orm.Float, required=False,
+                    help='Global kpoints setting.')
+        spec.input('parameters.scale_count', valid_type=orm.Int, required=False,
+                    help='Numbers of scale points in eos step.')
+        spec.input('parameters.scale_increment', valid_type=orm.Float, required=False,
+                    help='The scale increment in eos step.')
+        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
         spec.outline(
             cls.setup,
             cls.validate_structure_and_pseudo,
@@ -173,27 +141,16 @@ class DeltaFactorWorkChain(WorkChain):
             cls.run_delta_calc,
             cls.results,
         )
-        spec.output('output_eos_parameters',
-                    valid_type=orm.Dict,
-                    required=True,
+        spec.output('output_eos_parameters', valid_type=orm.Dict, required=True,
                     help='The eos outputs.')
-        spec.output('output_parameters',
-                    valid_type=orm.Dict,
-                    required=True,
+        spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The delta factor of the pseudopotential.')
-        spec.output(
-            'output_pseudo_header',
-            valid_type=orm.Dict,
-            required=True,
-            help='The header(important parameters) of the pseudopotential.')
-        spec.output('output_birch_murnaghan_fit',
-                    valid_type=orm.Dict,
-                    required=True,
+        spec.output('output_pseudo_header', valid_type=orm.Dict, required=True,
+                    help='The header(important parameters) of the pseudopotential.')
+        spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict, required=True,
                     help='The results V0, B0, B1 of Birch-Murnaghan fit.')
-        spec.exit_code(
-            201,
-            'ERROR_SUB_PROCESS_FAILED_EOS',
-            message='The `EquationOfStateWorkChain` sub process failed.')
+        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
+                    message='The `EquationOfStateWorkChain` sub process failed.')
 
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
@@ -328,15 +285,12 @@ class DeltaFactorWorkChain(WorkChain):
 
     def run_eos(self):
         """run eos workchain"""
+        # yapf: disable
         inputs = AttributeDict({
-            'structure':
-            self.ctx.structure,
-            'kpoints_distance':
-            orm.Float(self._KDISTANCE),
-            'scale_count':
-            orm.Int(self._SCALE_COUNT),
-            'scale_increment':
-            orm.Float(self._SCALE_INCREMENT),
+            'structure': self.ctx.structure,
+            'kpoints_distance': orm.Float(self._KDISTANCE),
+            'scale_count': orm.Int(self._SCALE_COUNT),
+            'scale_increment': orm.Float(self._SCALE_INCREMENT),
             'metadata': {
                 'call_link_label': 'eos'
             },

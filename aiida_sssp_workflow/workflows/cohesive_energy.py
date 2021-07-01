@@ -78,59 +78,30 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
+        """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('code',
-                   valid_type=orm.Code,
-                   help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input_namespace(
-            'pseudos',
-            valid_type=orm.UpfData,
-            dynamic=True,
-            help=
-            'A mapping of `UpfData` nodes onto the kind name to which they should apply.'
-        )
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            required=False,
-            help='Ground state structure which the verification perform')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
+        spec.input('code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
+        spec.input_namespace('pseudos', valid_type=orm.UpfData, dynamic=True,
+                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
+        spec.input('structure', valid_type=orm.StructureData, required=False,
+                    help='Ground state structure which the verification perform')
+        spec.input('options', valid_type=orm.Dict, required=False,
+                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw_bulk',
-                   valid_type=orm.Dict,
-                   default=PW_PARAS,
-                   help='parameters for pwscf of bulk calculation.')
-        spec.input('parameters.pw_atom',
-                   valid_type=orm.Dict,
-                   default=PW_PARAS,
-                   help='parameters for pwscf of atom calculation.')
-        spec.input(
-            'parameters.ecutwfc',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
-        )
-        spec.input(
-            'parameters.ecutrho',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
-        )
-        spec.input(
-            'parameters.kpoints_distance',
-            valid_type=orm.Float,
-            default=lambda: orm.Float(0.1),
-            help='Kpoints distance setting for bulk energy calculation.')
-        spec.input(
-            'parameters.vacuum_length',
-            valid_type=orm.Float,
-            default=lambda: orm.Float(12.0),
-            help='The length of cubic cell in isolate atom calculation.')
+        spec.input('parameters.pw_bulk', valid_type=orm.Dict, default=PW_PARAS,
+                    help='parameters for pwscf of bulk calculation.')
+        spec.input('parameters.pw_atom', valid_type=orm.Dict, default=PW_PARAS,
+                    help='parameters for pwscf of atom calculation.')
+        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
+                    help='Kpoints distance setting for bulk energy calculation.')
+        spec.input('parameters.vacuum_length', valid_type=orm.Float, default=lambda: orm.Float(12.0),
+                    help='The length of cubic cell in isolate atom calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -138,22 +109,12 @@ class CohesiveEnergyWorkChain(WorkChain):
             cls.inspect_energy,
             cls.results,
         )
-        spec.output(
-            'output_parameters',
-            valid_type=orm.Dict,
-            required=True,
-            help=
-            'The output parameters include cohesive energy of the structure.')
-        spec.exit_code(
-            211,
-            'ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY',
-            message='PwBaseWorkChain of atom energy evaluation failed.')
-        spec.exit_code(
-            212,
-            'ERROR_SUB_PROCESS_FAILED_BULK_ENERGY',
-            message=
-            'PwBaseWorkChain of bulk structure energy evaluation failed with exit status.'
-        )
+        spec.output('output_parameters', valid_type=orm.Dict, required=True,
+                    help='The output parameters include cohesive energy of the structure.')
+        spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY',
+                    message='PwBaseWorkChain of atom energy evaluation failed.')
+        spec.exit_code(212, 'ERROR_SUB_PROCESS_FAILED_BULK_ENERGY',
+                    message='PwBaseWorkChain of bulk structure energy evaluation failed with exit status.')
 
     def setup(self):
         """Input validation"""

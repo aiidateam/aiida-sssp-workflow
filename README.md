@@ -5,42 +5,42 @@
 
 # aiida-sssp-workflow
 
-The `aiida-sssp-workflow` is an aiida plugin to run the verification for a given pseudopotential. The plugin contains 
+The `aiida-sssp-workflow` is an aiida plugin to run the verification for a given pseudopotential. The plugin contains
 workflows to verify the pseudopotential.
 It can:
 
-1) evaluate the [delta factor]() of the pseudopotential with respect to WIEN2K all-electrons results. 
+1) evaluate the [delta factor]() of the pseudopotential with respect to WIEN2K all-electrons results.
 2) Converge test on varies of properties to give a recommended energy cutoff of the pseudopotential, include properties:
     1) Cohesive energy
     2) phonon frequencies
     3) pressure
     4) bands distance
-    
+
 ### The computational details to running the calculation
 
 #### Input Structures:
 
-- In Δ-factor calculation: most stable elemental system from [Cottenier's work](http://molmod.ugent.be/deltacodesdft) 
+- In Δ-factor calculation: most stable elemental system from [Cottenier's work](http://molmod.ugent.be/deltacodesdft)
     and rare-earth nitrides from [Topsakal-Wentzkovitch work](https://www.sciencedirect.com/science/article/abs/pii/S0927025614005059);
-- Phonon, pressure, cohesive energy: Cottenier's structures 
-    (except SiF4 has been used for F because of convergence issues) and 
+- Phonon, pressure, cohesive energy: Cottenier's structures
+    (except SiF4 has been used for F because of convergence issues) and
     rare-earth nitrides; Use primitive cells.
-- Bands: Cottenier's structures reduced to primitive cells 
-    (except SiF4 has been used for F because of convergence issues) and rare-earth nitrides. 
+- Bands: Cottenier's structures reduced to primitive cells
+    (except SiF4 has been used for F because of convergence issues) and rare-earth nitrides.
     PwbandWorkflow will make a primitive cell for band calculation (Remember to turn off the relax step).
-    
+
 #### Parameters of Δ calculations
 
 - wave function cutoffs: 200 Ry;
-- dual = 8 (PAW/US), 4 (NC); Mn/Fe/Co have larger duals tested as well; 12 and 16. 
-    We have gone in a mode where we do not use the dual, but we use ECUTRHO and ECUTWFC. However, dual is still used in 
+- dual = 8 (PAW/US), 4 (NC); Mn/Fe/Co have larger duals tested as well; 12 and 16.
+    We have gone in a mode where we do not use the dual, but we use ECUTRHO and ECUTWFC. However, dual is still used in
     simply setting the ecutwfc/ecutrho pairs.
 - k-points: 0.1A^-1;
-- smearing (degauss): Marzari-Vanderbilt, 0.01 Ry; 
-- non spin-polarized calculations except Mn (antiferromagnetic), 
-    O and Cr (antiferromagnetic), 
+- smearing (degauss): Marzari-Vanderbilt, 0.01 Ry;
+- non spin-polarized calculations except Mn (antiferromagnetic),
+    O and Cr (antiferromagnetic),
     Fe, Co, and Ni (ferromagnetic).
-    
+
 > As for calculation of lanthenide, always increase `nbnd` to two times of the default number.
 
 #### Parameters in phonon, pressure, cohesive energy calculations:
@@ -48,19 +48,19 @@ It can:
 - k-points: 0.15A^-1
 - smearing: Marzari-Vanderbilt, 0.01 Ry;
 - k-points for the isolated atoms: 1x1x1;
-- smearing for the isolated atoms: gaussian 0.01 Ry; 
+- smearing for the isolated atoms: gaussian 0.01 Ry;
 - unit cell for the isolated atoms: 12x12x12 Å with atom sit in [6.0, 6.0, 6.0] the middle of the cell;
 - q-point: only calculate the phonon frequencies on Brillouin-Zone border q=(0.5, 0.5, 0.5).
 - all calculations non-spin-polarized.
 
-> In isolate atom energy calculation of cohesive energy evaluation. 
+> In isolate atom energy calculation of cohesive energy evaluation.
 > As for lanthenide, increase `nbnd` to three times of the default number. Moreover, use more RAM(by increase `num_machine` to 4).
 
 
-> NOTE: PWscf writes in the output something called total energy. This is *NOT* the total energy when you have smearing; 
-> it’s the total free energy E-TS. PWscf also writes -TS, so one can get back the total energy E. 
-> In general (for a metal) E-TS should be used. For an atom instead the total energy should be used, 
-> since the -TS term is not really physical (it comes from the entropy of fractional occupations on the atom). 
+> NOTE: PWscf writes in the output something called total energy. This is *NOT* the total energy when you have smearing;
+> it’s the total free energy E-TS. PWscf also writes -TS, so one can get back the total energy E.
+> In general (for a metal) E-TS should be used. For an atom instead the total energy should be used,
+> since the -TS term is not really physical (it comes from the entropy of fractional occupations on the atom).
 > Check with Nicola if you have atoms where -TS is different from zero. (http://theossrv1.epfl.ch/Main/ElectronicTemperature)
 
 
@@ -110,6 +110,15 @@ Re-generate the SiF4 structure start from the cif file from [COD database](http:
 
 - seven points
 - 0.02 interval
+
+## Publishing Releases
+
+1. Create a release PR/commit to the `develop` branch, updating version number of `aiida_sssp_workflow/__init__.py`, `setup.json` and update `CHANGELOG.md`.
+2. Fast-forward merge `develop` into the `master` branch
+3. Create a release on GitHub (<https://github.com/aiidateam/aiida-sssp-workflow/releases/new>), pointing to the release commit on `master`, named `v.X.Y.Z` (identical to version in `setup.json`)
+4. This will trigger the `continuous-deployment` GitHub workflow which, if all tests pass, will publish the package to PyPi. Check this has successfully completed in the GitHub Actions tab (<https://github.com/aiidateam/aiida-sssp-workflow/actions>).
+
+(if the release fails, delete the release and tag)
 
 ## License
 

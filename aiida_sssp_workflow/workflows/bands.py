@@ -45,8 +45,8 @@ class BandsWorkChain(WorkChain):
             'degauss': 0.00735,
             'occupations': 'smearing',
             'smearing': 'marzari-vanderbilt',
-            "noinv": True,
-            "nosym": True,
+            'noinv': True,
+            'nosym': True,
         },
         'ELECTRONS': {
             'conv_thr': 1e-10,
@@ -61,63 +61,32 @@ class BandsWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
+        """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('code',
-                   valid_type=orm.Code,
-                   help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input_namespace(
-            'pseudos',
-            valid_type=orm.UpfData,
-            dynamic=True,
-            help=
-            'A mapping of `UpfData` nodes onto the kind name to which they should apply.'
-        )
-        spec.input(
-            'structure',
-            valid_type=orm.StructureData,
-            required=True,
-            help='Ground state structure which the verification perform')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
+        spec.input('code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
+        spec.input_namespace('pseudos', valid_type=orm.UpfData, dynamic=True,
+                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
+        spec.input('structure', valid_type=orm.StructureData, required=True,
+                    help='Ground state structure which the verification perform')
+        spec.input('options', valid_type=orm.Dict, required=False,
+                    help='Optional `options` to use for the `PwCalculations`.')
         spec.input_namespace('parameters', help='Para')
-        spec.input(
-            'parameters.pw',
-            valid_type=orm.Dict,
-            required=False,
-            help=
-            'parameters for pw.x, if not set use the default hard code one.')
-        spec.input(
-            'parameters.run_band_structure',
-            default=lambda: orm.Bool(False),
-            help='If True, run to get refined band structure along path.')
-        spec.input(
-            'parameters.ecutwfc',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.'
-        )
-        spec.input(
-            'parameters.ecutrho',
-            valid_type=(orm.Float, orm.Int),
-            required=False,
-            help=
-            'The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.'
-        )
-        spec.input('parameters.scf_kpoints_distance',
-                   valid_type=orm.Float,
-                   default=lambda: orm.Float(0.1),
-                   help='Kpoints distance setting for scf calculation.')
-        spec.input('parameters.nbands_factor',
-                   valid_type=orm.Float,
-                   default=lambda: orm.Float(1.0),
-                   help='Bands number factor in bands calculation.')
-        spec.input('parameters.bands_kpoints_distance',
-                   valid_type=orm.Float,
-                   default=lambda: orm.Float(0.15),
-                   help='Kpoints distance setting for bands nscf calculation.')
+        spec.input('parameters.pw', valid_type=orm.Dict, required=False,
+                    help='parameters for pw.x, if not set use the default hard code one.')
+        spec.input('parameters.run_band_structure', default=lambda: orm.Bool(False),
+                    help='If True, run to get refined band structure along path.')
+        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('parameters.scf_kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
+                    help='Kpoints distance setting for scf calculation.')
+        spec.input('parameters.nbands_factor', valid_type=orm.Float, default=lambda: orm.Float(1.0),
+                    help='Bands number factor in bands calculation.')
+        spec.input('parameters.bands_kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.15),
+                    help='Kpoints distance setting for bands nscf calculation.')
         spec.outline(
             cls.setup,
             cls.validate_structure,
@@ -131,25 +100,18 @@ class BandsWorkChain(WorkChain):
             ),
             cls.results,
         )
-        spec.output_namespace('seekpath_band_structure',
-                              dynamic=True,
-                              help='output of band structure along seekpath.')
-        spec.output('scf_parameters',
-                    valid_type=orm.Dict,
+        spec.output_namespace('seekpath_band_structure', dynamic=True,
+                                help='output of band structure along seekpath.')
+        spec.output('scf_parameters', valid_type=orm.Dict,
                     help='The output parameters of the SCF `PwBaseWorkChain`.')
-        spec.output(
-            'band_parameters',
-            valid_type=orm.Dict,
-            help='The output parameters of the BANDS `PwBaseWorkChain`.')
-        spec.output('band_structure',
-                    valid_type=orm.BandsData,
+        spec.output('band_parameters', valid_type=orm.Dict,
+                    help='The output parameters of the BANDS `PwBaseWorkChain`.')
+        spec.output('band_structure', valid_type=orm.BandsData,
                     help='The computed band structure.')
-        spec.output('nbands_factor',
-                    valid_type=orm.Float,
+        spec.output('nbands_factor', valid_type=orm.Float,
                     help='The nbands factor of final bands run.')
-        spec.exit_code(201,
-                       'ERROR_SUB_PROCESS_FAILED_BANDS',
-                       message='The `PwBandsWorkChain` sub process failed.')
+        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
+                    message='The `PwBandsWorkChain` sub process failed.')
 
     def setup(self):
         """Input validation"""
