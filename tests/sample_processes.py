@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """helper workfunction"""
 from aiida.engine import calcfunction
 

@@ -108,6 +108,7 @@ class VerificationWorkChain(WorkChain):
             message='The sub-workflows {processes} is not finished ok.')
 
     def setup(self):
+        """setup"""
         self.ctx.ecutwfc_list = self.inputs.parameters.ecutwfc_list
         self.ctx.ecutrho_list = self.inputs.parameters.ecutrho_list
         self.ctx.pseudo = self.inputs.pseudo
@@ -269,6 +270,7 @@ class VerificationWorkChain(WorkChain):
             self.ctx.workchains['convergence_pressure'] = running
 
     def results(self):
+        """result"""
         not_finished_ok = {}
         for wname, workchain in self.ctx.workchains.items():
             if workchain.is_finished_ok:

@@ -22,7 +22,6 @@ disable = [
     'too-many-branches',
     'too-many-locals',
     'protected-access',
-    'missing-function-docstring',
 ]
 
 [tool.pylint.miscellaneous]
@@ -39,10 +38,10 @@ good-names = [
     'B1',
     'P',
     'V',
+    'REF',
     'SsspFamily',
     'StructureData',
     'UpfData',
-    'HpCalculation',
     'PwCalculation',
 ]
 

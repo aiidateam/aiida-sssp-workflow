@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from aiida import orm
 from aiida.common import AttributeDict

@@ -23,11 +23,12 @@ PARA_ECUTRHO_LIST = lambda: orm.List(list=[
 
 
 @workfunction
-def helper_cohesive_energy_difference(input_band_structure: orm.BandsData,
-                                      ref_band_structure: orm.BandsData,
-                                      input_band_parameters: orm.Dict,
-                                      ref_band_parameters: orm.Dict,
-                                      smearing: orm.Float, is_metal: orm.Bool):
+def helper_bands_distence_difference(input_band_structure: orm.BandsData,
+                                     ref_band_structure: orm.BandsData,
+                                     input_band_parameters: orm.Dict,
+                                     ref_band_parameters: orm.Dict,
+                                     smearing: orm.Float, is_metal: orm.Bool):
+    """get the bands distence difference between two calculations"""
     res = calculate_bands_distance(input_band_structure,
                                    ref_band_structure,
                                    input_band_parameters,
@@ -35,17 +36,6 @@ def helper_cohesive_energy_difference(input_band_structure: orm.BandsData,
                                    smearing=smearing,
                                    is_metal=is_metal)
 
-    # calculate_bands_distance returns:
-    #
-    # return orm.Dict(dict={
-    #     'eta_v': res.get('eta_v', None),
-    #     'shift_v': res.get('shift_v', None),
-    #     'max_diff_v': res.get('max_diff_v', None),
-    #     'eta_10': res.get('eta_10', None),
-    #     'shift_10': res.get('shift_10', None),
-    #     'max_diff_10': res.get('max_diff_10', None),
-    #     'bands_unit': 'eV',
-    # })
     return res
 
 
@@ -57,10 +47,11 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
 
     @classmethod
     def define(cls, spec):
+        """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('code',
-                   valid_type=orm.Code,
-                   help='The `pw.x` code use for the `PwCalculation`.')
+        spec.input('code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
 
     def setup_protocol(self):
         # pylint: disable=invalid-name, attribute-defined-outside-init
@@ -87,7 +78,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         return BandsWorkChain
 
     def get_evaluate_process(self):
-        return helper_cohesive_energy_difference
+        return helper_bands_distence_difference
 
     def get_parsed_results(self):
         return {

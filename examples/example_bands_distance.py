@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Example for functions for bands distance calculation
 """

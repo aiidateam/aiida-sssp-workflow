@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 calculate bands distance
 """
@@ -12,6 +13,7 @@ def calculate_bands_distance(bands_a: orm.BandsData, bands_b: orm.BandsData,
                              band_parameters_a: orm.Dict,
                              band_parameters_b: orm.Dict, smearing: orm.Float,
                              is_metal: orm.Bool):
+    """doc"""
     res = get_bands_distance(bands_a, bands_b, band_parameters_a,
                              band_parameters_b, smearing.value, is_metal.value)
 

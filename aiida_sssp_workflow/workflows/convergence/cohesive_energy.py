@@ -13,6 +13,7 @@ from .base import BaseConvergenceWorkChain
 @calcfunction
 def helper_cohesive_energy_difference(input_parameters: orm.Dict,
                                       ref_parameters: orm.Dict) -> orm.Dict:
+    """calculate the cohesive energy difference from parameters"""
     res_energy = input_parameters['cohesive_energy_per_atom']
     ref_energy = ref_parameters['cohesive_energy_per_atom']
     absolute_diff = abs(res_energy - ref_energy)

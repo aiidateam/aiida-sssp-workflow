@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Module comtain helper functions for workflows
 """
@@ -91,6 +92,7 @@ def get_pw_inputs_from_pseudo(pseudo, primitive_cell=True):
 
 
 def helper_get_v0_b0_b1(element: str):
+    """get eos reference of element"""
     import re
     from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 

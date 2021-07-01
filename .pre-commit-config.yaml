@@ -42,6 +42,7 @@ repos:
                 setup.py|
                 examples/.*|
                 docs/.*|
+                tests/sample_processes.py|
                 tests/.*(?<!\.py)$
             )$
 -   repo: local

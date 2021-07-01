@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Module contain the launch cmdline method of delta-factor workflow
 """

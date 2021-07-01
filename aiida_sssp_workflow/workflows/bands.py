@@ -203,6 +203,7 @@ class BandsWorkChain(WorkChain):
         return inputs
 
     def run_bands(self):
+        """run bands calculation"""
         inputs = self._get_band_inputs()
         inputs['nbands_factor'] = self.ctx.nbands_factor
         inputs['bands_kpoints'] = self.ctx.bands_kpoints
@@ -231,9 +232,11 @@ class BandsWorkChain(WorkChain):
         self.ctx.output_nbands_factor = self.ctx.nbands_factor - 1.0
 
     def should_band_structure(self):
+        """should do band structure calc?"""
         return self.inputs.parameters.run_band_structure.value
 
     def run_band_structure(self):
+        """run band structure calculation"""
         inputs = self._get_band_inputs()
         inputs['nbands_factor'] = self.ctx.output_nbands_factor
         inputs['bands_kpoints_distance'] = orm.Float(self._SEEKPATH_DISTANCE)
@@ -243,6 +246,7 @@ class BandsWorkChain(WorkChain):
         return ToContext(workchain_band_structure=running)
 
     def inspect_band_structure(self):
+        """inspect band structure"""
         workchain = self.ctx.workchain_band_structure
 
         if not workchain.is_finished_ok:
@@ -260,6 +264,7 @@ class BandsWorkChain(WorkChain):
                  workchain.outputs.band_structure)
 
     def results(self):
+        """result"""
         self.report('pw bands workchain successfully completed')
         self.out('scf_parameters',
                  self.ctx.workchain_bands.outputs.scf_parameters)

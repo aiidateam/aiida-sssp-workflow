@@ -35,6 +35,7 @@ def update_dict(d, u):
 
 
 def get_standard_cif_filename_from_element(element: str) -> str:
+    """get cif filename from element"""
     if element in RARE_EARTH_ELEMENTS:
         fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN',
                                          f'{element}N.cif')
@@ -58,10 +59,11 @@ def parse_upf(upf_content: str) -> dict:
 
     upf_dict = upf_to_json(upf_content, None)
 
-    return upf_dict["pseudo_potential"]
+    return upf_dict['pseudo_potential']
 
 
 def helper_parse_upf(upf: orm.UpfData) -> dict:
+    """parser upf"""
     header = parse_upf(upf.get_content())['header']
 
     return header

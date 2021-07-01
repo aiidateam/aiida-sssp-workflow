@@ -80,5 +80,3 @@ The options of ``aiida-sssp-workflow workflow launch verification`` are::
                                       running it locally.  [default: False]
 
       -h, --help                      Show this message and exit.
-
-

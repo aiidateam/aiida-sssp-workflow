@@ -19,7 +19,7 @@ loop_
   _atom_site_fract_y
   _atom_site_fract_z
   _atom_site_type_symbol
-         Lu1       0.0       0.0       0.0       Lu        
+         Lu1       0.0       0.0       0.0       Lu
          N1        0.5000000000000001  0.5000000000000017  0.49999999999999817           N
 _cell_angle_alpha                       60.00000000000003
 _cell_angle_beta                        60.00000000000003
@@ -29,6 +29,6 @@ _cell_length_b                          3.37152
 _cell_length_c                          3.371520000000003
 loop_
   _symmetry_equiv_pos_as_xyz
-         'x, y, z' 
+         'x, y, z'
 _symmetry_int_tables_number             1
 _symmetry_space_group_name_H-M          'P 1'

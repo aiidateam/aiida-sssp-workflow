@@ -272,6 +272,7 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.ctx.element_energy = element_energy
 
     def results(self):
+        """result"""
         num_of_atoms = sum(self.ctx.element_number.values())
         cohesive_energy = self.ctx.bulk_energy
         element_energy = {

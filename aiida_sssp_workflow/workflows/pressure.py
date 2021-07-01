@@ -85,7 +85,6 @@ class PressureWorkChain(WorkChain):
             cls.validate_structure,
             cls.run_scf,
             cls.inspect_scf,
-            cls.results,
         )
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include cohesive energy of the structure.')
@@ -112,6 +111,7 @@ class PressureWorkChain(WorkChain):
         self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
 
     def validate_structure(self):
+        """doc"""
         self.ctx.pseudos = self.inputs.pseudos
 
     def run_scf(self):
@@ -162,6 +162,3 @@ class PressureWorkChain(WorkChain):
         output_parameters = helper_get_hydrostatic_stress(
             output_trajectory, output_parameters)
         self.out('output_parameters', output_parameters)
-
-    def results(self):
-        pass

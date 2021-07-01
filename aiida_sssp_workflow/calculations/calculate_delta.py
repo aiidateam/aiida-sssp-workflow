@@ -51,8 +51,8 @@ def calculate_delta(element, V0, B0, B1) -> orm.Dict:
     eloverlap = [element.value]
     if not eloverlap:
         # TODO ExitCode
-        raise ValueError("Element {} is not present in the reference set"
-                         "".format(element))
+        raise ValueError(
+            f'Element {element} is not present in the reference set')
     eloverlap = [element.value]
     # Delta computation
     Delta, Deltarel, Delta1 = _calcDelta(data_tested, data_ref, eloverlap)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Convergence workchain based on aiida-optimize by
 inherit `aiida_optimize.engines._convergence::_ConvergenceImpl`
