@@ -65,6 +65,7 @@
             "pytest-regressions~=1.0"
         ],
         "pre-commit": [
+            "mypy==0.790",
             "pre-commit~=2.2",
             "pylint~=2.6.0"
         ],
