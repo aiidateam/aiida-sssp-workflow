@@ -271,6 +271,9 @@ latex_elements = {
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+# autodoc mock
+autodoc_mock_imports = ['f90wrap', 'sssp.efermi_module', 'numpy']
+
 
 def run_apidoc(_):
     """Runs sphinx-apidoc when building the documentation.
