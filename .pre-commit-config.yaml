@@ -65,4 +65,8 @@ repos:
         name: Check version numbers
         entry: python ./.github/check_version.py
         language: system
-        files: '^(setup.json)|(aiida_sssp_workflow/__init__.py)'
+        files: >-
+            (?x)^(
+                setup.json|
+                aiida_sssp_workflow/__init__.py|
+            )$

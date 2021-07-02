@@ -13,7 +13,6 @@ The aiida-sssp-workflow plugin for `AiiDA`_
 
    user_guide/index
    developer_guide/index
-   API documentation <apidoc/aiida_sssp_workflow>
 
 If you use this plugin for your research, please cite the following work:
 
@@ -23,7 +22,7 @@ If you use this plugin for your research, please cite the following work:
 
 .. highlights:: K. Lejaeghere et al., Science 351 (6280), 1415 (2016).
   http://molmod.ugent.be/deltacodesdft
-http://molmod.ugent.be/deltacodesdft
+
 If you use AiiDA for your research, please cite the following work:
 
 .. highlights:: Giovanni Pizzi, Andrea Cepellotti, Riccardo Sabatini, Nicola Marzari,
