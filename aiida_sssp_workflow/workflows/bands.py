@@ -6,13 +6,14 @@ import numpy as np
 
 from aiida import orm
 from aiida.engine import WorkChain, ToContext, while_, if_
-from aiida.plugins import WorkflowFactory, CalculationFactory
+from aiida.plugins import WorkflowFactory, CalculationFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
 
 PwBandsWorkChain = WorkflowFactory('quantumespresso.pw.bands')
 create_kpoints_from_distance = CalculationFactory(
     'quantumespresso.create_kpoints_from_distance')
+UpfData = DataFactory('pseudo.upf')
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -66,7 +67,7 @@ class BandsWorkChain(WorkChain):
         super().define(spec)
         spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input_namespace('pseudos', valid_type=orm.UpfData, dynamic=True,
+        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData, required=True,
                     help='Ground state structure which the verification perform')
@@ -112,6 +113,7 @@ class BandsWorkChain(WorkChain):
                     help='The nbands factor of final bands run.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
+        # yapf: enable
 
     def setup(self):
         """Input validation"""
@@ -166,7 +168,7 @@ class BandsWorkChain(WorkChain):
         if 'options' in self.inputs:
             options = self.inputs.options.get_dict()
         else:
-            from aiida_quantumespresso.utils.resources import get_default_options
+            from aiida_sssp_workflow.utils import get_default_options
 
             # Too many kpoints may go beyond 1800s
             options = get_default_options(

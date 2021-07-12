@@ -5,12 +5,13 @@ WorkChain calculate phonon frequencies at Gamma
 from aiida import orm
 from aiida.engine import WorkChain, ToContext
 from aiida.common import AttributeDict, NotExistentAttributeError
-from aiida.plugins import WorkflowFactory
+from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
 
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 PhBaseWorkflow = WorkflowFactory('quantumespresso.ph.base')
+UpfData = DataFactory('pseudo.upf')
 
 PW_PARAS = lambda: orm.Dict(
     dict={
@@ -69,7 +70,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,
                     help='The `ph.x` code use for the `PwCalculation`.')
-        spec.input_namespace('pseudos', valid_type=orm.UpfData, dynamic=True,
+        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData, required=True,
                     help='Ground state structure which the verification perform')
@@ -103,6 +104,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                     message='The `PwBaseWorkChain` sub process failed.')
         spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER',
                     message='The remote folder node not exist')
+        # yapf: enable
 
     def setup(self):
         """Input validation"""
@@ -160,7 +162,7 @@ class PhononFrequenciesWorkChain(WorkChain):
         if 'options' in self.inputs:
             options = self.inputs.options.get_dict()
         else:
-            from aiida_quantumespresso.utils.resources import get_default_options
+            from aiida_sssp_workflow.utils import get_default_options
 
             options = get_default_options(with_mpi=True)
 

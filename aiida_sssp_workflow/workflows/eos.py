@@ -89,6 +89,7 @@ class EquationOfStateWorkChain(WorkChain):
                     help='A dict of results volumes and energise.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')
+        # yapf: enable
 
     def get_scale_factors(self):
         """Return the list of scale factors."""
@@ -97,7 +98,10 @@ class EquationOfStateWorkChain(WorkChain):
 
         count = self.inputs.scale_count.value
         increment = self.inputs.scale_increment.value
-        return [orm.Float(1 + i * increment - (count - 1) * increment / 2) for i in range(count)]
+        return [
+            orm.Float(1 + i * increment - (count - 1) * increment / 2)
+            for i in range(count)
+        ]
 
     def get_sub_workchain_builder(self, scale_factor):
         """Return the builder for the relax workchain."""
@@ -105,24 +109,28 @@ class EquationOfStateWorkChain(WorkChain):
         structure = scale_structure(self.inputs.structure, scale_factor)
         unscaled_structure = self.inputs.structure
 
-        inputs = AttributeDict(self.exposed_inputs(PwBaseWorkChain, namespace='scf'))
+        inputs = AttributeDict(
+            self.exposed_inputs(PwBaseWorkChain, namespace='scf'))
 
         parameters = inputs.pw.parameters.get_dict()
         parameters.setdefault('CONTROL', {})['calculation'] = 'scf'
 
         kpoints = orm.KpointsData()
         kpoints.set_cell_from_structure(unscaled_structure)
-        kpoints.set_kpoints_mesh_from_density(distance=self.inputs.kpoints_distance.value)
+        kpoints.set_kpoints_mesh_from_density(
+            distance=self.inputs.kpoints_distance.value)
 
         inputs.metadata.call_link_label = 'scf'
         inputs.kpoints = kpoints.store()
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
-        inputs.pw.settings = orm.Dict(dict={'CMDLINE': ['-ndiag', '1', '-nk', '4']})    # Too many cores for few bands
+        # inputs.pw.settings = orm.Dict(
+        #     dict={'CMDLINE': ['-ndiag', '1', '-nk',
+        #                       '4']})  # Too many cores for few bands
         if 'options' in self.inputs:
             inputs.pw.metadata.options = self.inputs.options.get_dict()
         else:
-            from aiida_quantumespresso.utils.resources import get_default_options
+            from aiida_sssp_workflow.utils import get_default_options
 
             inputs.pw.metadata.options = get_default_options(with_mpi=True)
 
@@ -136,7 +144,9 @@ class EquationOfStateWorkChain(WorkChain):
         """Run the first workchain."""
         scale_factor = self.get_scale_factors()[0]
         builder = self.get_sub_workchain_builder(scale_factor)
-        self.report(f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`')
+        self.report(
+            f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`'
+        )
         self.ctx.previous_workchain = self.submit(builder)
         self.to_context(children=append_(self.ctx.previous_workchain))
 
@@ -148,18 +158,22 @@ class EquationOfStateWorkChain(WorkChain):
             self.report(
                 f'PwBaseWorkChain pk={workchain.pk} for first scale structure run is failed.'
             )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=PwBaseWorkChain)
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
+                cls=PwBaseWorkChain)
 
         for scale_factor in self.get_scale_factors()[1:]:
             builder = self.get_sub_workchain_builder(scale_factor)
-            self.report(f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`')
+            self.report(
+                f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`'
+            )
             self.to_context(children=append_(self.submit(builder)))
 
     def inspect_eos(self):
         """Inspect all children workflows to make sure they finished successfully."""
-        if any([not child.is_finished_ok for child in self.ctx.children]):
+        if any(not child.is_finished_ok for child in self.ctx.children):
             process_class = PwBaseWorkChain
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=process_class)
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
+                cls=process_class)
 
         volume_energy = {
             'volumes': {},
@@ -169,14 +183,15 @@ class EquationOfStateWorkChain(WorkChain):
         }
         for index, child in enumerate(self.ctx.children):
             volume = child.outputs.output_parameters['volume']
-            energy = child.outputs.output_parameters['energy']  # Already the free energy E-TS (metal)
+            energy = child.outputs.output_parameters[
+                'energy']  # Already the free energy E-TS (metal)
             num_of_atoms = child.outputs.output_parameters['number_of_atoms']
-            self.report(f'Image {index}: volume={volume}, total energy={energy}')
+            self.report(
+                f'Image {index}: volume={volume}, total energy={energy}')
             volume_energy['volumes'][index] = volume / num_of_atoms
             volume_energy['energies'][index] = energy / num_of_atoms
 
-        res = birch_murnaghan_fit(
-            orm.Dict(dict=volume_energy))
+        res = birch_murnaghan_fit(orm.Dict(dict=volume_energy))
         output_birch_murnaghan_fit = {
             'V0': res['volume0'],
             'B0': res['bulk_modulus0'],

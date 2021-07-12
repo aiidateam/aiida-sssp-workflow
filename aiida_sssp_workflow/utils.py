@@ -4,7 +4,9 @@
 import collections.abc
 import importlib_resources
 
-from aiida import orm
+from aiida.plugins import DataFactory
+
+UpfData = DataFactory('pseudo.upf')
 
 RARE_EARTH_ELEMENTS = [
     'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er',
@@ -62,8 +64,26 @@ def parse_upf(upf_content: str) -> dict:
     return upf_dict['pseudo_potential']
 
 
-def helper_parse_upf(upf: orm.UpfData) -> dict:
+def helper_parse_upf(upf: UpfData) -> dict:
     """parser upf"""
     header = parse_upf(upf.get_content())['header']
 
     return header
+
+
+def get_default_options(max_num_machines=1,
+                        max_wallclock_seconds=1800,
+                        with_mpi=False):
+    """Return an instance of the options dictionary with the minimally required parameters for a `CalcJob`.
+
+    :param max_num_machines: set the number of nodes, default=1
+    :param max_wallclock_seconds: set the maximum number of wallclock seconds, default=1800
+    :param with_mpi: whether to run the calculation with MPI enabled
+    """
+    return {
+        'resources': {
+            'num_machines': int(max_num_machines)
+        },
+        'max_wallclock_seconds': int(max_wallclock_seconds),
+        'withmpi': with_mpi,
+    }

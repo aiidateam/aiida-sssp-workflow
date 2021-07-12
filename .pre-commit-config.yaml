@@ -12,7 +12,8 @@ repos:
         exclude: >-
             (?x)^(
                 tests/.*.*out|
-                tests/.*.in$
+                tests/.*.in |
+                tests/_static/.*(?<!\.py)$
             )$
 
 -   repo: https://github.com/ikamensh/flynt/
@@ -31,6 +32,10 @@ repos:
         name: yapf
         types: [python]
         args: ['-i']
+        exclude: >-
+            (?x)^(
+                examples/.*|
+            )$
 
 -   repo: https://github.com/PyCQA/pylint
     rev: pylint-2.6.0

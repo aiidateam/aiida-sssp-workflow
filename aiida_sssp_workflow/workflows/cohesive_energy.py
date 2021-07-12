@@ -6,11 +6,12 @@ Create the structure of isolate atom
 from aiida import orm
 from aiida.engine import calcfunction, WorkChain, append_
 from aiida.common import AttributeDict
-from aiida.plugins import WorkflowFactory
+from aiida.plugins import WorkflowFactory, DataFactory
 
-from aiida_sssp_workflow.utils import helper_parse_upf, update_dict, RARE_EARTH_ELEMENTS
+from aiida_sssp_workflow.utils import update_dict, RARE_EARTH_ELEMENTS
 
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
+UpfData = DataFactory('pseudo.upf')
 
 
 @calcfunction
@@ -83,7 +84,7 @@ class CohesiveEnergyWorkChain(WorkChain):
         super().define(spec)
         spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input_namespace('pseudos', valid_type=orm.UpfData, dynamic=True,
+        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData, required=False,
                     help='Ground state structure which the verification perform')
@@ -115,6 +116,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                     message='PwBaseWorkChain of atom energy evaluation failed.')
         spec.exit_code(212, 'ERROR_SUB_PROCESS_FAILED_BULK_ENERGY',
                     message='PwBaseWorkChain of bulk structure energy evaluation failed with exit status.')
+        # yapf: enable
 
     def setup(self):
         """Input validation"""
@@ -172,7 +174,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_bulk_parameters),
-                'settings': orm.Dict(dict=self._BULK_CMDLINE_SETTING),
+                # 'settings': orm.Dict(dict=self._BULK_CMDLINE_SETTING),
                 'metadata': {},
             },
             'kpoints_distance':
@@ -182,7 +184,7 @@ class CohesiveEnergyWorkChain(WorkChain):
         if 'options' in self.inputs:
             options = self.inputs.options.get_dict()
         else:
-            from aiida_quantumespresso.utils.resources import get_default_options
+            from aiida_sssp_workflow.utils import get_default_options
 
             options = get_default_options(with_mpi=True)
 
@@ -195,15 +197,12 @@ class CohesiveEnergyWorkChain(WorkChain):
             atom_kpoints = orm.KpointsData()
             atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
-            header = helper_parse_upf(pseudo)
-            z_valence = header['z_valence']
-
             parameters = {}
             if element in RARE_EARTH_ELEMENTS:
                 # And might be a small mixing is needed for electrons convergence
                 parameters = {
                     'SYSTEM': {
-                        'nbnd': int(z_valence * 3),
+                        'nbnd': int(pseudo.z_valence * 3),
                     }
                 }
 
@@ -221,7 +220,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                         element: pseudo
                     },
                     'parameters': orm.Dict(dict=atom_pw_parameters),
-                    'settings': orm.Dict(dict=self._ATOM_CMDLINE_SETTING),
+                    # 'settings': orm.Dict(dict=self._ATOM_CMDLINE_SETTING),
                     'metadata': {},
                 },
                 'kpoints': atom_kpoints,

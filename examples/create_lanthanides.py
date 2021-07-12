@@ -38,7 +38,7 @@ def create_lanthanide_nitride(element, latt):
     pbc = [True, True, True]
     scaled_positions = [[0.0, 0.0, 0.0], [0.5, 0.5, 0.0], [0.5, 0.0, 0.5],
                         [0.0, 0.5, 0.5], [0.0, 0.0, 0.5], [0.5, 0.5, 0.5],
-                        value[0.5, 0.0, 0.0], [0.0, 0.5, 0.0]]
+                        [0.5, 0.0, 0.0], [0.0, 0.5, 0.0]]
     ase_structure = Atoms(symbols=f'{element}4N4',
                           cell=cell,
                           pbc=pbc,

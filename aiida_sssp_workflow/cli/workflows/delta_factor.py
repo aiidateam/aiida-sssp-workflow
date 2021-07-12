@@ -38,7 +38,7 @@ def launch_workflow(code, pseudo, smearing, kpoints_distance, scale_count,
                     scale_increment, ecutwfc, ecutrho, clean_workdir,
                     max_num_machines, max_wallclock_seconds, with_mpi, daemon):
     """Run the workflow to calculate delta factor"""
-    from aiida_quantumespresso.utils.resources import get_default_options
+    from aiida_sssp_workflow.utils import get_default_options
 
     parameters = {
         'SYSTEM': {},

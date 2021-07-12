@@ -12,6 +12,17 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 @pytest.fixture(scope='function')
+def mocked_pw67(mock_code_factory):
+    """
+    Create mocked "pw" code
+    """
+    return mock_code_factory(label='pw67',
+                             data_dir_abspath=DATA_DIR,
+                             entry_point='quantumespresso.pw',
+                             ignore_files=('_aiidasubmit.sh', ))
+
+
+@pytest.fixture(scope='function')
 def pp_silicon_sg15():
     """
     Create a aiida-pseudo pp data of sg15 silicon

@@ -6,6 +6,7 @@ import yaml
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, ToContext, calcfunction
+from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
     MAGNETIC_ELEMENTS, \
@@ -14,6 +15,8 @@ from aiida_sssp_workflow.utils import update_dict, \
 from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
 from aiida_sssp_workflow.calculations.calculate_delta import calculate_delta
 from aiida_sssp_workflow.workflows.eos import EquationOfStateWorkChain
+
+UpfData = DataFactory('pseudo.upf')
 
 
 @calcfunction
@@ -110,7 +113,7 @@ class DeltaFactorWorkChain(WorkChain):
         super().define(spec)
         spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo', valid_type=orm.UpfData, required=True,
+        spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
         spec.input('structure', valid_type=orm.StructureData, required=False,
                     help='Ground state structure which the verification perform')
@@ -151,6 +154,7 @@ class DeltaFactorWorkChain(WorkChain):
                     help='The results V0, B0, B1 of Birch-Murnaghan fit.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
                     message='The `EquationOfStateWorkChain` sub process failed.')
+        # yapf: enable
 
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
@@ -303,11 +307,12 @@ class DeltaFactorWorkChain(WorkChain):
                 },
             }
         })
+        # yapf: enable
 
         if 'options' in self.inputs:
             inputs.options = self.inputs.options
         else:
-            from aiida_quantumespresso.utils.resources import get_default_options
+            from aiida_sssp_workflow.utils import get_default_options
 
             inputs.options = orm.Dict(dict=get_default_options(
                 max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,

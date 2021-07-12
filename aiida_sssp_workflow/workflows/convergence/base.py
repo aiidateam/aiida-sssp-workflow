@@ -11,7 +11,7 @@ from aiida_tools.process_inputs import get_fullname
 
 from aiida.engine import WorkChain, ToContext
 from aiida import orm
-from aiida.plugins import WorkflowFactory
+from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
 from aiida_sssp_workflow.utils import helper_parse_upf
@@ -19,6 +19,7 @@ from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
 
 CreateEvaluateWorkChain = WorkflowFactory('optimize.wrappers.create_evaluate')
 OptimizationWorkChain = WorkflowFactory('optimize.optimize')
+UpfData = DataFactory('pseudo.upf')
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[
     20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,
@@ -46,7 +47,7 @@ class BaseConvergenceWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('pseudo', valid_type=orm.UpfData, required=True,
+        spec.input('pseudo', valid_type=UpfData, required=True,
                    help='Pseudopotential to be verified')
         spec.input('options', valid_type=orm.Dict, required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
@@ -83,11 +84,10 @@ class BaseConvergenceWorkChain(WorkChain):
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
                     message='The sub processes {pk} did not finish successfully.')
         spec.exit_code(600, 'ERROR_NOT_ENOUGH_EVALUATE_WORKFLOW',
-                    message='The number of sub evaluation processes {n} is not enough.'
-        )
+                    message='The number of sub evaluation processes {n} is not enough.')
         spec.exit_code(510, 'ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS',
-                    message='The ecutwfc_list and ecutrho_list have incompatible size.'
-        )
+                    message='The ecutwfc_list and ecutrho_list have incompatible size.')
+        # yapf: enable
 
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
@@ -155,7 +155,7 @@ class BaseConvergenceWorkChain(WorkChain):
 
         # parse pseudo and output its header information
         upf_info = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.element = orm.Str(upf_info['element'])
+        self.ctx.element = self.inputs.pseudo.element
 
         self.out('output_pseudo_header', orm.Dict(dict=upf_info).store())
 

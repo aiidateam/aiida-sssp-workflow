@@ -52,6 +52,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         super().define(spec)
         spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
+        # yapf: enable
 
     def setup_protocol(self):
         # pylint: disable=invalid-name, attribute-defined-outside-init
