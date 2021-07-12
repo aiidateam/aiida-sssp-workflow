@@ -36,7 +36,11 @@ def birch_murnaghan_fit(volume_energy: orm.Dict):
             break
 
     if volume0 == 0:
-        return ExitCode(100, 'get spurious volume0.')
+        return ExitCode(100, f'get spurious volume0={volume0}.')
+
+    if not isinstance(volume0, float):
+        # In case where the fitting failed
+        return ExitCode(101, f'get spurious volume0={volume0}')
 
     derivV2 = 4. / 9. * x**5. * deriv2(x)
     derivV3 = (-20. / 9. * x**(13. / 2.) * deriv2(x) -
@@ -46,13 +50,13 @@ def birch_murnaghan_fit(volume_energy: orm.Dict):
     energy0 = deriv0(volume0**(-2. / 3.))
 
     echarge = 1.60217733e-19
-    res = {
-        'volume0': orm.Float(volume0),
-        'energy0': orm.Float(energy0),
-        'bulk_modulus0': orm.Float(bulk_modulus0 * echarge * 1.0e21),
-        'bulk_deriv0': orm.Float(bulk_deriv0),
-        'residuals0': orm.Float(residuals0[0]),
-        'volume0_unit': orm.Str('A^3/atom'),
-        'bulk_modulus0_unit': orm.Str('GPa'),
-    }
-    return res
+    return orm.Dict(
+        dict={
+            'volume0': volume0,
+            'energy0': energy0,
+            'bulk_modulus0': bulk_modulus0 * echarge * 1.0e21,
+            'bulk_deriv0': bulk_deriv0,
+            'residuals0': residuals0[0],
+            'volume0_unit': 'A^3/atom',
+            'bulk_modulus0_unit': 'GPa',
+        })

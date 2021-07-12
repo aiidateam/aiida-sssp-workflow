@@ -16,17 +16,6 @@ def validate_inputs(value, _):
         return 'neither `scale_factors` nor the pair of `scale_count` and `scale_increment` were defined.'
 
 
-# def validate_sub_process_class(value, _):
-#     """Validate the sub process class."""
-#     try:
-#         process_class = WorkflowFactory(value)
-#     except exceptions.EntryPointError:
-#         return f'`{value}` is not a valid or registered workflow entry point.'
-#
-#     if not inspect.isclass(process_class) or not issubclass(process_class, CommonRelaxWorkChain):
-#         return f'`{value}` is not a subclass of the `CommonRelaxWorkChain` common workflow.'
-
-
 def validate_scale_factors(value, _):
     """Validate the `validate_scale_factors` input."""
     if value and len(value) < 3:
@@ -55,7 +44,7 @@ def scale_structure(structure: orm.StructureData,
     return orm.StructureData(ase=ase)
 
 
-class EquationOfStateWorkChain(WorkChain):
+class _EquationOfStateWorkChain(WorkChain):
     """Workflow to compute the equation of state for a given crystal structure."""
     @classmethod
     def define(cls, spec):
@@ -75,18 +64,16 @@ class EquationOfStateWorkChain(WorkChain):
         spec.input('scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
             validator=validate_scale_increment,
             help='The relative difference between consecutive scaling factors.')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
         spec.inputs.validator = validate_inputs
         spec.outline(
             cls.run_init,
             cls.run_eos,
             cls.inspect_eos,
         )
-        spec.output('output_parameters', valid_type=orm.Dict,
-                    help='A dict of results volumes and energise.')
+        spec.output('output_volume_energy', valid_type=orm.Dict,
+                    help='Results volumes and energise.')
+        spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict,
+                    help='Result of birch murnaghan fitting.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')
         # yapf: enable
@@ -124,9 +111,6 @@ class EquationOfStateWorkChain(WorkChain):
         inputs.kpoints = kpoints.store()
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
-        # inputs.pw.settings = orm.Dict(
-        #     dict={'CMDLINE': ['-ndiag', '1', '-nk',
-        #                       '4']})  # Too many cores for few bands
         if 'options' in self.inputs:
             inputs.pw.metadata.options = self.inputs.options.get_dict()
         else:
@@ -141,7 +125,7 @@ class EquationOfStateWorkChain(WorkChain):
         return builder
 
     def run_init(self):
-        """Run the first workchain."""
+        """Run the first sub-workchain, if this failed the whole workchain break."""
         scale_factor = self.get_scale_factors()[0]
         builder = self.get_sub_workchain_builder(scale_factor)
         self.report(
@@ -191,17 +175,12 @@ class EquationOfStateWorkChain(WorkChain):
             volume_energy['volumes'][index] = volume / num_of_atoms
             volume_energy['energies'][index] = energy / num_of_atoms
 
-        res = birch_murnaghan_fit(orm.Dict(dict=volume_energy))
-        output_birch_murnaghan_fit = {
-            'V0': res['volume0'],
-            'B0': res['bulk_modulus0'],
-            'B1': res['bulk_deriv0'],
-            'E0': res['energy0']
-        }
+        output_volume_energy = orm.Dict(dict=volume_energy).store()
+        output_birch_murnaghan_fit = birch_murnaghan_fit(output_volume_energy)
 
-        output_parameters = {
-            'volume_energy': volume_energy,
-            'birch_murnaghan_fit': output_birch_murnaghan_fit,
-        }
+        self.report(
+            f'The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}'
+        )
 
-        self.out('output_parameters', orm.Dict(dict=output_parameters).store())
+        self.out('output_volume_energy', output_volume_energy)
+        self.out('output_birch_murnaghan_fit', output_birch_murnaghan_fit)

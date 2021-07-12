@@ -6,7 +6,7 @@ from aiida import orm
 from aiida.plugins import CalculationFactory
 
 
-def test_birch_murnaghan_fit():
+def test_birch_murnaghan_fit(data_regression):
     """Birch–Murnaghan fit test"""
     birch_murnaghan_fit = CalculationFactory(
         'sssp_workflow.birch_murnaghan_fit')
@@ -35,14 +35,9 @@ def test_birch_murnaghan_fit():
             }
         })
 
-    res = birch_murnaghan_fit(inputs)
-    assert 'volume0' in res
-    assert 'bulk_modulus0' in res
-    assert 'bulk_deriv0' in res
-    assert 'residuals0' in res
-    assert 'energy0' in res
-    assert res['volume0_unit'].value == 'A^3/atom'
-    assert res['bulk_modulus0_unit'].value == 'GPa'
+    output_bmf = birch_murnaghan_fit(inputs)
+    assert isinstance(output_bmf, orm.Dict)
+    data_regression.check(output_bmf.get_dict())
 
 
 def test_calculate_delta():

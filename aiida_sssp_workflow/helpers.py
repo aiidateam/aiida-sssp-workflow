@@ -43,7 +43,7 @@ def helper_get_primitive_structure(structure,
     return primitive_structure
 
 
-def get_pw_inputs_from_pseudo(pseudo: UpfData, primitive_cell=True):
+def helper_get_base_inputs(pseudo: UpfData, primitive_cell=True):
     """
     helper method used to generate base pw inputs(structure, pseudos, pw_parameters).
     lanthanides elements are supported with Rare-Nithides.
@@ -62,23 +62,6 @@ def get_pw_inputs_from_pseudo(pseudo: UpfData, primitive_cell=True):
             filename = str(path)
             upf_silicon = UpfData.get_or_create(filename)[0]
             pseudos['Si'] = upf_silicon
-
-    pw_parameters = {}
-    if element in RARE_EARTH_ELEMENTS:
-        fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                         'N.pbe-n-radius_5.UPF')
-        with fpath as path:
-            filename = str(path)
-            upf_nitrogen = UpfData.get_or_create(filename)[0]
-            pseudos['N'] = upf_nitrogen
-
-        nbands = pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
-        pw_parameters = {
-            'SYSTEM': {
-                'nbnd': int(nbands * nbands_factor),
-            },
-        }
 
     cif_file = get_standard_cif_filename_from_element(element)
 

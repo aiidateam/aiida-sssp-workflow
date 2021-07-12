@@ -146,9 +146,9 @@ test:
         occupations: smearing
         degauss: 0.00735
         smearing: 'marzari-vanderbilt'
-        electron_conv_thr: 1.0e-8
+        electron_conv_thr: 1.0e-6
         kpoints_distance: 0.5
-        ecutwfc: 30.0
+        ecutwfc: 20.0
         wall_time_seconds: 3600
         scale_count: 5
         scale_increment: 0.02

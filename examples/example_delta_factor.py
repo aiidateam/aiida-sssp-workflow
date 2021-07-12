@@ -28,6 +28,8 @@ def run_delta(code, upf):
                     'max_wallclock_seconds': 1800 * 3,
                     'withmpi': False,
                 }),
+        'parallelization': orm.Dict(dict={}),
+        'clean_workdir': orm.Bool(True),
     }
 
     res, node = run_get_node(DeltaFactorWorkChain, **inputs)
@@ -36,8 +38,10 @@ def run_delta(code, upf):
 
 if __name__ == '__main__':
     from aiida.orm import load_code
+    from aiida import load_profile
 
-    code = load_code('pw67@localhost')
+    load_profile('sssp-dev')
+    code = load_code('pw64@localhost')
 
     upf_sg15 = {}
     # sg15/Si_ONCV_PBE-1.2.upf
@@ -52,14 +56,29 @@ if __name__ == '__main__':
         node.description = f'sg15/{element}'
         print(node)
 
-    # # test on lanthanides
     # upf_wt = {}
     # # WT/La.GGA-PBE-paw-v1.0.UPF
-    # upf_wt['La'] = load_node('b2880763-579c-4f6d-8803-2c77f4fb10e8')
-    # # WT/Eu.GGA-PBE-paw-v1.0.UPF
-    # upf_wt['Eu'] = load_node('220a8ebd-0ac5-44f1-a6a9-0790b24965a9')
-    #
+    # pp_name = 'La.GGA-PBE-paw-v1.0.UPF'
+    # pp_path = os.path.join(STATIC_DIR, pp_name)
+    # with open(pp_path, 'rb') as stream:
+    #     pseudo = UpfData(stream)
+    #     upf_wt['La'] = pseudo
+
     # for element, upf in upf_wt.items():
-    #     node = run_delta(code, upf, is_nc=False)
+    #     res, node = run_delta(code, upf)
     #     node.description = f'WT/{element}-PBE'
+    #     print(node)
+
+
+    # upf_mag = {}
+    # # MAG/O_ONCV_PBE-1.2.upf
+    # pp_name = 'O_ONCV_PBE-1.2.upf'
+    # pp_path = os.path.join(STATIC_DIR, pp_name)
+    # with open(pp_path, 'rb') as stream:
+    #     pseudo = UpfData(stream)
+    #     upf_mag['O'] = pseudo
+
+    # for element, upf in upf_mag.items():
+    #     res, node = run_delta(code, upf)
+    #     node.description = f'MAG/SG15/{element}'
     #     print(node)
