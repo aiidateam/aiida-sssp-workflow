@@ -314,9 +314,9 @@ class ConvergenceBandsWorkChain(WorkChain):
             child_bands_structure = child.outputs.output_bands_structure
             res = helper_bands_distence_difference(
                 bands_structure_a=child_bands_structure,
-                band_parameters_a=child_bands_parameters,
+                bands_parameters_a=child_bands_parameters,
                 bands_structure_b=reference_bands_structure,
-                band_parameters_b=reference_bands_parameters,
+                bands_parameters_b=reference_bands_parameters,
                 smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
                 is_metal=orm.Bool(self.ctx.is_metal))
 

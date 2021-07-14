@@ -4,9 +4,10 @@ doc
 """
 # pylint: disable=import-error,wrong-import-order,no-name-in-module
 
-from sssp.efermi_module import efermi
-
+import pytest
 import numpy as np
+
+from efermi import pyefermi
 
 
 def test_efermi_import():
@@ -53,12 +54,55 @@ def test_efermi_import():
              18.2509223, 22.09837349, 32.84238068, 35.66056113, 35.66056114
          ]])
     bands = bands - 18.3253
-    bands = np.asfortranarray(bands)
-    nelectrons = 19
-    nbands = 14
     nkps = 8
-    weight = np.ones(nkps) / nkps
-    smearing = 0.002721
+    nelectrons = 19
+    weights = np.ones(nkps) / nkps
+    swidth = 0.002721
+    meth = 2  # fermi-dirac
 
-    res = efermi(nelectrons, nbands, smearing, nkps, weight, 0.0, bands, 2)
-    assert res[1] < 0.1
+    got_fl = pyefermi(bands, weights, nelectrons, swidth, meth)
+    assert got_fl == pytest.approx(-0.071388, 1e-4)
+
+
+def test_pyefermi():
+    """test pyefermi"""
+    #yapf: disable
+
+    # a random metal (magnesium) emulation
+    # lattice = [-3.0179389205999998 -3.0179389205999998 0.0000000000000000;
+    #         -5.2272235447000002 5.2272235447000002 0.0000000000000000;
+    #         0.0000000000000000 0.0000000000000000 -9.7736219469000005],
+    bands = np.array(
+                [[-0.08063210585291,  0.11227915155236, 0.13057816014162, 0.57672256037074],
+                [ 0.09509047528102,  0.09538152469111, 0.27197836572013, 0.28750689088845],
+                [-0.00144586520885,  0.18640677556553, 0.19603060374450, 0.24422060327989],
+                [ 0.05693643182609,  0.16919740718547, 0.24190245274401, 0.25674283154835],
+                [-0.06756541677784,  0.03381889875058, 0.23162853469956, 0.50981867707851],
+                [ 0.10685980948954,  0.10728887405642, 0.20784971952147, 0.20786603845828],
+                [ 0.01122399002894,  0.11011069317735, 0.24016826005369, 0.30770620467001],
+                [ 0.06925846412968,  0.16087157153058, 0.19146746736359, 0.27463770659603],
+                [-0.02937886574534, -0.02937886574483, 0.36206906745747, 0.36206906745749],
+                [ 0.13314087354890,  0.13314087354890, 0.15834732772541, 0.15834732772541],
+                [ 0.04869672986772,  0.04869672986772, 0.27749728805752, 0.27749728805768],
+                [ 0.10585630776222,  0.10585630776223, 0.22191839818805, 0.22191839818822]]
+    )
+    # yapf: enable
+
+    nelectrons = 4
+    weights = np.array([
+        1 / 24, 1 / 24, 1 / 12, 1 / 12, 1 / 12, 1 / 12, 1 / 6, 1 / 6, 1 / 24,
+        1 / 24, 1 / 12, 1 / 12
+    ])
+
+    # (:method, :swidth, :expected)
+    fermi_dirac = 2
+    parameters = [
+        (fermi_dirac, 0.01, 0.17251898225370),
+        (fermi_dirac, 0.02, 0.17020763046058),
+        (fermi_dirac, 0.03, 0.16865552281082),
+    ]
+
+    for meth, swidth, expected_ef in parameters:
+        got_ef = pyefermi(bands, weights, nelectrons, swidth, meth)
+
+        assert got_ef == pytest.approx(expected_ef, 1e-3)

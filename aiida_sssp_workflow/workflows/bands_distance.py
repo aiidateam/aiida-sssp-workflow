@@ -256,9 +256,9 @@ class BandsDistanceWorkChain(WorkChain):
 
             res = calculate_bands_distance(
                 bands_structure_a=wca_bands_structure,
-                band_parameters_a=wca_bands_parameters,
+                bands_parameters_a=wca_bands_parameters,
                 bands_structure_b=wcb_bands_structure,
-                band_parameters_b=wcb_bands_parameters,
+                bands_parameters_b=wcb_bands_parameters,
                 smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
                 is_metal=orm.Bool(self.ctx.is_metal))
 

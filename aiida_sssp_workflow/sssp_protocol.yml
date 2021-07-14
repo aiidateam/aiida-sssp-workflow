@@ -203,7 +203,7 @@ test:
                 tr2_ph: 1.0e-16
 
             max_evaluate: 3 # number of evaluation run, not include ref
-            reference_ecutwfc: 200.0
+            reference_ecutwfc: 60.0
 
             tolerance: 0.1 # 0.1(%)
             convergence_conv_thr: 2.0 # 2.0(%)

@@ -44,6 +44,9 @@ repos:
         language: system
         exclude: &exclude_files >
             (?x)^(
+                aiida_sssp_workflow/workflows/convergence/.*|
+                efermi/efermi.py|
+                aiida_sssp_workflow/helpers.py|
                 setup.py|
                 examples/.*|
                 docs/.*|

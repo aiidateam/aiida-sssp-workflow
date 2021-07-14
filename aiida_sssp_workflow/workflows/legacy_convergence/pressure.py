@@ -328,7 +328,7 @@ class ConvergencePressureWorkChain(WorkChain):
             },
         }
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-                                        parameters)
+                                             parameters)
 
         self.report(f'{self.ctx.pw_parameters}')
         # yapf: disable
