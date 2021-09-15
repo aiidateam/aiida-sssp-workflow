@@ -52,11 +52,11 @@ def birch_murnaghan_fit(volume_energy: orm.Dict):
     echarge = 1.60217733e-19
     return orm.Dict(
         dict={
-            'volume0': volume0,
-            'energy0': energy0,
-            'bulk_modulus0': bulk_modulus0 * echarge * 1.0e21,
-            'bulk_deriv0': bulk_deriv0,
-            'residuals0': residuals0[0],
+            'volume0': round(volume0, 7),
+            'energy0': round(energy0, 7),
+            'bulk_modulus0': round(bulk_modulus0 * echarge * 1.0e21, 7),
+            'bulk_deriv0': round(bulk_deriv0, 7),
+            'residuals0': round(residuals0[0]),
             'volume0_unit': 'A^3/atom',
             'bulk_modulus0_unit': 'GPa',
         })
