@@ -6,7 +6,7 @@ from aiida.engine import calcfunction
 from aiida import orm
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.pressure import PressureWorkChain
+from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
 from .base import BaseConvergenceWorkChain
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[

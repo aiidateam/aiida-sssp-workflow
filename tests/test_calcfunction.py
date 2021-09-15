@@ -2,6 +2,8 @@
 """
 Test of process functions
 """
+import pytest
+
 from aiida import orm
 from aiida.plugins import CalculationFactory
 
@@ -105,6 +107,7 @@ def test_get_v0_b0_b1():
     assert B1 == 4.1599
 
 
+@pytest.mark.skip(reason='Tackle after all convergence wf fixed')
 def test_get_volume_from_pressure_birch_murnaghan():
     """
     doc
@@ -122,6 +125,7 @@ def test_get_volume_from_pressure_birch_murnaghan():
     assert ret - 20.4530 < 0.1
 
 
+@pytest.mark.skip(reason='Tackle after all convergence wf fixed')
 def test_phonon_frequencies_diff():
     """test of helper_get_relative_phonon_frequencies"""
     from aiida_sssp_workflow.workflows.convergence.phonon_frequencies import helper_phonon_frequencies_difference
