@@ -9,13 +9,15 @@ from aiida.engine import calcfunction
 
 
 @calcfunction
-def calculate_bands_distance(bands_a: orm.BandsData, bands_b: orm.BandsData,
+def calculate_bands_distance(bands_structure_a: orm.BandsData,
                              band_parameters_a: orm.Dict,
+                             bands_structure_b: orm.BandsData,
                              band_parameters_b: orm.Dict, smearing: orm.Float,
                              is_metal: orm.Bool):
     """doc"""
-    res = get_bands_distance(bands_a, bands_b, band_parameters_a,
-                             band_parameters_b, smearing.value, is_metal.value)
+    res = get_bands_distance(bands_structure_a, bands_structure_b,
+                             band_parameters_a, band_parameters_b,
+                             smearing.value, is_metal.value)
 
     return orm.Dict(
         dict={

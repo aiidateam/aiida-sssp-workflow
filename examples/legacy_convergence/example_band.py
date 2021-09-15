@@ -12,13 +12,13 @@ from aiida.plugins import WorkflowFactory, DataFactory
 from aiida.engine import run_get_node
 
 UpfData = DataFactory('pseudo.upf')
-ConvergenceCohesiveEnergy = WorkflowFactory(
-    'sssp_workflow.convergence.cohesive_energy')
+ConvergenceBands = WorkflowFactory(
+    'sssp_workflow.legacy_convergence.bands')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../', '_static')
 
 
-def run_cohesive_cov(code, upf, dual):
+def run_bands_cov(code, upf, dual=4.0):
     inputs = {
         'code': code,
         'pseudo': upf,
@@ -35,16 +35,14 @@ def run_cohesive_cov(code, upf, dual):
         'parallelization': orm.Dict(dict={}),
         'clean_workdir': orm.Bool(True),
     }
-    res, node = run_get_node(ConvergenceCohesiveEnergy, **inputs)
+    res, node = run_get_node(ConvergenceBands, **inputs)
 
     return res, node
-
 
 if __name__ == '__main__':
     from aiida.orm import load_code
     from aiida import load_profile
 
-    load_profile('sssp-dev')
     code = load_code('pw64@localhost')
 
     upf_sg15 = {}
@@ -56,6 +54,6 @@ if __name__ == '__main__':
         upf_sg15['si'] = pseudo
 
     for element, upf in upf_sg15.items():
-        res, node = run_cohesive_cov(code, upf)
+        res, node = run_bands_cov(code, upf, dual=4.0)
         node.description = f'sg15/{element}'
         print(node)

@@ -13,12 +13,12 @@ from aiida.engine import run_get_node
 
 UpfData = DataFactory('pseudo.upf')
 ConvergenceCohesiveEnergy = WorkflowFactory(
-    'sssp_workflow.convergence.cohesive_energy')
+    'sssp_workflow.legacy_convergence.cohesive_energy')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../', '_static')
 
 
-def run_cohesive_cov(code, upf, dual):
+def run_cohesive_cov(code, upf, dual=4.0):
     inputs = {
         'code': code,
         'pseudo': upf,
@@ -56,6 +56,6 @@ if __name__ == '__main__':
         upf_sg15['si'] = pseudo
 
     for element, upf in upf_sg15.items():
-        res, node = run_cohesive_cov(code, upf)
+        res, node = run_cohesive_cov(code, upf, dual=4.0)
         node.description = f'sg15/{element}'
         print(node)

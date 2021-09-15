@@ -4,7 +4,7 @@ WorkChain calculate phonon frequencies at Gamma
 """
 from aiida import orm
 from aiida.engine import WorkChain, ToContext
-from aiida.common import AttributeDict, NotExistentAttributeError
+from aiida.common import NotExistentAttributeError
 from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
@@ -13,54 +13,9 @@ PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 PhBaseWorkflow = WorkflowFactory('quantumespresso.ph.base')
 UpfData = DataFactory('pseudo.upf')
 
-PW_PARAS = lambda: orm.Dict(
-    dict={
-        'SYSTEM': {
-            'degauss': 0.02,
-            'ecutrho': 800,
-            'ecutwfc': 200,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    })
-
-PH_PARAS = lambda: orm.Dict(dict=
-                            {'INPUTPH': {
-                                'tr2_ph': 1e-16,
-                                'epsil': False,
-                            }})
-
 
 class PhononFrequenciesWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
-    _PW_PARAMETERS = {
-        'SYSTEM': {
-            'degauss': 0.02,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-        'CONTROL': {
-            'calculation': 'scf',
-            'wf_collect': True,
-            'tstress': True,
-        },
-    }
-    _PH_PARAMETERS = {
-        'INPUTPH': {
-            'tr2_ph': 1e-16,
-            'epsil': False,
-        }
-    }
-
-    _PW_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
-    _PH_CMDLINE_SETTING = {'CMDLINE': ['-nk', '2']}
-
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -74,24 +29,28 @@ class PhononFrequenciesWorkChain(WorkChain):
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData, required=True,
                     help='Ground state structure which the verification perform')
+        spec.input('pw_base_parameters', valid_type=orm.Dict,
+                    help='parameters for pw.x.')
+        spec.input('ph_base_parameters', valid_type=orm.Dict,
+                    help='parameters for ph.x.')
+        spec.input('ecutwfc', valid_type=(orm.Float, orm.Int),
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('ecutrho', valid_type=(orm.Float, orm.Int),
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('qpoints', valid_type=orm.List,
+                    help='qpoints for ph calculation.')
+        spec.input('kpoints_distance', valid_type=orm.Float,
+                    help='Kpoints distance setting for bulk energy calculation in pw calculation.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
-        spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw', valid_type=orm.Dict, default=PW_PARAS,
-                    help='parameters for pw.x.')
-        spec.input('parameters.ph', valid_type=orm.Dict, default=PH_PARAS,
-                    help='parameters for ph.x.')
-        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
-                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
-                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
-        spec.input('parameters.qpoints', valid_type=orm.List, default=lambda: orm.List(list=[[0., 0., 0.]]),
-                    help='qpoints')
-        spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.15),
-                    help='Kpoints distance setting for bulk energy calculation.')
+        spec.input('parallelization', valid_type=orm.Dict, required=False,
+                    help='Parallelization options for the `PwCalculations`.')
+        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
         spec.outline(
-            cls.setup,
+            cls.setup_base_parameters,
             cls.validate_structure,
+            cls.setup_code_resource_options,
             cls.run_scf,
             cls.inspect_scf,
             cls.run_ph,
@@ -104,81 +63,92 @@ class PhononFrequenciesWorkChain(WorkChain):
                     message='The `PwBaseWorkChain` sub process failed.')
         spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER',
                     message='The remote folder node not exist')
+        spec.exit_code(202, 'ERROR_SUB_PROCESS_FAILED_PH',
+                    message='The `PhBaseWorkChain` sub process failed.')
         # yapf: enable
 
-    def setup(self):
+    def setup_base_parameters(self):
         """Input validation"""
-        pw_parameters = self._PW_PARAMETERS
-        pw_parameters = update_dict(pw_parameters,
-                                    self.inputs.parameters.pw.get_dict())
+        pw_parameters = self.inputs.pw_base_parameters.get_dict()
 
-        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
-            parameters = {
-                'SYSTEM': {
-                    'ecutwfc': self.inputs.parameters.ecutwfc,
-                    'ecutrho': self.inputs.parameters.ecutrho,
-                },
-            }
-            pw_parameters = update_dict(pw_parameters, parameters)
+        parameters = {
+            'SYSTEM': {
+                'ecutwfc': self.inputs.ecutwfc,
+                'ecutrho': self.inputs.ecutrho,
+            },
+        }
+        pw_parameters = update_dict(pw_parameters, parameters)
 
         self.ctx.pw_parameters = pw_parameters
-
-        self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
+        self.ctx.kpoints_distance = self.inputs.kpoints_distance
 
         # ph.x
-        ph_parameters = self._PH_PARAMETERS
-        ph_parameters = update_dict(ph_parameters,
-                                    self.inputs.parameters.ph.get_dict())
-        self.ctx.ph_parameters = ph_parameters
+        self.ctx.ph_parameters = self.inputs.ph_base_parameters.get_dict()
+
         qpoints = orm.KpointsData()
         qpoints.set_cell_from_structure(self.inputs.structure)
-        qpoints.set_kpoints(self.inputs.parameters.qpoints.get_list())
+        qpoints.set_kpoints(self.inputs.qpoints.get_list())
         self.ctx.qpoints = qpoints
 
     def validate_structure(self):
-        """Create isolate atom and validate structure"""
-        # create isolate atom structure
+        """validate structure and set pseudos"""
         self.ctx.pseudos = self.inputs.pseudos
+
+    def setup_code_resource_options(self):
+        """
+        setup resource options and parallelization for `PwCalculation` and
+        `PhCalculation` from inputs
+        """
+        if 'options' in self.inputs:
+            self.ctx.options = self.inputs.options.get_dict()
+        else:
+            from aiida_sssp_workflow.utils import get_default_options
+
+            self.ctx.options = get_default_options(
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
+                with_mpi=True)
+
+        if 'parallelization' in self.inputs:
+            self.ctx.parallelization = self.inputs.parallelization.get_dict()
+        else:
+            self.ctx.parallelization = {}
+
+        self.report(f'resource options set to {self.ctx.options}')
+        self.report(
+            f'parallelization options set to {self.ctx.parallelization}')
 
     def run_scf(self):
         """
         set the inputs and submit scf
         """
-        inputs = AttributeDict({
+        inputs = {
             'metadata': {
-                'call_link_label': 'scf'
+                'call_link_label': 'SCF'
             },
             'pw': {
                 'structure': self.inputs.structure,
                 'code': self.inputs.pw_code,
                 'pseudos': self.ctx.pseudos,
                 'parameters': orm.Dict(dict=self.ctx.pw_parameters),
-                'settings': orm.Dict(dict=self._PW_CMDLINE_SETTING),
-                'metadata': {},
+                'metadata': {
+                    'options': self.ctx.options,
+                },
+                'parallelization': orm.Dict(dict=self.ctx.parallelization),
             },
             'kpoints_distance': self.ctx.kpoints_distance,
-        })
-
-        if 'options' in self.inputs:
-            options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            options = get_default_options(with_mpi=True)
-
-        inputs.pw.metadata.options = options
+        }
 
         running = self.submit(PwBaseWorkflow, **inputs)
         self.report(f'Running pw calculation pk={running.pk}')
         return ToContext(workchain_scf=running)
 
     def inspect_scf(self):
-        """inspect the result of scf calculation."""
+        """inspect the result of scf calculation if fail do not continue."""
         workchain = self.ctx.workchain_scf
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}'
+                f'PwBaseWorkChain failed with exit status {workchain.exit_status}'
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
@@ -191,27 +161,21 @@ class PhononFrequenciesWorkChain(WorkChain):
         """
         set the inputs and submit ph calculation to get quantities for phonon evaluation
         """
-        inputs = AttributeDict({
+        inputs = {
             'metadata': {
-                'call_link_label': 'ph'
+                'call_link_label': 'PH'
             },
             'ph': {
                 'code': self.inputs.ph_code,
                 'qpoints': self.ctx.qpoints,
                 'parameters': orm.Dict(dict=self.ctx.ph_parameters),
                 'parent_folder': self.ctx.scf_remote_folder,
-                'settings': orm.Dict(dict=self._PH_CMDLINE_SETTING),
-                'metadata': {},
+                'metadata': {
+                    'options': self.ctx.options,
+                },
+                # CMDLINE setting for parallelization
             },
-        })
-        if 'options' in self.inputs:
-            options = self.inputs.options.get_dict()
-        else:
-            from aiida_quantumespresso.utils.resources import get_default_options
-
-            options = get_default_options(with_mpi=True)
-
-        inputs.ph.metadata.options = options
+        }
 
         running = self.submit(PhBaseWorkflow, **inputs)
         self.report(f'Running ph calculation pk={running.pk}')

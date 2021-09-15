@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Running cohesive energy convergence workflow
+Running phonon frequencies convergence workflow
 """
 import numpy as np
 import os
@@ -12,15 +12,16 @@ from aiida.plugins import WorkflowFactory, DataFactory
 from aiida.engine import run_get_node
 
 UpfData = DataFactory('pseudo.upf')
-ConvergenceCohesiveEnergy = WorkflowFactory(
-    'sssp_workflow.convergence.cohesive_energy')
+ConvergencePhononFrequenciesWorkChain = WorkflowFactory(
+    'sssp_workflow.legacy_convergence.phonon_frequencies')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../', '_static')
 
 
-def run_cohesive_cov(code, upf, dual):
+def run_phonon_cov(pw_code, ph_code, upf, dual=4.0):
     inputs = {
-        'code': code,
+        'pw_code': pw_code,
+        'ph_code': ph_code,
         'pseudo': upf,
         'protocol': orm.Str('test'),
         'dual': orm.Float(4.0),
@@ -35,7 +36,7 @@ def run_cohesive_cov(code, upf, dual):
         'parallelization': orm.Dict(dict={}),
         'clean_workdir': orm.Bool(True),
     }
-    res, node = run_get_node(ConvergenceCohesiveEnergy, **inputs)
+    res, node = run_get_node(ConvergencePhononFrequenciesWorkChain, **inputs)
 
     return res, node
 
@@ -45,7 +46,8 @@ if __name__ == '__main__':
     from aiida import load_profile
 
     load_profile('sssp-dev')
-    code = load_code('pw64@localhost')
+    pw_code = load_code('pw64@localhost')
+    ph_code = load_code('ph64@localhost')
 
     upf_sg15 = {}
     # sg15/Si_ONCV_PBE-1.2.upf
@@ -56,6 +58,6 @@ if __name__ == '__main__':
         upf_sg15['si'] = pseudo
 
     for element, upf in upf_sg15.items():
-        res, node = run_cohesive_cov(code, upf)
+        res, node = run_phonon_cov(pw_code, ph_code, upf, dual=4.0)
         node.description = f'sg15/{element}'
         print(node)

@@ -50,3 +50,10 @@ def test_cif_from_element():
 
     fname = get_standard_cif_filename_from_element('La')
     assert 'LaN.cif' in fname
+
+
+def test_to_valid_key():
+    """test to_valid_key"""
+    from aiida_sssp_workflow.utils import to_valid_key
+
+    assert to_valid_key('Si_ONCV_PBE-1.2') == 'Si_ONCV_PBE_1_2'

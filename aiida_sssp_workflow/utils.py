@@ -37,7 +37,12 @@ def update_dict(d, u):
 
 
 def get_standard_cif_filename_from_element(element: str) -> str:
-    """get cif filename from element"""
+    """
+    get cif filename from element
+
+    NOTICE!!: that for convergence verification the SiF4 structure is used, the
+    name of file is `SiF4.cif` which can be get by `element=SiF4`.
+    """
     if element in RARE_EARTH_ELEMENTS:
         fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_REN',
                                          f'{element}N.cif')
@@ -87,3 +92,14 @@ def get_default_options(max_num_machines=1,
         'max_wallclock_seconds': int(max_wallclock_seconds),
         'withmpi': with_mpi,
     }
+
+
+def to_valid_key(name):
+    """
+    convert name into a valid key name which contain only alphanumeric and underscores
+    """
+    import re
+
+    valid_name = re.sub(r'[^\w\s]', '_', name)
+
+    return valid_name

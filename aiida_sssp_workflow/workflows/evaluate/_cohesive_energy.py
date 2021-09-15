@@ -8,7 +8,7 @@ from aiida.engine import calcfunction, WorkChain, append_
 from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory, DataFactory
 
-from aiida_sssp_workflow.utils import update_dict, RARE_EARTH_ELEMENTS
+from aiida_sssp_workflow.utils import update_dict
 
 PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
 UpfData = DataFactory('pseudo.upf')
@@ -34,49 +34,8 @@ def create_isolate_atom(
     return structure
 
 
-PW_PARAS = lambda: orm.Dict(dict={
-    'SYSTEM': {
-        'ecutrho': 1600,
-        'ecutwfc': 200,
-    },
-})
-
-
 class CohesiveEnergyWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
-
-    _BULK_PARAMETERS = {
-        'SYSTEM': {
-            'degauss': 0.02,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-        'CONTROL': {
-            'calculation': 'scf',
-            'wf_collect': True,
-            'tstress': True,
-        },
-    }
-
-    _ATOM_PARAMETERS = {
-        'SYSTEM': {
-            'degauss': 0.02,
-            'occupations': 'smearing',
-            'smearing': 'gaussian',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    }
-
-    _BULK_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
-    _ATOM_CMDLINE_SETTING = {
-        'CMDLINE': ['-ndiag', '1']
-    }  # TODO use the same one above
-
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -86,26 +45,30 @@ class CohesiveEnergyWorkChain(WorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
-        spec.input('structure', valid_type=orm.StructureData, required=False,
+        spec.input('structure', valid_type=orm.StructureData,
                     help='Ground state structure which the verification perform')
+        spec.input('bulk_parameters', valid_type=orm.Dict,
+                    help='parameters for pwscf of bulk calculation.')
+        spec.input('atom_parameters', valid_type=orm.Dict,
+                    help='parameters for pwscf of atom calculation.')
+        spec.input('ecutwfc', valid_type=orm.Float,
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('ecutrho', valid_type=orm.Float,
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('kpoints_distance', valid_type=orm.Float,
+                    help='Kpoints distance setting for bulk energy calculation.')
+        spec.input('vacuum_length', valid_type=orm.Float,
+                    help='The length of cubic cell in isolate atom calculation.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
-        spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw_bulk', valid_type=orm.Dict, default=PW_PARAS,
-                    help='parameters for pwscf of bulk calculation.')
-        spec.input('parameters.pw_atom', valid_type=orm.Dict, default=PW_PARAS,
-                    help='parameters for pwscf of atom calculation.')
-        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
-                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
-                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
-        spec.input('parameters.kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
-                    help='Kpoints distance setting for bulk energy calculation.')
-        spec.input('parameters.vacuum_length', valid_type=orm.Float, default=lambda: orm.Float(12.0),
-                    help='The length of cubic cell in isolate atom calculation.')
+        spec.input('parallelization', valid_type=orm.Dict, required=False,
+                    help='Parallelization options for the `PwCalculations`.')
+        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
         spec.outline(
-            cls.setup,
+            cls.setup_base_parameters,
             cls.validate_structure,
+            cls.setup_code_resource_options,
             cls.run_energy,
             cls.inspect_energy,
             cls.results,
@@ -118,54 +81,71 @@ class CohesiveEnergyWorkChain(WorkChain):
                     message='PwBaseWorkChain of bulk structure energy evaluation failed with exit status.')
         # yapf: enable
 
-    def setup(self):
+    def setup_base_parameters(self):
         """Input validation"""
-        bulk_parameters = self._BULK_PARAMETERS
-        atom_parameters = self._ATOM_PARAMETERS
-        pw_bulk_parameters = update_dict(
-            bulk_parameters, self.inputs.parameters.pw_bulk.get_dict())
-        pw_atom_parameters = update_dict(
-            atom_parameters, self.inputs.parameters.pw_atom.get_dict())
+        bulk_parameters = self.inputs.bulk_parameters.get_dict()
+        atom_parameters = self.inputs.atom_parameters.get_dict()
 
-        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
-            parameters = {
-                'SYSTEM': {
-                    'ecutwfc': self.inputs.parameters.ecutwfc,
-                    'ecutrho': self.inputs.parameters.ecutrho,
-                },
-            }
-            pw_bulk_parameters = update_dict(pw_bulk_parameters, parameters)
-            pw_atom_parameters = update_dict(pw_atom_parameters, parameters)
+        parameters = {
+            'SYSTEM': {
+                'ecutwfc': self.inputs.ecutwfc,
+                'ecutrho': self.inputs.ecutrho,
+            },
+        }
+        bulk_parameters = update_dict(bulk_parameters, parameters)
+        atom_parameters = update_dict(atom_parameters, parameters)
 
-        self.ctx.pw_bulk_parameters = pw_bulk_parameters
-        self.ctx.pw_atom_parameters = pw_atom_parameters
+        self.ctx.bulk_parameters = bulk_parameters
+        self.ctx.atom_parameters = atom_parameters
 
-        self.ctx.kpoints_distance = self.inputs.parameters.kpoints_distance
+        self.ctx.kpoints_distance = self.inputs.kpoints_distance
 
     def validate_structure(self):
         """Create isolate atom and validate structure"""
         # create isolate atom structure
         elements = self.inputs.structure.get_kind_names()
         formula_list = self.inputs.structure.get_ase().get_chemical_symbols()
-        element_number = {
+        dict_element_and_count = {
             element: formula_list.count(element)
             for element in formula_list
         }
 
-        assert len(self.inputs.pseudos) == len(element_number)
-        element_structure = {}
+        # assert len(self.inputs.pseudos) == len(dict_element_and_count)
+        dict_element_and_structure = {}
         for element in elements:
-            atom_structure = create_isolate_atom(
-                orm.Str(element), self.inputs.parameters.vacuum_length)
-            element_structure[element] = atom_structure
+            atom_structure = create_isolate_atom(orm.Str(element),
+                                                 self.inputs.vacuum_length)
+            dict_element_and_structure[element] = atom_structure
 
         self.ctx.pseudos = self.inputs.pseudos
-        self.ctx.element_structure = element_structure
-        self.ctx.element_number = element_number
+        self.ctx.d_element_structure = dict_element_and_structure
+        self.ctx.d_element_count = dict_element_and_count
+
+    def setup_code_resource_options(self):
+        """
+        setup resource options and parallelization for `PwCalculation` from inputs
+        """
+        if 'options' in self.inputs:
+            self.ctx.options = self.inputs.options.get_dict()
+        else:
+            from aiida_sssp_workflow.utils import get_default_options
+
+            self.ctx.options = get_default_options(
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
+                with_mpi=True)
+
+        if 'parallelization' in self.inputs:
+            self.ctx.parallelization = self.inputs.parallelization.get_dict()
+        else:
+            self.ctx.parallelization = {}
+
+        self.report(f'resource options set to {self.ctx.options}')
+        self.report(
+            f'parallelization options set to {self.ctx.parallelization}')
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
-        bulk_inputs = AttributeDict({
+        bulk_inputs = {
             'metadata': {
                 'call_link_label': 'bulk_scf'
             },
@@ -173,69 +153,46 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'structure': self.inputs.structure,
                 'code': self.inputs.code,
                 'pseudos': self.ctx.pseudos,
-                'parameters': orm.Dict(dict=self.ctx.pw_bulk_parameters),
-                # 'settings': orm.Dict(dict=self._BULK_CMDLINE_SETTING),
-                'metadata': {},
+                'parameters': orm.Dict(dict=self.ctx.bulk_parameters),
+                'metadata': {
+                    'options': self.ctx.options,
+                },
+                'parallelization': orm.Dict(dict=self.ctx.parallelization),
             },
-            'kpoints_distance':
-            self.ctx.kpoints_distance,
-        })
-
-        if 'options' in self.inputs:
-            options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            options = get_default_options(with_mpi=True)
-
-        bulk_inputs.pw.metadata.options = options
+            'kpoints_distance': self.ctx.kpoints_distance,
+        }
 
         running_bulk_energy = self.submit(PwBaseWorkflow, **bulk_inputs)
+        self.report(
+            f'Submit SCF calculation of bulk {self.inputs.structure.get_description()}'
+        )
         self.to_context(workchain_bulk_energy=running_bulk_energy)
 
         for element, pseudo in self.ctx.pseudos.items():
             atom_kpoints = orm.KpointsData()
             atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
-            parameters = {}
-            if element in RARE_EARTH_ELEMENTS:
-                # And might be a small mixing is needed for electrons convergence
-                parameters = {
-                    'SYSTEM': {
-                        'nbnd': int(pseudo.z_valence * 3),
-                    }
-                }
-
-            atom_pw_parameters = update_dict(self.ctx.pw_atom_parameters,
-                                             parameters)
-
             atom_inputs = AttributeDict({
                 'metadata': {
                     'call_link_label': 'atom_scf'
                 },
                 'pw': {
-                    'structure': self.ctx.element_structure[element],
+                    'structure': self.ctx.d_element_structure[element],
                     'code': self.inputs.code,
                     'pseudos': {
                         element: pseudo
                     },
-                    'parameters': orm.Dict(dict=atom_pw_parameters),
-                    # 'settings': orm.Dict(dict=self._ATOM_CMDLINE_SETTING),
-                    'metadata': {},
+                    'parameters': orm.Dict(dict=self.ctx.atom_parameters),
+                    'metadata': {
+                        'options': self.ctx.options,
+                    },
+                    'parallelization': orm.Dict(dict=self.ctx.parallelization),
                 },
                 'kpoints': atom_kpoints,
             })
-            atom_inputs.pw.metadata.options = options
-
-            # TODO n_machine = 4 mandatory for lanthanides.
-            if self.inputs.parameters.ecutwfc.value > 100:
-                self.report(
-                    'High ecutwfc may require more RAM. Simply increase the node.'
-                )
-                atom_inputs.pw.metadata.options['resources'][
-                    'num_machines'] = 2
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
+            self.report(f'Submit atomic SCF of {element}.')
             self.to_context(
                 workchain_atom_children=append_(running_atom_energy))
 
@@ -254,7 +211,7 @@ class CohesiveEnergyWorkChain(WorkChain):
 
         element_energy = {}
         for child in self.ctx.workchain_atom_children:
-            element = child.inputs.pw__structure.get_kind_names()[0]
+            element = child.inputs.pw.structure.get_kind_names()[0]
             if not child.is_finished_ok:
                 self.report(
                     f'PwBaseWorkChain of element={element} atom energy evaluation failed'
@@ -272,13 +229,13 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def results(self):
         """result"""
-        num_of_atoms = sum(self.ctx.element_number.values())
+        num_of_atoms = sum(self.ctx.d_element_count.values())
         cohesive_energy = self.ctx.bulk_energy
         element_energy = {
         }  # dict to be output for every element isolate energy
         for element, energy in self.ctx.element_energy.items():
             element_energy[f'isolate_atom_energy_{element}'] = energy
-            cohesive_energy -= energy * self.ctx.element_number[element]
+            cohesive_energy -= energy * self.ctx.d_element_count[element]
 
         cohesive_energy_per_atom = cohesive_energy / num_of_atoms
 
@@ -294,4 +251,29 @@ class CohesiveEnergyWorkChain(WorkChain):
         output_parameters = orm.Dict(dict=parameters_dict)
 
         self.out('output_parameters', output_parameters.store())
-        self.report(f'output_parameters node<{output_parameters.pk}>')
+        self.report(
+            f'output_parameters node<{output_parameters.pk}> with: {output_parameters.get_dict()}'
+        )
+
+    def on_terminated(self):
+        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
+        super().on_terminated()
+
+        if self.inputs.clean_workdir.value is False:
+            self.report('remote folders will not be cleaned')
+            return
+
+        cleaned_calcs = []
+
+        for called_descendant in self.node.called_descendants:
+            if isinstance(called_descendant, orm.CalcJobNode):
+                try:
+                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
+                    cleaned_calcs.append(called_descendant.pk)
+                except (IOError, OSError, KeyError):
+                    pass
+
+        if cleaned_calcs:
+            self.report(
+                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
+            )

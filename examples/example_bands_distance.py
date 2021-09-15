@@ -1,37 +1,55 @@
 # -*- coding: utf-8 -*-
 """
-Example for functions for bands distance calculation
+Example of bands distance to chessboard comparision
 """
+import os
+
 from aiida import orm
-from aiida.orm import load_node
-from aiida.plugins import CalculationFactory
-from aiida import load_profile
-load_profile()
+from aiida.plugins import DataFactory, WorkflowFactory
+from aiida.engine import run_get_node
 
-from aiida_sssp_workflow.calculations.calculate_bands_distance import calculate_eta_and_max_diff, \
-    retrieve_bands, calculate_bands_distance
+from aiida_sssp_workflow.utils import to_valid_key
 
-# calculate_bands_distance = CalculationFactory('sssp_workflow.calculate_bands_distance')
+UpfData = DataFactory('pseudo.upf')
+BandsDistanceWorkChain = WorkflowFactory('sssp_workflow.bands_distance')
 
-RY_TO_EV = 13.6056980659
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
+def run_bands_chessboard(code, d_input_upfs):
+    inputs = {
+        'code': code,
+        'input_pseudos': d_input_upfs,
+        'protocol': orm.Str('test'),
+        'options': orm.Dict(
+                dict={
+                    'resources': {
+                        'num_machines': 1
+                    },
+                    'max_wallclock_seconds': 1800 * 3,
+                    'withmpi': False,
+                }),
+        'parallelization': orm.Dict(dict={}),
+        'clean_workdir': orm.Bool(True),
+    }
 
-def calc_band_distance(bandsdata_a, bandsdata_b, band_parameters_a,
-                       band_parameters_b, is_metal):
-    res = calculate_bands_distance(bandsdata_a, bandsdata_b,
-                                   band_parameters_a, band_parameters_b,
-                                   orm.Float(0.02 * RY_TO_EV),
-                                   orm.Bool(is_metal))
-    print(res.get_dict())
-
+    res, node = run_get_node(BandsDistanceWorkChain, **inputs)
+    return res, node
 
 if __name__ == '__main__':
-    # the bands of gold calculated with different pseudopotential
-    bandsdata_a = load_node(11385)
-    band_parameters_a = load_node(11387)
-    bandsdata_b = load_node(14680)
-    band_parameters_b = load_node(14682)
+    from aiida.orm import load_code
+    from os.path import splitext, basename
 
-    # shift values are opposite to each other
-    calc_band_distance(bandsdata_a, bandsdata_b, band_parameters_a,
-                       band_parameters_b, True)
+    code = load_code('pw64@localhost')
+
+    d_input_upfs = {}
+    pp_name_list = ['Si_ONCV_PBE-1.2.upf', 'Si.pbe-n-kjpaw_psl.1.0.0.UPF', 'Si.pbe-nl-rrkjus_psl.1.0.0.UPF']
+    for pp_name in pp_name_list:
+        pp_path = os.path.join(STATIC_DIR, pp_name)
+        with open(pp_path, 'rb') as stream:
+            pseudo = UpfData(stream)
+            name = to_valid_key(pp_name)
+            d_input_upfs[name] = pseudo
+
+    res, node = run_bands_chessboard(code, d_input_upfs)
+    node.description = 'Silicon'
+    print(node)

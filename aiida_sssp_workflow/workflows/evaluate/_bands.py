@@ -5,60 +5,55 @@ WorkChain calculate the bands for certain pseudopotential
 import numpy as np
 
 from aiida import orm
-from aiida.engine import WorkChain, ToContext, while_, if_
-from aiida.plugins import WorkflowFactory, CalculationFactory, DataFactory
+from aiida.engine import WorkChain, ToContext, while_, if_, calcfunction
+from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
 
 PwBandsWorkChain = WorkflowFactory('quantumespresso.pw.bands')
-create_kpoints_from_distance = CalculationFactory(
-    'quantumespresso.create_kpoints_from_distance')
 UpfData = DataFactory('pseudo.upf')
 
-PW_PARAS = lambda: orm.Dict(
-    dict={
-        'SYSTEM': {
-            'ecutrho': 800,
-            'ecutwfc': 200,
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    })
+
+@calcfunction
+def create_kpoints_from_distance(structure, distance, force_parity):
+    """Generate a uniformly spaced kpoint mesh for a given structure.
+    The spacing between kpoints in reciprocal space is guaranteed to be at least the defined distance.
+    :param structure: the StructureData to which the mesh should apply
+    :param distance: a Float with the desired distance between kpoints in reciprocal space
+    :param force_parity: a Bool to specify whether the generated mesh should maintain parity
+    :returns: a KpointsData with the generated mesh
+    """
+    from numpy import linalg
+    from aiida.orm import KpointsData
+
+    epsilon = 1E-5
+
+    kpoints = KpointsData()
+    kpoints.set_cell_from_structure(structure)
+    kpoints.set_kpoints_mesh_from_density(distance.value,
+                                          force_parity=force_parity.value)
+
+    lengths_vector = [linalg.norm(vector) for vector in structure.cell]
+    lengths_kpoint = kpoints.get_kpoints_mesh()[0]
+
+    is_symmetric_cell = all(
+        abs(length - lengths_vector[0]) < epsilon for length in lengths_vector)
+    is_symmetric_mesh = all(length == lengths_kpoint[0]
+                            for length in lengths_kpoint)
+
+    # If the vectors of the cell all have the same length, the kpoint mesh should be isotropic as well
+    if is_symmetric_cell and not is_symmetric_mesh:
+        nkpoints = max(lengths_kpoint)
+        kpoints.set_kpoints_mesh([nkpoints, nkpoints, nkpoints])
+
+    return kpoints
 
 
 class BandsWorkChain(WorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
 
-    _SCF_PARAMETERS = {
-        'SYSTEM': {
-            'degauss': 0.00735,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    }
-
-    _BAND_PARAMETERS = {
-        'SYSTEM': {
-            'degauss': 0.00735,
-            'occupations': 'smearing',
-            'smearing': 'marzari-vanderbilt',
-            'noinv': True,
-            'nosym': True,
-        },
-        'ELECTRONS': {
-            'conv_thr': 1e-10,
-        },
-    }
-
-    _BANDS_SHIFT = 10.5
+    _BANDS_SHIFT = 10.05
     _SEEKPATH_DISTANCE = 0.1
-    _SCF_CMDLINE_SETTING = {'CMDLINE': ['-ndiag', '1', '-nk', '4']}
-    _BAND_CMDLINE_SETTING = {'CMDLINE': ['-nk', '4']}
-    _MAX_WALLCLOCK_SECONDS = 1800 * 3
 
     @classmethod
     def define(cls, spec):
@@ -69,135 +64,147 @@ class BandsWorkChain(WorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
-        spec.input('structure', valid_type=orm.StructureData, required=True,
+        spec.input('structure', valid_type=orm.StructureData,
                     help='Ground state structure which the verification perform')
+        spec.input('pw_base_parameters', valid_type=orm.Dict,
+                    help='parameters for pwscf of calculation.')
+        spec.input('ecutwfc', valid_type=orm.Float,
+                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
+        spec.input('ecutrho', valid_type=orm.Float,
+                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
+        spec.input('kpoints_distance', valid_type=orm.Float,
+                    help='Kpoints distance setting for bulk energy calculation.')
+        spec.input('init_nbands_factor', valid_type=orm.Float,
+                    help='initial nbands factor.')
+        spec.input('should_run_bands_structure', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+                    help='if True, run final bands structure calculation on seekpath kpath.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
-        spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.pw', valid_type=orm.Dict, required=False,
-                    help='parameters for pw.x, if not set use the default hard code one.')
-        spec.input('parameters.run_band_structure', default=lambda: orm.Bool(False),
-                    help='If True, run to get refined band structure along path.')
-        spec.input('parameters.ecutwfc', valid_type=(orm.Float, orm.Int), required=False,
-                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('parameters.ecutrho', valid_type=(orm.Float, orm.Int), required=False,
-                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
-        spec.input('parameters.scf_kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.1),
-                    help='Kpoints distance setting for scf calculation.')
-        spec.input('parameters.nbands_factor', valid_type=orm.Float, default=lambda: orm.Float(1.0),
-                    help='Bands number factor in bands calculation.')
-        spec.input('parameters.bands_kpoints_distance', valid_type=orm.Float, default=lambda: orm.Float(0.15),
-                    help='Kpoints distance setting for bands nscf calculation.')
+        spec.input('parallelization', valid_type=orm.Dict, required=False,
+                    help='Parallelization options for the `PwCalculations`.')
+        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
         spec.outline(
-            cls.setup,
+            cls.setup_base_parameters,
             cls.validate_structure,
+            cls.setup_code_resource_options,
+
+            cls.run_bands,
             while_(cls.not_enough_bands)(
+                cls.increase_nbands,
                 cls.run_bands,
-                cls.inspect_bands,
             ),
-            if_(cls.should_band_structure)(
+
+            if_(cls.should_run_bands_structure)(
                 cls.run_band_structure,
                 cls.inspect_band_structure,
             ),
+
             cls.results,
         )
         spec.output_namespace('seekpath_band_structure', dynamic=True,
                                 help='output of band structure along seekpath.')
-        spec.output('scf_parameters', valid_type=orm.Dict,
+        spec.output('output_scf_parameters', valid_type=orm.Dict,
                     help='The output parameters of the SCF `PwBaseWorkChain`.')
-        spec.output('band_parameters', valid_type=orm.Dict,
+        spec.output('output_bands_parameters', valid_type=orm.Dict,
                     help='The output parameters of the BANDS `PwBaseWorkChain`.')
-        spec.output('band_structure', valid_type=orm.BandsData,
+        spec.output('output_bands_structure', valid_type=orm.BandsData,
                     help='The computed band structure.')
-        spec.output('nbands_factor', valid_type=orm.Float,
+        spec.output('output_nbands_factor', valid_type=orm.Float,
                     help='The nbands factor of final bands run.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
         # yapf: enable
 
-    def setup(self):
+    def setup_base_parameters(self):
         """Input validation"""
-        scf_parameters = self._SCF_PARAMETERS
-        bands_parameters = self._BAND_PARAMETERS
+        pw_parameters = self.inputs.pw_base_parameters.get_dict()
 
-        if 'pw' in self.inputs.parameters:
-            self.ctx.pw_parameters = self.inputs.parameters.pw.get_dict()
-        else:
-            self.ctx.pw_parameters = {}
+        parameters = {
+            'SYSTEM': {
+                'ecutwfc': self.inputs.ecutwfc,
+                'ecutrho': self.inputs.ecutrho,
+            },
+        }
 
-        pw_scf_parameters = update_dict(scf_parameters, self.ctx.pw_parameters)
-        pw_bands_parameters = update_dict(bands_parameters,
-                                          self.ctx.pw_parameters)
+        pw_scf_parameters = update_dict(pw_parameters, parameters)
 
-        # nbnd can not sit with nband_factor and nbnd might be set somewhere
-        pw_bands_parameters['SYSTEM'].pop('nbnd', None)
+        parameters = {
+            'SYSTEM': {
+                'ecutwfc': self.inputs.ecutwfc,
+                'ecutrho': self.inputs.ecutrho,
+                'noinv': True,
+                'nosym': True,
+            },
+        }
 
-        if self.inputs.parameters.ecutwfc and self.inputs.parameters.ecutrho:
-            parameters = {
-                'SYSTEM': {
-                    'ecutwfc': self.inputs.parameters.ecutwfc,
-                    'ecutrho': self.inputs.parameters.ecutrho,
-                },
-            }
-            pw_scf_parameters = update_dict(pw_scf_parameters, parameters)
-            pw_bands_parameters = update_dict(pw_bands_parameters, parameters)
+        pw_bands_parameters = update_dict(pw_parameters, parameters)
 
-        self.ctx.pw_scf_parameters = orm.Dict(dict=pw_scf_parameters)
-        self.ctx.pw_bands_parameters = orm.Dict(dict=pw_bands_parameters)
+        self.ctx.pw_scf_parameters = pw_scf_parameters
+        self.ctx.pw_bands_parameters = pw_bands_parameters
 
-        self.ctx.scf_kpoints_distance = self.inputs.parameters.scf_kpoints_distance
+        self.ctx.kpoints_distance = self.inputs.kpoints_distance
 
         # set initial lowest highest bands eigenvalue - fermi_energy equals to 0.0
-        self.ctx.nbands_factor = self.inputs.parameters.nbands_factor
+        self.ctx.nbands_factor = self.inputs.init_nbands_factor
         self.ctx.lowest_highest_eigenvalue = 0.0
 
-        bands_kpoints_distance = self.inputs.parameters.bands_kpoints_distance
         self.ctx.bands_kpoints = create_kpoints_from_distance(
-            self.inputs.structure, bands_kpoints_distance, orm.Bool(False))
+            self.inputs.structure, self.ctx.kpoints_distance, orm.Bool(False))
 
     def validate_structure(self):
-        """Create isolate atom and validate structure"""
+        """doc"""
         self.ctx.pseudos = self.inputs.pseudos
 
-    def not_enough_bands(self):
-        """Check if the number of bands enough for shift 10eV"""
-        bands_shift = self._BANDS_SHIFT  # hard code for the time being
-        return self.ctx.lowest_highest_eigenvalue < bands_shift
-
-    def _get_band_inputs(self):
+    def setup_code_resource_options(self):
+        """
+        setup resource options and parallelization for `PwCalculation` from inputs
+        """
         if 'options' in self.inputs:
-            options = self.inputs.options.get_dict()
+            self.ctx.options = self.inputs.options.get_dict()
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
-            # Too many kpoints may go beyond 1800s
-            options = get_default_options(
-                with_mpi=True,
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS)
+            self.ctx.options = get_default_options(
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
+                with_mpi=True)
 
+        if 'parallelization' in self.inputs:
+            self.ctx.parallelization = self.inputs.parallelization.get_dict()
+        else:
+            self.ctx.parallelization = {}
+
+        self.report(f'resource options set to {self.ctx.options}')
+        self.report(
+            f'parallelization options set to {self.ctx.parallelization}')
+
+    def _get_base_bands_inputs(self):
+        """
+        get the inputs for raw band workflow
+        """
         inputs = {
             'structure': self.inputs.structure,
             'scf': {
                 'pw': {
                     'code': self.inputs.code,
                     'pseudos': self.ctx.pseudos,
-                    'parameters': self.ctx.pw_scf_parameters,
-                    'settings': orm.Dict(dict=self._SCF_CMDLINE_SETTING),
+                    'parameters': orm.Dict(dict=self.ctx.pw_scf_parameters),
                     'metadata': {
-                        'options': options
+                        'options': self.ctx.options,
                     },
+                    'parallelization': orm.Dict(dict=self.ctx.parallelization),
                 },
-                'kpoints_distance': self.ctx.scf_kpoints_distance,
+                'kpoints_distance': self.ctx.kpoints_distance,
             },
             'bands': {
                 'pw': {
                     'code': self.inputs.code,
                     'pseudos': self.ctx.pseudos,
-                    'parameters': self.ctx.pw_bands_parameters,
-                    'settings': orm.Dict(dict=self._BAND_CMDLINE_SETTING),
+                    'parameters': orm.Dict(dict=self.ctx.pw_bands_parameters),
                     'metadata': {
-                        'options': options
+                        'options': self.ctx.options,
                     },
+                    'parallelization': orm.Dict(dict=self.ctx.parallelization),
                 },
             },
         }
@@ -206,7 +213,7 @@ class BandsWorkChain(WorkChain):
 
     def run_bands(self):
         """run bands calculation"""
-        inputs = self._get_band_inputs()
+        inputs = self._get_base_bands_inputs()
         inputs['nbands_factor'] = self.ctx.nbands_factor
         inputs['bands_kpoints'] = self.ctx.bands_kpoints
 
@@ -214,8 +221,8 @@ class BandsWorkChain(WorkChain):
         self.report(f'Running pw bands calculation pk={running.pk}')
         return ToContext(workchain_bands=running)
 
-    def inspect_bands(self):
-        """inspect the result of bands calculation."""
+    def not_enough_bands(self):
+        """inspect and check if the number of bands enough for shift 10eV (_BANDS_SHIFT)"""
         workchain = self.ctx.workchain_bands
 
         if not workchain.is_finished_ok:
@@ -225,22 +232,23 @@ class BandsWorkChain(WorkChain):
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
         fermi_energy = workchain.outputs.band_parameters['fermi_energy']
-        bands = workchain.outputs.band_structure.get_array(
-            'bands') - fermi_energy
-        eigv = float(np.amin(bands[:, -1]))
-        self.ctx.lowest_highest_eigenvalue = eigv
+        bands = workchain.outputs.band_structure.get_array('bands')
+        self.ctx.highest_band = float(np.amin(bands[:, -1]))
 
+        return self.ctx.highest_band - fermi_energy < self._BANDS_SHIFT
+
+    def increase_nbands(self):
+        """inspect the result of bands calculation."""
         self.ctx.nbands_factor += 1.0
-        self.ctx.output_nbands_factor = self.ctx.nbands_factor - 1.0
 
-    def should_band_structure(self):
-        """should do band structure calc?"""
-        return self.inputs.parameters.run_band_structure.value
+    def should_run_bands_structure(self):
+        """whether run band structure"""
+        return self.inputs.should_run_bands_structure.value
 
     def run_band_structure(self):
         """run band structure calculation"""
-        inputs = self._get_band_inputs()
-        inputs['nbands_factor'] = self.ctx.output_nbands_factor
+        inputs = self._get_base_bands_inputs()
+        inputs['nbands_factor'] = self.ctx.nbands_factor
         inputs['bands_kpoints_distance'] = orm.Float(self._SEEKPATH_DISTANCE)
 
         running = self.submit(PwBandsWorkChain, **inputs)
@@ -258,21 +266,21 @@ class BandsWorkChain(WorkChain):
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
         self.report('pw band structure workchain successfully completed')
-        self.out('seekpath_band_structure.scf_parameters',
+        self.out('seekpath_band_structure.output_scf_parameters',
                  workchain.outputs.scf_parameters)
-        self.out('seekpath_band_structure.band_parameters',
+        self.out('seekpath_band_structure.output_bands_parameters',
                  workchain.outputs.band_parameters)
-        self.out('seekpath_band_structure.band_structure',
+        self.out('seekpath_band_structure.output_bands_structure',
                  workchain.outputs.band_structure)
 
     def results(self):
         """result"""
         self.report('pw bands workchain successfully completed')
-        self.out('scf_parameters',
+        self.out('output_scf_parameters',
                  self.ctx.workchain_bands.outputs.scf_parameters)
-        self.out('band_parameters',
+        self.out('output_bands_parameters',
                  self.ctx.workchain_bands.outputs.band_parameters)
-        self.out('band_structure',
+        self.out('output_bands_structure',
                  self.ctx.workchain_bands.outputs.band_structure)
-        self.out('nbands_factor',
-                 orm.Float(self.ctx.output_nbands_factor).store())
+        self.out('output_nbands_factor',
+                 orm.Float(self.ctx.nbands_factor).store())
