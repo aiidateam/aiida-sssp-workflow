@@ -29,7 +29,7 @@ def run_delta(code, upf):
                     'withmpi': False,
                 }),
         'parallelization': orm.Dict(dict={}),
-        'clean_workdir': orm.Bool(True),
+        'clean_workdir': orm.Bool(False),
     }
 
     res, node = run_get_node(DeltaFactorWorkChain, **inputs)
@@ -38,9 +38,7 @@ def run_delta(code, upf):
 
 if __name__ == '__main__':
     from aiida.orm import load_code
-    from aiida import load_profile
 
-    load_profile('sssp-dev')
     code = load_code('pw64@localhost')
 
     upf_sg15 = {}
