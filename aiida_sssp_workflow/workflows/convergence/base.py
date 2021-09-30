@@ -11,7 +11,7 @@ from aiida_tools.process_inputs import get_fullname
 
 from aiida.engine import WorkChain, ToContext
 from aiida import orm
-from aiida.plugins import WorkflowFactory
+from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
 from aiida_sssp_workflow.utils import helper_parse_upf
@@ -19,6 +19,7 @@ from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
 
 CreateEvaluateWorkChain = WorkflowFactory('optimize.wrappers.create_evaluate')
 OptimizationWorkChain = WorkflowFactory('optimize.optimize')
+UpfData = DataFactory('pseudo.upf')
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[
     20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,
@@ -43,31 +44,21 @@ class BaseConvergenceWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
+        """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
+        spec.input('pseudo', valid_type=UpfData, required=True,
                    help='Pseudopotential to be verified')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
+        spec.input('options', valid_type=orm.Dict, required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('protocol',
-                   valid_type=orm.Str,
-                   default=lambda: orm.Str('efficiency'),
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
                    help='The protocol to use for the workchain.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.ecutrho_list',
-                   valid_type=orm.List,
-                   default=PARA_ECUTRHO_LIST,
+        spec.input('parameters.ecutrho_list', valid_type=orm.List, default=PARA_ECUTRHO_LIST,
                    help='dual value for ecutrho list.')
-        spec.input('parameters.ecutwfc_list',
-                   valid_type=orm.List,
-                   default=PARA_ECUTWFC_LIST,
+        spec.input('parameters.ecutwfc_list', valid_type=orm.List, default=PARA_ECUTWFC_LIST,
                    help='list of ecutwfc evaluate list.')
-        spec.input('parameters.ref_cutoff_pair',
-                   valid_type=orm.List,
-                   required=True,
+        spec.input('parameters.ref_cutoff_pair', valid_type=orm.List, required=True,
                    default=lambda: orm.List(list=[200, 1600]),
                    help='ecutwfc/ecutrho pair for reference calculation.')
         spec.outline(
@@ -80,44 +71,23 @@ class BaseConvergenceWorkChain(WorkChain):
             cls.results,
             cls.final_step,
         )
-        spec.output(
-            'output_parameters',
-            valid_type=orm.Dict,
-            required=True,
-            help='The output parameters include results of all calculations.')
-        spec.output(
-            'xy_data_ecutwfc',
-            valid_type=orm.XyData,
-            required=True,
-            help='The output XY data for plot use; the x axis is ecutwfc.')
-        spec.output(
-            'xy_data_ecutrho',
-            valid_type=orm.XyData,
-            required=True,
-            help='The output XY data for plot use; the x axis is ecutrho.')
-        spec.output('output_convergence_parameters',
-                    valid_type=orm.Dict,
-                    required=False,
+        spec.output('output_parameters', valid_type=orm.Dict, required=True,
+                    help='The output parameters include results of all calculations.')
+        spec.output('xy_data_ecutwfc', valid_type=orm.XyData, required=True,
+                    help='The output XY data for plot use; the x axis is ecutwfc.')
+        spec.output('xy_data_ecutrho', valid_type=orm.XyData, required=True,
+                    help='The output XY data for plot use; the x axis is ecutrho.')
+        spec.output('output_convergence_parameters', valid_type=orm.Dict, required=False,
                     help='The result point of convergence test.')
-        spec.output(
-            'output_pseudo_header',
-            valid_type=orm.Dict,
-            required=True,
-            help='The header(important parameters) of the pseudopotential.')
-        spec.exit_code(
-            400,
-            'ERROR_SUB_PROCESS_FAILED',
-            message='The sub processes {pk} did not finish successfully.')
-        spec.exit_code(
-            600,
-            'ERROR_NOT_ENOUGH_EVALUATE_WORKFLOW',
-            message='The number of sub evaluation processes {n} is not enough.'
-        )
-        spec.exit_code(
-            510,
-            'ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS',
-            message='The ecutwfc_list and ecutrho_list have incompatible size.'
-        )
+        spec.output('output_pseudo_header', valid_type=orm.Dict, required=True,
+                    help='The header(important parameters) of the pseudopotential.')
+        spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
+                    message='The sub processes {pk} did not finish successfully.')
+        spec.exit_code(600, 'ERROR_NOT_ENOUGH_EVALUATE_WORKFLOW',
+                    message='The number of sub evaluation processes {n} is not enough.')
+        spec.exit_code(510, 'ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS',
+                    message='The ecutwfc_list and ecutrho_list have incompatible size.')
+        # yapf: enable
 
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
@@ -177,6 +147,7 @@ class BaseConvergenceWorkChain(WorkChain):
         """
 
     def setup(self):
+        """setup"""
         self.ctx.ecutwfc_list = self.inputs.parameters.ecutwfc_list.get_list()
         self.ctx.ecutrho_list = self.inputs.parameters.ecutrho_list.get_list()
         if not len(self.ctx.ecutwfc_list) == len(self.ctx.ecutrho_list):
@@ -184,11 +155,12 @@ class BaseConvergenceWorkChain(WorkChain):
 
         # parse pseudo and output its header information
         upf_info = helper_parse_upf(self.inputs.pseudo)
-        self.ctx.element = orm.Str(upf_info['element'])
+        self.ctx.element = self.inputs.pseudo.element
 
         self.out('output_pseudo_header', orm.Dict(dict=upf_info).store())
 
     def validate_structure(self):
+        """validate structure"""
         res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo)
 
         self.ctx.structure = res['structure']

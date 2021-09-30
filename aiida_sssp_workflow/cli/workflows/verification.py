@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Module contain the launch cmdline method of verification workflow
 """
@@ -50,7 +51,7 @@ ecutwfc_list = np.array(
 def launch_workflow(pw_code, ph_code, pseudo, protocol, dual, clean_workdir,
                     max_num_machines, max_wallclock_seconds, with_mpi, daemon):
     """Run the workflow to calculate delta factor"""
-    from aiida_quantumespresso.utils.resources import get_default_options
+    from aiida_sssp_workflow.utils import get_default_options
 
     builder = WorkflowFactory('sssp_workflow.verification').get_builder()
 

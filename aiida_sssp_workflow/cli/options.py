@@ -4,28 +4,6 @@ import click
 
 from aiida.cmdline.params.options import OverridableOption
 
-ECUTWFC = OverridableOption('-W',
-                            '--ecutwfc',
-                            default=200.0,
-                            show_default=True,
-                            type=click.FLOAT,
-                            help='The plane wave cutoff energy in Ry.')
-
-ECUTRHO = OverridableOption('-R',
-                            '--ecutrho',
-                            type=click.FLOAT,
-                            help='The charge density cutoff energy in Ry.')
-
-KPOINTS_DISTANCE = OverridableOption(
-    '-K',
-    '--kpoints-distance',
-    type=click.FLOAT,
-    default=0.1,
-    show_default=True,
-    help=
-    'The minimal distance between k-points in reciprocal space in inverse Ångström.'
-)
-
 PROTOCOL = OverridableOption('-P',
                              '--protocol',
                              type=click.STRING,
@@ -39,20 +17,6 @@ DUAL = OverridableOption('-D',
                          default=8,
                          show_default=True,
                          help='The dual between ecutwfc and ecutrho.')
-
-SCALE_COUNT = OverridableOption('-C',
-                                '--scale-count',
-                                type=click.INT,
-                                default=7,
-                                show_default=True,
-                                help='Numbers of scale points in eos step.')
-
-SCALE_INCREMENT = OverridableOption('-C',
-                                    '--scale-increment',
-                                    type=click.FLOAT,
-                                    default=0.02,
-                                    show_default=True,
-                                    help='The scale increment in eos step.')
 
 MAX_NUM_MACHINES = OverridableOption(
     '-m',
@@ -102,13 +66,3 @@ CLEAN_WORKDIR = OverridableOption(
     help=
     'Clean the remote folder of all the launched calculations after completion of the workchain.'
 )
-
-SMEARING = OverridableOption(
-    '--smearing',
-    nargs=2,
-    default=('marzari-vanderbilt', 0.00735),
-    show_default=True,
-    type=click.Tuple([str, float]),
-    help=
-    'Add smeared occupations by specifying the type and amount of smearing.',
-    metavar='<TYPE DEGAUSS>')

@@ -69,15 +69,13 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'aiida-sssp-workflow'
-copyright_first_year = "2020"
-copyright_owners = "The AiiDA Team"
+copyright_first_year = '2020'
+copyright_owners = 'The AiiDA Team'
 
 current_year = str(time.localtime().tm_year)
-copyright_year_string = current_year if current_year == copyright_first_year else "{}-{}".format(
-    copyright_first_year, current_year)
+copyright_year_string = current_year if current_year == copyright_first_year else f'{copyright_first_year}-{current_year}'
 # pylint: disable=redefined-builtin
-copyright = u'{}, {}. All rights reserved'.format(copyright_year_string,
-                                                  copyright_owners)
+copyright = f'{copyright_year_string}, {copyright_owners}. All rights reserved'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -273,6 +271,9 @@ latex_elements = {
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+# autodoc mock
+autodoc_mock_imports = ['f90wrap', 'sssp.efermi_module', 'numpy']
+
 
 def run_apidoc(_):
     """Runs sphinx-apidoc when building the documentation.
@@ -310,7 +311,7 @@ def run_apidoc(_):
 
     # See https://stackoverflow.com/a/30144019
     env = os.environ.copy()
-    env["SPHINX_APIDOC_OPTIONS"] = 'members,special-members,private-members,undoc-members,show-inheritance'
+    env['SPHINX_APIDOC_OPTIONS'] = 'members,special-members,private-members,undoc-members,show-inheritance'
     subprocess.check_call([cmd_path] + options, env=env)
 
 

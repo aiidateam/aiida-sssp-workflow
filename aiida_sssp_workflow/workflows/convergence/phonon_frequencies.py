@@ -6,7 +6,7 @@ from aiida.engine import calcfunction
 from aiida import orm
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.phonon_frequencies import PhononFrequenciesWorkChain
+from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import PhononFrequenciesWorkChain
 from .base import BaseConvergenceWorkChain
 
 

@@ -5,7 +5,7 @@ All in one verification workchain
 from aiida import orm
 from aiida.engine import WorkChain
 
-from aiida.plugins import WorkflowFactory
+from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
 
@@ -18,6 +18,7 @@ ConvergencePhononFrequencies = WorkflowFactory(
     'sssp_workflow.convergence.phonon_frequencies')
 ConvergencePressureWorkChain = WorkflowFactory(
     'sssp_workflow.convergence.pressure')
+UpfData = DataFactory('pseudo.upf')
 
 PARA_ECUTWFC_LIST = lambda: orm.List(list=[
     20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,
@@ -34,45 +35,30 @@ class VerificationWorkChain(WorkChain):
     """doc"""
     @classmethod
     def define(cls, spec):
+        """Define the process specification."""
+        # yapf: disable
         super().define(spec)
-        spec.input('pw_code',
-                   valid_type=orm.Code,
+        spec.input('pw_code', valid_type=orm.Code,
                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('ph_code',
-                   valid_type=orm.Code,
+        spec.input('ph_code', valid_type=orm.Code,
                    help='The `ph.x` code use for the `PwCalculation`.')
-        spec.input('pseudo',
-                   valid_type=orm.UpfData,
-                   required=True,
+        spec.input('pseudo', valid_type=UpfData, required=True,
                    help='Pseudopotential to be verified')
-        spec.input('options',
-                   valid_type=orm.Dict,
-                   required=False,
+        spec.input('options', valid_type=orm.Dict, required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('protocol',
-                   valid_type=orm.Str,
-                   default=lambda: orm.Str('efficiency'),
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
                    help='The protocol to use for the workchain.')
         spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.ecutrho_list',
-                   valid_type=orm.List,
+        spec.input('parameters.ecutrho_list', valid_type=orm.List,
                    default=lambda: PARA_ECUTRHO_LIST,
                    help='dual value for ecutrho list.')
-        spec.input('parameters.ecutwfc_list',
-                   valid_type=orm.List,
-                   default=PARA_ECUTWFC_LIST,
+        spec.input('parameters.ecutwfc_list', valid_type=orm.List, default=PARA_ECUTWFC_LIST,
                    help='list of ecutwfc evaluate list.')
-        spec.input('parameters.ref_cutoff_pair',
-                   valid_type=orm.List,
-                   required=True,
+        spec.input('parameters.ref_cutoff_pair', valid_type=orm.List, required=True,
                    default=lambda: orm.List(list=[200, 1600]),
                    help='ecutwfc/ecutrho pair for reference calculation.')
-        spec.input(
-            'clean_workdir',
-            valid_type=orm.Bool,
-            default=lambda: orm.Bool(False),
-            help=
-            'If `True`, work directories of all called calculation will be cleaned at the end of execution.'
+        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+            help= 'If `True`, work directories of all called calculation will be cleaned at the end of execution.'
         )
         spec.outline(
             cls.setup,
@@ -80,34 +66,26 @@ class VerificationWorkChain(WorkChain):
             cls.run_stage2,
             cls.results,
         )
-        spec.output_namespace('delta_factor',
-                              dynamic=True,
+        spec.output_namespace('delta_factor', dynamic=True,
                               help='results of delta factor calculation.')
-        spec.output_namespace(
-            'convergence_cohesive_energy',
+        spec.output_namespace('convergence_cohesive_energy',
             dynamic=True,
             help='results of convergence cohesive energy calculation.')
-        spec.output_namespace(
-            'convergence_phonon_frequencies',
-            dynamic=True,
+        spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
             help='results of convergence phonon_frequencies calculation.')
-        spec.output_namespace(
-            'convergence_pressure',
-            dynamic=True,
+        spec.output_namespace('convergence_pressure', dynamic=True,
             help='results of convergence pressure calculation.')
-        spec.output_namespace('convergence_bands',
-                              dynamic=True,
+        spec.output_namespace('convergence_bands', dynamic=True,
                               help='results of convergence bands calculation.')
-        spec.output_namespace('band_structure',
-                              dynamic=True,
+        spec.output_namespace('band_structure', dynamic=True,
                               help='results of band structure calculation.')
 
-        spec.exit_code(
-            811,
-            'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
+        spec.exit_code(811, 'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
             message='The sub-workflows {processes} is not finished ok.')
+        # yapf: enable
 
     def setup(self):
+        """setup"""
         self.ctx.ecutwfc_list = self.inputs.parameters.ecutwfc_list
         self.ctx.ecutrho_list = self.inputs.parameters.ecutrho_list
         self.ctx.pseudo = self.inputs.pseudo
@@ -269,6 +247,7 @@ class VerificationWorkChain(WorkChain):
             self.ctx.workchains['convergence_pressure'] = running
 
     def results(self):
+        """result"""
         not_finished_ok = {}
         for wname, workchain in self.ctx.workchains.items():
             if workchain.is_finished_ok:

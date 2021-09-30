@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from aiida import orm
 from aiida.engine import calcfunction
 
@@ -37,7 +38,7 @@ def create_lanthanide_nitride(element, latt):
     pbc = [True, True, True]
     scaled_positions = [[0.0, 0.0, 0.0], [0.5, 0.5, 0.0], [0.5, 0.0, 0.5],
                         [0.0, 0.5, 0.5], [0.0, 0.0, 0.5], [0.5, 0.5, 0.5],
-                        value[0.5, 0.0, 0.0], [0.0, 0.5, 0.0]]
+                        [0.5, 0.0, 0.0], [0.0, 0.5, 0.0]]
     ase_structure = Atoms(symbols=f'{element}4N4',
                           cell=cell,
                           pbc=pbc,
@@ -49,7 +50,7 @@ def create_lanthanide_nitride(element, latt):
 
 
 dir_path = os.path.abspath(
-    "/home/unkcpz/Projs/sssp-workflow/aiida-sssp-workflow/aiida_sssp_workflow/REF/CIFs_REN/"
+    '/home/unkcpz/Projs/sssp-workflow/aiida-sssp-workflow/aiida_sssp_workflow/REF/CIFs_REN/'
 )
 for element, latt in element_latt.items():
     cif_data = create_lanthanide_nitride(orm.Str(element), orm.Float(latt))

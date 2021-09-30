@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """setup.py"""
 import json
 import setuptools  # this is the "magic" import
@@ -16,9 +17,11 @@ if __name__ == '__main__':
         packages=setuptools.find_packages(exclude=['tests*']),
         # this doesn't work when placed in setup.json (something to do with str type)
         package_data={
-            "": ["*"],
-            'aiida_sssp_workflow':
-            ['REF/CIFs/*.cif', 'REF/CIFs_REN/*.cif', 'REF/UPFs/*.UPF'],
+            '': ['*'],
+            'aiida_sssp_workflow': [
+                'REF/CIFs/*.cif', 'REF/CIFs_REN/*.cif', 'REF/UPFs/*.UPF',
+                'sssp_protocol.yml'
+            ],
         },
         ext_modules=[flib],
         long_description=open('README.md').read(),

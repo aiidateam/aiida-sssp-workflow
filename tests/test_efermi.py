@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 doc
 """
@@ -9,6 +10,7 @@ import numpy as np
 
 
 def test_efermi_import():
+    """test efermi_module working"""
     bands = np.array(
         [[
             -85.39990157, -36.73700546, -36.73700543, -36.7370054, 9.76035271,

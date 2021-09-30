@@ -15,7 +15,7 @@ click_completion.init()
              context_settings={'help_option_names': ['-h', '--help']})
 @options_core.PROFILE(type=types.ProfileParamType(load_profile=True))
 def cmd_root(profile):  # pylint: disable=unused-argument
-    """CLI for the `aiida-quantumespresso` plugin."""
+    """CLI for the `aiida-sssp-workflow` plugin."""
 
 
 from aiida_sssp_workflow.cli.workflows import cmd_workflow

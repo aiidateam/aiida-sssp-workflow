@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
+"""tests of customize optimize engine"""
 from aiida import orm
 from aiida.plugins import WorkflowFactory
-
-from .sample_processes import echo_calcfunction
+from aiida.engine import run
 from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
 
-from aiida.engine import run
+from .sample_processes import echo_calcfunction
 
 OptimizationWorkChain = WorkflowFactory('optimize.optimize')
 

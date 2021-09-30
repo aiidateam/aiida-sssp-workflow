@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Running EquationOfStateWorkChain example
 You can import the necessary nodes of examples-node-archive

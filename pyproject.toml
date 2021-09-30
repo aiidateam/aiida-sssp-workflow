@@ -3,7 +3,7 @@ requires = ['setuptools>=40.8.0', 'wheel', 'reentry~=1.3', 'fastentrypoints~=0.1
 build-backend = 'setuptools.build_meta:__legacy__'
 
 [tool.pylint.format]
-max-line-length = 120
+max-line-length = 140
 
 [tool.pylint.tool-check]
 generated-members = 'self.exit_codes.*'
@@ -22,7 +22,6 @@ disable = [
     'too-many-branches',
     'too-many-locals',
     'protected-access',
-    'missing-function-docstring',
 ]
 
 [tool.pylint.miscellaneous]
@@ -39,10 +38,10 @@ good-names = [
     'B1',
     'P',
     'V',
+    'REF',
     'SsspFamily',
     'StructureData',
     'UpfData',
-    'HpCalculation',
     'PwCalculation',
 ]
 
@@ -57,3 +56,13 @@ filterwarnings = [
     'ignore::DeprecationWarning:reentry:',
     'ignore::DeprecationWarning:sqlalchemy_utils:',
 ]
+
+# mypy global options:
+
+[tool.mypy]
+show_error_codes = true
+
+check_untyped_defs = true
+scripts_are_modules = true
+warn_unused_ignores = true
+warn_redundant_casts = true

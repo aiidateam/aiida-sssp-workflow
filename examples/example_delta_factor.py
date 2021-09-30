@@ -1,62 +1,82 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Running delta factor workchain example
 """
-from aiida.common import AttributeDict
+import os
+
 from aiida import orm
 
-from aiida.plugins import WorkflowFactory
-from aiida.engine import run_get_node, submit
+from aiida.plugins import WorkflowFactory, DataFactory
+from aiida.engine import run_get_node
 
+UpfData = DataFactory('pseudo.upf')
 DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
 
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
-def run_delta(code, upf, is_nc=False):
-    ecutwfc = 200.0
-    inputs = AttributeDict({
-        'code':
-        code,
-        'pseudo':
-        upf,
-        'options':
-        orm.Dict(
-            dict={
-                'resources': {
-                    'num_machines': 1
-                },
-                'max_wallclock_seconds': 1800 * 3,
-                'withmpi': True,
-            }),
-    })
+def run_delta(code, upf):
+    inputs = {
+        'code': code,
+        'pseudo': upf,
+        'protocol': orm.Str('test'),
+        'options': orm.Dict(
+                dict={
+                    'resources': {
+                        'num_machines': 1
+                    },
+                    'max_wallclock_seconds': 1800 * 3,
+                    'withmpi': False,
+                }),
+        'parallelization': orm.Dict(dict={}),
+        'clean_workdir': orm.Bool(False),
+    }
 
-    node = submit(DeltaFactorWorkChain, **inputs)
-    return node
+    res, node = run_get_node(DeltaFactorWorkChain, **inputs)
+    return res, node
 
 
 if __name__ == '__main__':
-    from aiida.orm import load_code, load_node
+    from aiida.orm import load_code
 
-    code = load_code('qe-6.6-pw@daint-mc')
+    code = load_code('pw64@localhost')
 
     upf_sg15 = {}
-    # # sg15/Au_ONCV_PBE-1.2.upf
-    # upf_sg15['au'] = load_node('2c467668-2f38-4a8c-8b57-69d67a3fb2a4')
     # sg15/Si_ONCV_PBE-1.2.upf
-    upf_sg15['si'] = load_node('39e55083-3fc7-4405-8b3b-54a2c940dc67')
+    pp_name = 'Si_ONCV_PBE-1.2.upf'
+    pp_path = os.path.join(STATIC_DIR, pp_name)
+    with open(pp_path, 'rb') as stream:
+        pseudo = UpfData(stream)
+        upf_sg15['si'] = pseudo
 
     for element, upf in upf_sg15.items():
-        node = run_delta(code, upf, is_nc=True)
+        res, node = run_delta(code, upf)
         node.description = f'sg15/{element}'
         print(node)
 
-    # # test on lanthanides
     # upf_wt = {}
     # # WT/La.GGA-PBE-paw-v1.0.UPF
-    # upf_wt['La'] = load_node('b2880763-579c-4f6d-8803-2c77f4fb10e8')
-    # # WT/Eu.GGA-PBE-paw-v1.0.UPF
-    # upf_wt['Eu'] = load_node('220a8ebd-0ac5-44f1-a6a9-0790b24965a9')
-    #
+    # pp_name = 'La.GGA-PBE-paw-v1.0.UPF'
+    # pp_path = os.path.join(STATIC_DIR, pp_name)
+    # with open(pp_path, 'rb') as stream:
+    #     pseudo = UpfData(stream)
+    #     upf_wt['La'] = pseudo
+
     # for element, upf in upf_wt.items():
-    #     node = run_delta(code, upf, is_nc=False)
+    #     res, node = run_delta(code, upf)
     #     node.description = f'WT/{element}-PBE'
+    #     print(node)
+
+
+    # upf_mag = {}
+    # # MAG/O_ONCV_PBE-1.2.upf
+    # pp_name = 'O_ONCV_PBE-1.2.upf'
+    # pp_path = os.path.join(STATIC_DIR, pp_name)
+    # with open(pp_path, 'rb') as stream:
+    #     pseudo = UpfData(stream)
+    #     upf_mag['O'] = pseudo
+
+    # for element, upf in upf_mag.items():
+    #     res, node = run_delta(code, upf)
+    #     node.description = f'MAG/SG15/{element}'
     #     print(node)

@@ -1,14 +1,41 @@
 # Install pre-commit hooks via:
 # pre-commit install
-
-# yapf = yet another python formatter
 repos:
-- repo: https://github.com/pre-commit/mirrors-yapf
-  rev: v0.30.0
-  hooks:
-  - id: yapf
-    name: yapf
-    args: ["-i"]
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+    -   id: double-quote-string-fixer
+    -   id: end-of-file-fixer
+    -   id: fix-encoding-pragma
+    -   id: mixed-line-ending
+    -   id: trailing-whitespace
+        exclude: >-
+            (?x)^(
+                tests/.*.*out|
+                tests/.*.in |
+                tests/_static/.*(?<!\.py)$
+            )$
+
+-   repo: https://github.com/ikamensh/flynt/
+    rev: '0.55'
+    hooks:
+    -   id: flynt
+        args: [
+            '--line-length=140',
+            '--fail-on-change',
+        ]
+
+-   repo: https://github.com/pre-commit/mirrors-yapf
+    rev: v0.30.0
+    hooks:
+    -   id: yapf
+        name: yapf
+        types: [python]
+        args: ['-i']
+        exclude: >-
+            (?x)^(
+                examples/.*|
+            )$
 
 -   repo: https://github.com/PyCQA/pylint
     rev: pylint-2.6.0
@@ -16,24 +43,31 @@ repos:
     -   id: pylint
         language: system
         exclude: &exclude_files >
-          (?x)^(
-              examples/.*|
-              docs/.*|
-              tests/.*|
-              .github/.*|
-              conftest.py|
-              aiida_sssp_workflow/cli.py|
-              tests/test_cli.py|
-              aiida_sssp_workflow/helpers.py|
-              aiida_sssp_workflow/data/__init__.py|
-              aiida_sssp_workflow/REF/__init__.py|
-              tests/.*(?<!\.py)$
-          )$
+            (?x)^(
+                setup.py|
+                examples/.*|
+                docs/.*|
+                tests/sample_processes.py|
+                tests/.*(?<!\.py)$
+            )$
 
-- repo: local
-  hooks:
-  - id: version-number
-    name: Check version numbers
-    entry: python ./.github/check_version.py
-    language: system
-    files: '^(setup.json)|(aiida_sssp_workflow/__init__.py)'
+-   repo: local
+    hooks:
+
+    -   id: mypy
+        name: mypy
+        entry: mypy
+        language: python
+        types: [python]
+        require_serial: true
+        pass_filenames: true
+        files: >-
+            (?x)^(
+                aiida_sssp_workflow/__init__.py|
+            )$
+
+    -   id: version-number
+        name: Check version numbers
+        entry: python ./.github/check_version.py
+        language: system
+        files: '^(setup.json)|(aiida_sssp_workflow/__init__.py)'

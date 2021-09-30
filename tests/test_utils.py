@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
+"""doc"""
+
+
 def test_update_dict():
+    """test update_dict"""
     from aiida_sssp_workflow.utils import update_dict
     import copy
 
-    u = {
+    old_dict = {
         'SYSTEM': {
             'degauss': 0.02,
             'occupations': 'smearing',
@@ -12,9 +17,9 @@ def test_update_dict():
             'conv_thr': 1e-10,
         },
     }
-    u_expect = copy.deepcopy(u)
+    old_expect = copy.deepcopy(old_dict)
 
-    d = {
+    new_inputs = {
         'SYSTEM': {
             'ecutrho': 1600,
             'ecutwfc': 200,
@@ -22,23 +27,33 @@ def test_update_dict():
         },
     }
 
-    r = update_dict(u, d)
+    new_dict = update_dict(old_dict, new_inputs)
 
-    assert r['SYSTEM']['degauss'] == 0.02
-    assert r['SYSTEM']['smearing'] == 'fd'
-    assert r['SYSTEM']['ecutrho'] == 1600
-    assert r['ELECTRONS']['conv_thr'] == 1e-10
-    assert u == u_expect
+    assert new_dict['SYSTEM']['degauss'] == 0.02
+    assert new_dict['SYSTEM']['smearing'] == 'fd'
+    assert new_dict['SYSTEM']['ecutrho'] == 1600
+    assert new_dict['ELECTRONS']['conv_thr'] == 1e-10
+
+    # test that the original one is not modified
+    assert old_expect == old_dict
 
 
 def test_cif_from_element():
+    """test cif_from_element"""
     from aiida_sssp_workflow.utils import get_standard_cif_filename_from_element
 
-    fn = get_standard_cif_filename_from_element('Si')
-    assert 'Si.cif' in fn
+    fname = get_standard_cif_filename_from_element('Si')
+    assert 'Si.cif' in fname
 
-    fn = get_standard_cif_filename_from_element('SiF4')
-    assert 'SiF4.cif' in fn
+    fname = get_standard_cif_filename_from_element('SiF4')
+    assert 'SiF4.cif' in fname
 
-    fn = get_standard_cif_filename_from_element('La')
-    assert 'LaN.cif' in fn
+    fname = get_standard_cif_filename_from_element('La')
+    assert 'LaN.cif' in fname
+
+
+def test_to_valid_key():
+    """test to_valid_key"""
+    from aiida_sssp_workflow.utils import to_valid_key
+
+    assert to_valid_key('Si_ONCV_PBE-1.2') == 'Si_ONCV_PBE_1_2'
