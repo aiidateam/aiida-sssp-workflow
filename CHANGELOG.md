@@ -1,5 +1,14 @@
 ## aiida-sssp-workflow
 
+### 0.2.0-alpha.0
+The release after Jason start working at EPFL
+
+Add Legacy convergence workflows and simplify the interface of all workflows
+
+- use aiida-pseudo for `UpfData`.
+- add legacy convergence workflows for comparing the old sssp and for benchmarking purpose
+- add `BandsDistanceWorkChain` for future bands chessboard plot
+
 ### 0.1.0
 The first release
 

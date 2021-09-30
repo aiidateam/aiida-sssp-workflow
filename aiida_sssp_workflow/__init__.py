@@ -5,4 +5,4 @@ aiida_sssp_workflow
 SSSP verification workflows
 """
 
-__version__ = '0.1.0b'
+__version__ = '0.2.0-alpha.0'
