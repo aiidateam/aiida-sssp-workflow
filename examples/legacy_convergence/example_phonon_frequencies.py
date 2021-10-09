@@ -45,7 +45,6 @@ if __name__ == '__main__':
     from aiida.orm import load_code
     from aiida import load_profile
 
-    load_profile('sssp-dev')
     pw_code = load_code('pw64@localhost')
     ph_code = load_code('ph64@localhost')
 

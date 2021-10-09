@@ -1,0 +1,10 @@
+#==========================================================================#
+#= PREPEND_TEXT: if there is any bash commands that should be prepended to
+#= the executable call in all submit scripts for this code, type that
+#= between the equal signs below and save the file.
+#==========================================================================#
+
+
+#==========================================================================#
+#= All lines that start with `#=` will be ignored.
+#==========================================================================#
