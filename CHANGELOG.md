@@ -1,5 +1,13 @@
 ## aiida-sssp-workflow
 
+
+### 0.2.0-alpha.1
+The release to correctly deploy the documentation and install the package in aiidalab
+
+- replace fortran efermi with pure python efermi [#50](https://github.com/aiidateam/aiida-sssp-workflow/pull/50)
+- verification workflow based on legacy workflows
+- delta factor workflow accept dual as input
+
 ### 0.2.0-alpha.0
 The release after Jason start working at EPFL
 
