@@ -30,7 +30,7 @@ def run_verification(pw_code, ph_code, upf, dual=4.0):
                     'max_wallclock_seconds': 1800 * 3,
                     'withmpi': False,
                 }),
-        'parallelization': orm.Dict(dict={}),
+        # 'parallelization': orm.Dict(dict={}),
         'clean_workdir': orm.Bool(True),
     }
 

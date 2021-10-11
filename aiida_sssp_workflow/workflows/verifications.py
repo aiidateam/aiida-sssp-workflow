@@ -52,6 +52,7 @@ class VerificationWorkChain(WorkChain):
                     help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
 
         spec.outline(
+            cls.setup_code_resource_options,
             cls.init_setup,
             cls.run_verifications,
             cls.report_and_results,
@@ -71,13 +72,35 @@ class VerificationWorkChain(WorkChain):
             message='The sub-workflows {processes} is not finished ok.')
         # yapf: enable
 
+    def setup_code_resource_options(self):
+        """
+        setup resource options and parallelization for `PwCalculation` from inputs
+        """
+        if 'options' in self.inputs:
+            self.ctx.options = self.inputs.options.get_dict()
+        else:
+            from aiida_sssp_workflow.utils import get_default_options
+
+            self.ctx.options = get_default_options(
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
+                with_mpi=True)
+
+        if 'parallelization' in self.inputs:
+            self.ctx.parallelization = self.inputs.parallelization.get_dict()
+        else:
+            self.ctx.parallelization = {}
+
+        self.report(f'resource options set to {self.ctx.options}')
+        self.report(
+            f'parallelization options set to {self.ctx.parallelization}')
+
     def init_setup(self):
         """prepare inputs for all verification process"""
         base_inputs = {
             'pseudo': self.inputs.pseudo,
             'protocol': self.inputs.protocol,
-            'options': self.inputs.options,
-            'parallelization': self.inputs.parallelization,
+            'options': orm.Dict(dict=self.ctx.options),
+            'parallelization': orm.Dict(dict=self.ctx.parallelization),
             'clean_workdir':
             orm.Bool(False),  # not clean for sub-workflow clean at final
         }
