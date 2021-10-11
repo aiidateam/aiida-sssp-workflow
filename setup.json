@@ -18,7 +18,7 @@
         "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    "version": "0.2.0-alpha.0",
+    "version": "0.2.0-alpha.1",
     "entry_points": {
         "aiida.data": [
         ],
