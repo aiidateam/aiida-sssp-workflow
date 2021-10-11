@@ -43,7 +43,6 @@ if __name__ == '__main__':
     from aiida.orm import load_code
     from aiida import load_profile
 
-    load_profile('sssp-dev')
     code = load_code('pw64@localhost')
 
     upf_sg15 = {}

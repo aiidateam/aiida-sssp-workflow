@@ -10,13 +10,13 @@ from aiida.engine import calcfunction
 
 @calcfunction
 def calculate_bands_distance(bands_structure_a: orm.BandsData,
-                             band_parameters_a: orm.Dict,
+                             bands_parameters_a: orm.Dict,
                              bands_structure_b: orm.BandsData,
-                             band_parameters_b: orm.Dict, smearing: orm.Float,
+                             bands_parameters_b: orm.Dict, smearing: orm.Float,
                              is_metal: orm.Bool):
     """doc"""
     res = get_bands_distance(bands_structure_a, bands_structure_b,
-                             band_parameters_a, band_parameters_b,
+                             bands_parameters_a, bands_parameters_b,
                              smearing.value, is_metal.value)
 
     return orm.Dict(
@@ -59,11 +59,9 @@ def fermi_dirac(band_energy, fermi_energy, smearing):
 def retrieve_bands(bandsdata: orm.BandsData, start_band, num_electrons, efermi,
                    smearing, is_metal):
     """
-    :bandsdata:
-    ...
-    TODO docstring
+    docstring
     """
-    from sssp.efermi_module import efermi as efermi_calc  # pylint: disable=no-name-in-module, import-error
+    from efermi import pyefermi
 
     bands = bandsdata.get_bands()
     bands = bands - efermi  # shift all bands to fermi energy 0
@@ -75,14 +73,13 @@ def retrieve_bands(bandsdata: orm.BandsData, start_band, num_electrons, efermi,
     if is_metal:
         nelectrons = num_electrons
         nkpoints = np.shape(bands)[0]
-        nbands = np.shape(bands)[1]
         weights = np.ones(nkpoints) / nkpoints
         bands = np.asfortranarray(bands)
+        meth = 2  # firmi-dirac smearing
 
-        # 2 for firmi-dirac smearing
-        res = efermi_calc(nelectrons, nbands, smearing, nkpoints, weights, 0.0,
-                          bands, 2)
-        output_efermi = res[1]
+        output_efermi = pyefermi(bands, weights, nelectrons, smearing,
+                                 nkpoints, meth)
+
     else:
         homo_energy = get_homo(bands, num_electrons)
         output_efermi = homo_energy

@@ -1,7 +1,6 @@
 *.pyc
 *.swo
 *.swp
-efermi_module*
 ~*
 *~
 *.pdf

@@ -7,246 +7,161 @@ from aiida.engine import WorkChain
 
 from aiida.plugins import WorkflowFactory, DataFactory
 
-from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
-
-BandsWorkChain = WorkflowFactory('sssp_workflow.evaluation.bands')
 DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
 ConvergenceCohesiveEnergy = WorkflowFactory(
-    'sssp_workflow.convergence.cohesive_energy')
-ConvergenceBandsWorkChain = WorkflowFactory('sssp_workflow.convergence.bands')
+    'sssp_workflow.legacy_convergence.cohesive_energy')
 ConvergencePhononFrequencies = WorkflowFactory(
-    'sssp_workflow.convergence.phonon_frequencies')
+    'sssp_workflow.legacy_convergence.phonon_frequencies')
 ConvergencePressureWorkChain = WorkflowFactory(
-    'sssp_workflow.convergence.pressure')
+    'sssp_workflow.legacy_convergence.pressure')
+ConvergenceBandsWorkChain = WorkflowFactory(
+    'sssp_workflow.legacy_convergence.bands')
+
 UpfData = DataFactory('pseudo.upf')
-
-PARA_ECUTWFC_LIST = lambda: orm.List(list=[
-    20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,
-    120, 130, 140, 160, 180, 200
-])
-
-PARA_ECUTRHO_LIST = lambda: orm.List(list=[
-    160, 200, 240, 280, 320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720,
-    760, 800, 880, 960, 1040, 1120, 1280, 1440, 1600
-])
 
 
 class VerificationWorkChain(WorkChain):
-    """doc"""
+    """The verification workflow to run all test for the given pseudopotential"""
+    _MAX_WALLCLOCK_SECONDS = 1800 * 3
+
+    # ecutwfc evaluate list, the normal reference 200Ry not included
+    # since reference will anyway included at final inspect step
+    _ECUTWFC_LIST = [
+        30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150
+    ]
+
     @classmethod
     def define(cls, spec):
-        """Define the process specification."""
-        # yapf: disable
         super().define(spec)
+        # yapf: disable
         spec.input('pw_code', valid_type=orm.Code,
-                   help='The `pw.x` code use for the `PwCalculation`.')
+                    help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,
-                   help='The `ph.x` code use for the `PwCalculation`.')
+                    help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
-                   help='Pseudopotential to be verified')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                   help='Optional `options` to use for the `PwCalculations`.')
+                    help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
-                   help='The protocol to use for the workchain.')
-        spec.input_namespace('parameters', help='Para')
-        spec.input('parameters.ecutrho_list', valid_type=orm.List,
-                   default=lambda: PARA_ECUTRHO_LIST,
-                   help='dual value for ecutrho list.')
-        spec.input('parameters.ecutwfc_list', valid_type=orm.List, default=PARA_ECUTWFC_LIST,
-                   help='list of ecutwfc evaluate list.')
-        spec.input('parameters.ref_cutoff_pair', valid_type=orm.List, required=True,
-                   default=lambda: orm.List(list=[200, 1600]),
-                   help='ecutwfc/ecutrho pair for reference calculation.')
+                    help='The protocol to use for the workchain.')
+        spec.input('dual', valid_type=orm.Float,
+                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
+        spec.input('options', valid_type=orm.Dict, required=False,
+                    help='Optional `options` to use for the `PwCalculations`.')
+        spec.input('parallelization', valid_type=orm.Dict, required=False,
+                    help='Parallelization options for the `PwCalculations`.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-            help= 'If `True`, work directories of all called calculation will be cleaned at the end of execution.'
-        )
+                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+
         spec.outline(
-            cls.setup,
-            cls.run_stage1,
-            cls.run_stage2,
-            cls.results,
+            cls.init_setup,
+            cls.run_verifications,
+            cls.report_and_results,
         )
         spec.output_namespace('delta_factor', dynamic=True,
-                              help='results of delta factor calculation.')
-        spec.output_namespace('convergence_cohesive_energy',
-            dynamic=True,
-            help='results of convergence cohesive energy calculation.')
+                            help='results of delta factor calculation.')
+        spec.output_namespace('convergence_cohesive_energy', dynamic=True,
+                            help='results of convergence cohesive energy calculation.')
         spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
-            help='results of convergence phonon_frequencies calculation.')
+                            help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
-            help='results of convergence pressure calculation.')
+                            help='results of convergence pressure calculation.')
         spec.output_namespace('convergence_bands', dynamic=True,
                               help='results of convergence bands calculation.')
-        spec.output_namespace('band_structure', dynamic=True,
-                              help='results of band structure calculation.')
 
         spec.exit_code(811, 'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
             message='The sub-workflows {processes} is not finished ok.')
         # yapf: enable
 
-    def setup(self):
-        """setup"""
-        self.ctx.ecutwfc_list = self.inputs.parameters.ecutwfc_list
-        self.ctx.ecutrho_list = self.inputs.parameters.ecutrho_list
-        self.ctx.pseudo = self.inputs.pseudo
-        if not len(self.ctx.ecutwfc_list) == len(self.ctx.ecutrho_list):
-            return self.exit_codes.ERROR_DIFFERENT_SIZE_OF_ECUTOFF_PAIRS
+    def init_setup(self):
+        """prepare inputs for all verification process"""
+        base_inputs = {
+            'pseudo': self.inputs.pseudo,
+            'protocol': self.inputs.protocol,
+            'options': self.inputs.options,
+            'parallelization': self.inputs.parallelization,
+            'clean_workdir':
+            orm.Bool(False),  # not clean for sub-workflow clean at final
+        }
+
+        self.ctx.delta_factor_inputs = base_inputs.copy()
+        self.ctx.delta_factor_inputs['code'] = self.inputs.pw_code
+
+        self.ctx.phonon_frequencies_inputs = base_inputs.copy()
+        self.ctx.phonon_frequencies_inputs['pw_code'] = self.inputs.pw_code
+        self.ctx.phonon_frequencies_inputs['ph_code'] = self.inputs.ph_code
+        self.ctx.phonon_frequencies_inputs['dual'] = self.inputs.dual
+
+        self.ctx.pressure_inputs = base_inputs.copy()
+        self.ctx.pressure_inputs['code'] = self.inputs.pw_code
+        self.ctx.pressure_inputs['dual'] = self.inputs.dual
+
+        self.ctx.cohesive_energy_inputs = base_inputs.copy()
+        self.ctx.cohesive_energy_inputs['code'] = self.inputs.pw_code
+        self.ctx.cohesive_energy_inputs['dual'] = self.inputs.dual
+
+        self.ctx.bands_distance_inputs = base_inputs.copy()
+        self.ctx.bands_distance_inputs['code'] = self.inputs.pw_code
+        self.ctx.bands_distance_inputs['dual'] = self.inputs.dual
 
         # to collect workchains in a dict
         self.ctx.workchains = {}
 
-    def run_stage1(self):
+    def run_verifications(self):
         """
-        In this stage run:
-        1) delta factor calculation, the results also used for pressure convergence
-        2) phonon frequencies convergence since ph.x calculation depend on the workdir
-        3) bands distance convergence.
-        4) band_structure evaluation to get seekpath band structure
+        running all verification workflows
         """
-        # run delta factor
-        inputs = {
-            'code': self.inputs.pw_code,
-            'pseudo': self.ctx.pseudo,
-            'protocol': self.inputs.protocol,
-        }
-        if 'options' in self.inputs:
-            inputs['options'] = self.inputs.options
-
-        running = self.submit(DeltaFactorWorkChain, **inputs)
+        ##
+        # delta factor
+        ##
+        running = self.submit(DeltaFactorWorkChain,
+                              **self.ctx.delta_factor_inputs)
         self.report(f'submit workchain delta factor pk={running}')
-        self.to_context(w00=running)
+
+        self.to_context(verify_delta_factor=running)
         self.ctx.workchains['delta_factor'] = running
 
-        # -----------------------------------------
-        # run phonon convergence test
-        inputs = {
-            'pw_code': self.inputs.pw_code,
-            'ph_code': self.inputs.ph_code,
-            'pseudo': self.ctx.pseudo,
-            'protocol': self.inputs.protocol,
-            'parameters': {
-                'ecutwfc_list': self.ctx.ecutwfc_list,
-                'ecutrho_list': self.ctx.ecutrho_list,
-                'ref_cutoff_pair': self.inputs.parameters.ref_cutoff_pair,
-            },
-        }
-        if 'options' in self.inputs:
-            inputs['options'] = self.inputs.options
+        ##
+        # phonon frequencies convergence test
+        ##
+        running = self.submit(ConvergencePhononFrequencies,
+                              **self.ctx.phonon_frequencies_inputs)
+        self.report(
+            f'submit workchain phonon frequencies convergence pk={running.pk}')
 
-        # running phonon convergence
-        running = self.submit(ConvergencePhononFrequencies, **inputs)
-        self.report(f'submit workchain phonon convergence pk={running.pk}')
-        self.to_context(w01=running)
+        self.to_context(verify_phonon_frequencies=running)
         self.ctx.workchains['convergence_phonon_frequencies'] = running
 
-        # running bands convergence
-        inputs = {
-            'code': self.inputs.pw_code,
-            'pseudo': self.ctx.pseudo,
-            'protocol': self.inputs.protocol,
-            'parameters': {
-                'ecutwfc_list': self.ctx.ecutwfc_list,
-                'ecutrho_list': self.ctx.ecutrho_list,
-                'ref_cutoff_pair': self.inputs.parameters.ref_cutoff_pair,
-            },
-        }
-        if 'options' in self.inputs:
-            inputs['options'] = self.inputs.options
-
-        running = self.submit(ConvergenceBandsWorkChain, **inputs)
-        self.report(f'submit workchain bands convergence pk={running.pk}')
-        self.to_context(w02=running)
-        self.ctx.workchains['convergence_bands'] = running
-
-        # running band structure
-        res = get_pw_inputs_from_pseudo(pseudo=self.ctx.pseudo)
-
-        structure = res['structure']
-        pseudos = res['pseudos']
-
-        cutoff_pair = self.inputs.parameters.ref_cutoff_pair.get_list()
-        ecutwfc = cutoff_pair[0]
-        ecutrho = cutoff_pair[1]
-
-        inputs = {
-            'code': self.inputs.pw_code,
-            'pseudos': pseudos,
-            'structure': structure,
-            'parameters': {
-                'ecutwfc': orm.Float(ecutwfc),
-                'ecutrho': orm.Float(ecutrho),
-                'run_band_structure': orm.Bool(True),
-                'nbands_factor': orm.Float(2)
-            },
-        }
-        running = self.submit(BandsWorkChain, **inputs)
-        self.report(f'submit workchain band structure pk={running.pk}')
-        self.to_context(w_band_structure=running)
-        self.ctx.workchains['band_structure'] = running
-
-    def run_stage2(self):
-        """
-        The stage2 runs
-        1) Cohesive energy convergence
-        2) pressure convergence which use V0_B0_B1 from delta_factor calculation as inputs
-        """
-        # -----------------------------------
+        ##
         # Cohesive energy
-        inputs = {
-            'code': self.inputs.pw_code,
-            'pseudo': self.ctx.pseudo,
-            'protocol': self.inputs.protocol,
-            'parameters': {
-                'ecutwfc_list': self.ctx.ecutwfc_list,
-                'ecutrho_list': self.ctx.ecutrho_list,
-                'ref_cutoff_pair': self.inputs.parameters.ref_cutoff_pair,
-            },
-        }
-        if 'options' in self.inputs:
-            inputs['options'] = self.inputs.options
-
-        # running cohesive energy convergence
-        running = self.submit(ConvergenceCohesiveEnergy, **inputs)
+        ##
+        running = self.submit(ConvergenceCohesiveEnergy,
+                              **self.ctx.cohesive_energy_inputs)
         self.report(
             f'submit workchain cohesive energy convergence pk={running.pk}')
-        self.to_context(w03=running)
+
+        self.to_context(verify_cohesive_energy=running)
         self.ctx.workchains['convergence_cohesive_energy'] = running
 
-        # -----------------------------------------
+        ##
         # Pressure
-        workchain = self.ctx.workchains['delta_factor']
+        ##
+        running = self.submit(ConvergencePressureWorkChain,
+                              **self.ctx.pressure_inputs)
+        self.report(f'submit workchain pressure convergence pk={running.pk}')
 
-        if workchain.is_finished_ok:
-            for label in workchain.outputs:
-                self.out(f'delta_factor.{label}', workchain.outputs[label])
+        self.to_context(verify_pressure=running)
+        self.ctx.workchains['convergence_pressure'] = running
 
-            res = workchain.outputs.output_birch_murnaghan_fit
-            v0_b0_b1 = {
-                'V0': res['V0'],
-                'B0': res['B0'],
-                'B1': res['B1'],
-            }
+        # ##
+        # # bands
+        # ##
+        # running = self.submit(ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs)
+        # self.report(
+        #     f'submit workchain bands distance convergence pk={running.pk}')
 
-            inputs = {
-                'code': self.inputs.pw_code,
-                'pseudo': self.ctx.pseudo,
-                'parameters': {
-                    'ecutwfc_list': self.ctx.ecutwfc_list,
-                    'ecutrho_list': self.ctx.ecutrho_list,
-                    'ref_cutoff_pair': self.inputs.parameters.ref_cutoff_pair,
-                    'v0_b0_b1': orm.Dict(dict=v0_b0_b1),
-                },
-            }
-            if 'options' in self.inputs:
-                inputs['options'] = self.inputs.options
-            # running pressure convergence
-            running = self.submit(ConvergencePressureWorkChain, **inputs)
-            self.report(
-                f'submit workchain pressure convergence pk={running.pk}')
-            self.to_context(w04=running)
-            self.ctx.workchains['convergence_pressure'] = running
+        # self.to_context(verify_bands=running)
+        # self.ctx.workchains['convergence_bands_distance'] = running
 
-    def results(self):
+    def report_and_results(self):
         """result"""
         not_finished_ok = {}
         for wname, workchain in self.ctx.workchains.items():
