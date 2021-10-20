@@ -42,6 +42,7 @@ good-names = [
     'StructureData',
     'UpfData',
     'PwCalculation',
+    'pk',
 ]
 
 [tool.pytest.ini_options]

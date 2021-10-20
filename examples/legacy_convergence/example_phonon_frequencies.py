@@ -24,7 +24,7 @@ def run_phonon_cov(pw_code, ph_code, upf, dual=4.0):
         'ph_code': ph_code,
         'pseudo': upf,
         'protocol': orm.Str('test'),
-        'dual': orm.Float(4.0),
+        'dual': orm.Float(dual),
         'options': orm.Dict(
                 dict={
                     'resources': {
@@ -34,7 +34,7 @@ def run_phonon_cov(pw_code, ph_code, upf, dual=4.0):
                     'withmpi': False,
                 }),
         'parallelization': orm.Dict(dict={}),
-        'clean_workdir': orm.Bool(True),
+        'clean_workdir': orm.Bool(False),
     }
     res, node = run_get_node(ConvergencePhononFrequenciesWorkChain, **inputs)
 
@@ -43,10 +43,9 @@ def run_phonon_cov(pw_code, ph_code, upf, dual=4.0):
 
 if __name__ == '__main__':
     from aiida.orm import load_code
-    from aiida import load_profile
 
-    pw_code = load_code('pw64@localhost')
-    ph_code = load_code('ph64@localhost')
+    pw_code = load_code('pw-6.7@localhost')
+    ph_code = load_code('ph-6.7@localhost')
 
     upf_sg15 = {}
     # sg15/Si_ONCV_PBE-1.2.upf

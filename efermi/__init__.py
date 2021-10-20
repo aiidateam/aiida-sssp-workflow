@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=wildcard-import,undefined-variable
 """entry point import of efermi"""
+# pylint: disable=wildcard-import,undefined-variable, cyclic-import
 from .efermi import pyefermi

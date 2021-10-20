@@ -21,7 +21,7 @@ def run_verification(pw_code, ph_code, upf, dual=4.0):
         'ph_code': ph_code,
         'pseudo': upf,
         'protocol': orm.Str('test'),
-        'dual': orm.Float(4.0),
+        'dual': orm.Float(dual),
         'options': orm.Dict(
                 dict={
                     'resources': {
@@ -31,7 +31,7 @@ def run_verification(pw_code, ph_code, upf, dual=4.0):
                     'withmpi': False,
                 }),
         # 'parallelization': orm.Dict(dict={}),
-        'clean_workdir': orm.Bool(True),
+        'clean_workdir': orm.Bool(False),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)
