@@ -2,6 +2,7 @@
 """
 All in one verification workchain
 """
+# pylint: disable=cyclic-import
 from aiida import orm
 from aiida.engine import WorkChain
 
@@ -176,15 +177,16 @@ class VerificationWorkChain(WorkChain):
         self.to_context(verify_pressure=running)
         self.ctx.workchains['convergence_pressure'] = running
 
-        # ##
-        # # bands
-        # ##
-        # running = self.submit(ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs)
-        # self.report(
-        #     f'submit workchain bands distance convergence pk={running.pk}')
+        ##
+        # bands
+        ##
+        running = self.submit(ConvergenceBandsWorkChain,
+                              **self.ctx.bands_distance_inputs)
+        self.report(
+            f'submit workchain bands distance convergence pk={running.pk}')
 
-        # self.to_context(verify_bands=running)
-        # self.ctx.workchains['convergence_bands_distance'] = running
+        self.to_context(verify_bands=running)
+        self.ctx.workchains['convergence_bands_distance'] = running
 
     def report_and_results(self):
         """result"""

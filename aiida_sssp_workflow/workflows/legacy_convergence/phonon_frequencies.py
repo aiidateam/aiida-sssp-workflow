@@ -2,18 +2,17 @@
 """
 Convergence test on phonon frequencies of a given pseudopotential
 """
-import yaml
 import importlib_resources
 
 from aiida.engine import calcfunction
 from aiida import orm
-from aiida.engine import WorkChain, if_, append_, ToContext
+from aiida.engine import append_, ToContext
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
-    RARE_EARTH_ELEMENTS, \
     helper_parse_upf, get_standard_cif_filename_from_element
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import PhononFrequenciesWorkChain
+from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -48,17 +47,9 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
         })
 
 
-class ConvergencePhononFrequenciesWorkChain(WorkChain):
+class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
-
-    _MAX_WALLCLOCK_SECONDS = 1800 * 3
-
-    # ecutwfc evaluate list, the normal reference 200Ry not included
-    # since reference will anyway included at final inspect step
-    _ECUTWFC_LIST = [
-        30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150
-    ]
 
     @classmethod
     def define(cls, spec):
@@ -68,72 +59,7 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,
                     help='The `ph.x` code use for the `PhCalculation`.')
-        spec.input('pseudo', valid_type=UpfData, required=True,
-                    help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
-                    help='The protocol to use for the workchain.')
-        spec.input('dual', valid_type=orm.Float,
-                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
-
-        spec.outline(
-            cls.init_setup,
-            if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element, ),
-            if_(cls.is_fluorine_element)(
-                cls.extra_setup_for_fluorine_element, ),
-            cls.setup_code_parameters_from_protocol,
-            cls.setup_code_resource_options,
-            cls.run_reference,
-            cls.run_samples,
-            cls.results,
-        )
-
-        spec.output('output_parameters', valid_type=orm.Dict, required=True,
-                    help='The output parameters include results of all calculations.')
-
-        spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED',
-            message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
-
-    def _get_protocol(self):
-        """Load and read protocol from faml file to a verbose dict"""
-        import_path = importlib_resources.path('aiida_sssp_workflow',
-                                               'sssp_protocol.yml')
-        with import_path as pp_path, open(pp_path, 'rb') as handle:
-            self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
-
-            return self._protocol
-
-    def init_setup(self):
-        """
-        This step contains all preparation before actaul setup, e.g. set
-        the context of element, base_structure, base pw_parameters and pseudos.
-        """
-        # parse pseudo and output its header information
-        element = self.inputs.pseudo.element
-        self.ctx.element = element
-
-        self.ctx.pseudos = {element: self.inputs.pseudo}
-
-        # Structures for convergence verification are all primitive structures
-        # the original conventional structure comes from the same CIF files of
-        # http:// molmod.ugent.be/deltacodesdft/
-        # EXCEPT that for the element fluorine the `SiF4.cif` used for convergence
-        # reason. But we do the structure setup for SiF4 in the following step:
-        # `cls.extra_setup_for_fluorine_element`
-        cif_file = get_standard_cif_filename_from_element(element)
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file)[0].get_structure(primitive_cell=True)
-
-    def is_rare_earth_element(self):
-        """Check if the element is rare earth"""
-        return self.ctx.element in RARE_EARTH_ELEMENTS
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
@@ -156,10 +82,6 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
         }
         self.ctx.bulk_parameters = update_dict(self.ctx.pw_parameters,
                                                extra_parameters)
-
-    def is_fluorine_element(self):
-        """Check if the element is magnetic"""
-        return self.ctx.element == 'F'
 
     def extra_setup_for_fluorine_element(self):
         """Extra setup for fluorine element"""
@@ -245,28 +167,6 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
             f'The ph parameters for convergence is: {self.ctx.ph_parameters}'
         )
 
-    def setup_code_resource_options(self):
-        """
-        setup resource options and parallelization for `PwCalculation` from inputs
-        """
-        if 'options' in self.inputs:
-            self.ctx.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
-                with_mpi=True)
-
-        if 'parallelization' in self.inputs:
-            self.ctx.parallelization = self.inputs.parallelization.get_dict()
-        else:
-            self.ctx.parallelization = {}
-
-        self.report(f'resource options set to {self.ctx.options}')
-        self.report(
-            f'parallelization options set to {self.ctx.parallelization}')
-
     def _get_inputs(self, ecutwfc, ecutrho):
         """
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
@@ -330,59 +230,22 @@ class ConvergencePhononFrequenciesWorkChain(WorkChain):
 
             self.to_context(children=append_(running))
 
+    def get_result_metadata(self):
+        return {
+            'absolute_unit': 'cm-1',
+            'relative_unit': '%',
+        }
+
+    def helper_compare_result_extract_fun(self, sample_node, reference_node,
+                                          **kwargs):
+        """extract"""
+        sample_output = sample_node.outputs.output_parameters
+        reference_output = reference_node.outputs.output_parameters
+
+        return helper_phonon_frequencies_difference(
+            sample_output, reference_output).get_dict()
+
     def results(self):
-        """
-        results
-        """
-        reference = self.ctx.reference
-        reference_parameters = reference.outputs.output_parameters
+        output_parameters = self.result_general_process()
 
-        children = self.ctx.children
-        success_children = [
-            child for child in children if child.is_finished_ok
-        ]
-
-        ecutwfc_list = []
-        ecutrho_list = []
-        absolute_diff_list = []
-        d_output_parameters = {}
-
-        for child in success_children:
-            ecutwfc_list.append(child.inputs.ecutwfc.value)
-            ecutrho_list.append(child.inputs.ecutrho.value)
-
-            child_parameters = child.outputs.output_parameters
-            res = helper_phonon_frequencies_difference(child_parameters,
-                                                       reference_parameters)
-
-            absolute_diff_list.append(res['absolute_diff'])
-
-        d_output_parameters['ecutwfc_list'] = ecutwfc_list
-        d_output_parameters['ecutrho_list'] = ecutrho_list
-        d_output_parameters['absolute_list'] = absolute_diff_list
-
-        self.out('output_parameters',
-                 orm.Dict(dict=d_output_parameters).store())
-
-    def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
-        super().on_terminated()
-
-        if self.inputs.clean_workdir.value is False:
-            self.report('remote folders will not be cleaned')
-            return
-
-        cleaned_calcs = []
-
-        for called_descendant in self.node.called_descendants:
-            if isinstance(called_descendant, orm.CalcJobNode):
-                try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
-
-        if cleaned_calcs:
-            self.report(
-                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
-            )
+        self.out('output_parameters', orm.Dict(dict=output_parameters).store())

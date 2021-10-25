@@ -66,7 +66,7 @@ def run_cohesive_eva(code, pseudos, ecutwfc=30.0, ecutrho=120.0):
                     'withmpi': False,
                 }),
         'parallelization': orm.Dict(dict={}),
-        'clean_workdir': orm.Bool(True),
+        'clean_workdir': orm.Bool(False),
     }
     res, node = run_get_node(CohesiveEnergyWorkChain, **inputs)
 
@@ -77,8 +77,7 @@ if __name__ == '__main__':
     from aiida.orm import load_code
     from aiida import load_profile
 
-    load_profile('sssp-dev')
-    code = load_code('pw64@localhost')
+    code = load_code('pw-6.7@localhost')
 
     upf_sg15 = {}
     # sg15/Si_ONCV_PBE-1.2.upf
