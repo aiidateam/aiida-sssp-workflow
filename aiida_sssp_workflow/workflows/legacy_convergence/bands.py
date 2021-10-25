@@ -12,7 +12,7 @@ from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 from aiida_sssp_workflow.calculations import calculate_bands_distance
 from aiida_sssp_workflow.utils import update_dict, \
     NONMETAL_ELEMENTS, \
-    helper_parse_upf, get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
@@ -116,8 +116,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 8 for all other type of PP.
-        upf_header = helper_parse_upf(self.inputs.pseudo)
-        if upf_header['pseudo_type'] in ['NC', 'SL']:
+        if self.ctx.pseudo_type in ['NC', 'SL']:
             dual = 4.0
         else:
             dual = 8.0

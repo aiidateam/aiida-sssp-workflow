@@ -12,6 +12,7 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
     get_standard_cif_filename_from_element
+import pseudo_parser
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -81,9 +82,13 @@ class BaseLegacyWorkChain(WorkChain):
         the context of element, base_structure, base pw_parameters and pseudos.
         """
         # parse pseudo and output its header information
+        from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
-        element = self.inputs.pseudo.element
+        content = self.inputs.pseudo.get_content()
+        element = parse_element(content)
+        pseudo_type = parse_pseudo_type(content)
         self.ctx.element = element
+        self.ctx.pseudo_type = pseudo_type
 
         self.ctx.pseudos = {element: self.inputs.pseudo}
 
