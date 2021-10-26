@@ -10,7 +10,7 @@ from aiida.plugins import DataFactory
 from aiida_sssp_workflow.utils import update_dict, \
     MAGNETIC_ELEMENTS, \
     RARE_EARTH_ELEMENTS, \
-    helper_parse_upf, get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element
 from aiida_sssp_workflow.calculations.calculate_delta import calculate_delta
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
 
@@ -236,8 +236,7 @@ class DeltaFactorWorkChain(WorkChain):
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 8 for all other type of PP.
-        upf_header = helper_parse_upf(self.inputs.pseudo)
-        if upf_header['pseudo_type'] in ['NC', 'SL']:
+        if self.ctx.pseudo_type in ['NC', 'SL']:
             dual = 4.0
         else:
             dual = 8.0

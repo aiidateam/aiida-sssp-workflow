@@ -21,6 +21,7 @@ disable = [
     'too-many-branches',
     'too-many-locals',
     'protected-access',
+    'missing-module-docstring',
 ]
 
 [tool.pylint.miscellaneous]
