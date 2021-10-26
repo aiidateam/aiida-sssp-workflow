@@ -19,6 +19,15 @@ REGEX_PSEUDO_TYPE_V2 = re.compile(
 )
 
 
+def parse(content: str):
+    """parse all"""
+    return {
+        'element': parse_element(content),
+        'pp_type': parse_pseudo_type(content),
+        'z_valence': parse_z_valence(content),
+    }
+
+
 def parse_element(content: str):
     """Parse the content of the UPF file to determine the element.
     :param stream: a filelike object with the binary content of the file.

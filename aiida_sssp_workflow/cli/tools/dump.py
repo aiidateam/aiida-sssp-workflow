@@ -22,9 +22,11 @@ def flaten_output(attr_dict):
 def dump_output(pk):
     """dump the verification result"""
     node = load_node(pk)
+    res = {}
+
     outputs = node.outputs._construct_attribute_dict(False)
-
     flaten_output(outputs)
+    res.update(outputs)
 
-    json_obj = json.dumps(dict(outputs), indent=2)
+    json_obj = json.dumps(dict(res), indent=2)
     print(json_obj)

@@ -5,6 +5,8 @@ All in one verification workchain
 # pylint: disable=cyclic-import
 from aiida import orm
 from aiida.engine import WorkChain
+from aiida.engine.processes.functions import calcfunction
+from aiida.orm.nodes.process import calculation
 
 from aiida.plugins import WorkflowFactory, DataFactory
 
@@ -19,6 +21,14 @@ ConvergenceBandsWorkChain = WorkflowFactory(
     'sssp_workflow.legacy_convergence.bands')
 
 UpfData = DataFactory('pseudo.upf')
+
+
+@calcfunction
+def parse_pseudo_info(pseudo: UpfData):
+    """parse the pseudo info as a Dict"""
+    from pseudo_parser.upf_parser import parse
+
+    return orm.Dict(dict=parse(pseudo.get_content()))
 
 
 class VerificationWorkChain(WorkChain):
@@ -58,6 +68,8 @@ class VerificationWorkChain(WorkChain):
             cls.run_verifications,
             cls.report_and_results,
         )
+        spec.output('pseudo_info', valid_type=orm.Dict, required=True,
+            help='pseudopotential info')
         spec.output_namespace('delta_factor', dynamic=True,
                             help='results of delta factor calculation.')
         spec.output_namespace('convergence_cohesive_energy', dynamic=True,
@@ -66,8 +78,8 @@ class VerificationWorkChain(WorkChain):
                             help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
                             help='results of convergence pressure calculation.')
-        spec.output_namespace('convergence_bands', dynamic=True,
-                              help='results of convergence bands calculation.')
+        # spec.output_namespace('convergence_bands', dynamic=True,
+        #                       help='results of convergence bands calculation.')
 
         spec.exit_code(811, 'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
             message='The sub-workflows {processes} is not finished ok.')
@@ -177,16 +189,16 @@ class VerificationWorkChain(WorkChain):
         self.to_context(verify_pressure=running)
         self.ctx.workchains['convergence_pressure'] = running
 
-        ##
-        # bands
-        ##
-        running = self.submit(ConvergenceBandsWorkChain,
-                              **self.ctx.bands_distance_inputs)
-        self.report(
-            f'submit workchain bands distance convergence pk={running.pk}')
+        # ##
+        # # bands
+        # ##
+        # running = self.submit(ConvergenceBandsWorkChain,
+        #                       **self.ctx.bands_distance_inputs)
+        # self.report(
+        #     f'submit workchain bands distance convergence pk={running.pk}')
 
-        self.to_context(verify_bands=running)
-        self.ctx.workchains['convergence_bands_distance'] = running
+        # self.to_context(verify_bands=running)
+        # self.ctx.workchains['convergence_bands_distance'] = running
 
     def report_and_results(self):
         """result"""
@@ -204,6 +216,10 @@ class VerificationWorkChain(WorkChain):
         if not_finished_ok:
             return self.exit_codes.WARNING_NOT_ALL_SUB_WORKFLOW_OK.format(
                 processes=not_finished_ok)
+
+        # parse the info of the input pseudo
+        pseudo_info = parse_pseudo_info(self.inputs.pseudo)
+        self.out('pseudo_info', pseudo_info)
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
