@@ -188,7 +188,7 @@ class BaseLegacyWorkChain(WorkChain):
         """set results of sub-workflows to output ports"""
         reference_node = self.ctx.reference
 
-        children = self.ctx.children
+        children = self.ctx.children + [reference_node]
         success_children = [
             child for child in children if child.is_finished_ok
         ]
