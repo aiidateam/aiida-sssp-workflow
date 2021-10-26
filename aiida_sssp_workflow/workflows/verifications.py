@@ -109,6 +109,11 @@ class VerificationWorkChain(WorkChain):
 
     def init_setup(self):
         """prepare inputs for all verification process"""
+
+        # set the extra attributes for the node
+        self.ctx.pseudo_info = parse_pseudo_info(self.inputs.pseudo)
+        self.node.set_extra_many(self.ctx.pseudo_info.get_dict())
+
         base_inputs = {
             'pseudo': self.inputs.pseudo,
             'protocol': self.inputs.protocol,
@@ -218,8 +223,7 @@ class VerificationWorkChain(WorkChain):
                 processes=not_finished_ok)
 
         # parse the info of the input pseudo
-        pseudo_info = parse_pseudo_info(self.inputs.pseudo)
-        self.out('pseudo_info', pseudo_info)
+        self.out('pseudo_info', self.ctx.pseudo_info)   
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""

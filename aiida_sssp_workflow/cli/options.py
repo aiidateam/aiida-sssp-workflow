@@ -2,7 +2,7 @@
 """Pre-defined overridable options for commonly used command line interface parameters."""
 import click
 
-from aiida.cmdline.params.options import OverridableOption
+from aiida.cmdline.params.options import DESCRIPTION, OverridableOption
 
 PROTOCOL = OverridableOption('-P',
                              '--protocol',
@@ -13,8 +13,8 @@ PROTOCOL = OverridableOption('-P',
 
 DUAL = OverridableOption('-D',
                          '--dual',
-                         type=click.INT,
-                         default=8,
+                         type=click.FLOAT,
+                         default=8.0,
                          show_default=True,
                          help='The dual between ecutwfc and ecutrho.')
 
@@ -66,3 +66,8 @@ CLEAN_WORKDIR = OverridableOption(
     help=
     'Clean the remote folder of all the launched calculations after completion of the workchain.'
 )
+
+DESCRIPTION = OverridableOption(
+    '--description',
+    type=click.STRING,
+    help='The description for the verification and the pseudo.')
