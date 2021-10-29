@@ -13,9 +13,9 @@ REGEX_Z_VALENCE_V2 = re.compile(
     r""")\s*['"].*""")
 
 REGEX_PSEUDO_TYPE_V1 = re.compile(
-    r"""\s*(?P<pseudo_type>(NC|SL|1\/r|US|PAW))\s*.*\s*pseudopotential""")
+    r"""\s*(?P<pseudo_type>(NC|SL|1\/r|US|USPP|PAW))\s*.*\s*pseudopotential""")
 REGEX_PSEUDO_TYPE_V2 = re.compile(
-    r"""\s*pseudo_type\s*=\s*['"]\s*(?P<pseudo_type>(NC|SL|1\/r|US|PAW))\s*['"].*"""
+    r"""\s*pseudo_type\s*=\s*['"]\s*(?P<pseudo_type>(NC|SL|1\/r|US|USPP|PAW))\s*['"].*"""
 )
 
 
