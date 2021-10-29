@@ -5,6 +5,7 @@ All in one verification workchain
 # pylint: disable=cyclic-import
 from aiida import orm
 from aiida.engine import WorkChain
+from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.orm.nodes.process import calculation
 
@@ -28,7 +29,12 @@ def parse_pseudo_info(pseudo: UpfData):
     """parse the pseudo info as a Dict"""
     from pseudo_parser.upf_parser import parse
 
-    return orm.Dict(dict=parse(pseudo.get_content()))
+    try:
+        info = parse(pseudo.get_content())
+    except ValueError:
+        return ExitCode(100, 'cannot parse the info of pseudopotential.')
+
+    return orm.Dict(dict=info)
 
 
 class VerificationWorkChain(WorkChain):
