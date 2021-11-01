@@ -158,9 +158,9 @@ test:
         smearing: 'marzari-vanderbilt'
         electron_conv_thr: 1.0e-6
         kpoints_distance: 0.5
-        ecutwfc: 20.0
+        ecutwfc: 200.0
         wall_time_seconds: 3600
-        scale_count: 5
+        scale_count: 7
         scale_increment: 0.02
 
     bands_distance:

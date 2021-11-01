@@ -100,7 +100,7 @@ class BaseLegacyWorkChain(WorkChain):
         # `cls.extra_setup_for_fluorine_element`
         cif_file = get_standard_cif_filename_from_element(element)
         self.ctx.structure = orm.CifData.get_or_create(
-            cif_file)[0].get_structure(primitive_cell=True)
+            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
