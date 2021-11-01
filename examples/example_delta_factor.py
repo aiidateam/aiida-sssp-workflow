@@ -8,49 +8,50 @@ import os
 from aiida import orm
 
 from aiida.plugins import WorkflowFactory, DataFactory
-from aiida.engine import run_get_node
+from aiida.engine import run_get_node, submit
 
 UpfData = DataFactory('pseudo.upf')
 DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
-def run_delta(code, upf):
+def run_delta(code, upf, dual):
     inputs = {
         'code': code,
         'pseudo': upf,
-        'protocol': orm.Str('test'),
+        'dual': orm.Float(dual),
+        'protocol': orm.Str('efficiency'),
         'options': orm.Dict(
                 dict={
                     'resources': {
                         'num_machines': 1
                     },
                     'max_wallclock_seconds': 1800 * 3,
-                    'withmpi': False,
+                    'withmpi': True,
                 }),
         'parallelization': orm.Dict(dict={}),
         'clean_workdir': orm.Bool(False),
     }
 
-    res, node = run_get_node(DeltaFactorWorkChain, **inputs)
-    return res, node
+    node = submit(DeltaFactorWorkChain, **inputs)
+    return node
 
 
 if __name__ == '__main__':
     from aiida.orm import load_code
 
-    code = load_code('pw64@localhost')
+    code = load_code('pw-6.5@imxgesrv1')
 
     upf_sg15 = {}
-    # sg15/Si_ONCV_PBE-1.2.upf
-    pp_name = 'Si_ONCV_PBE-1.2.upf'
+    # sg15/F_ONCV_PBE-1.2.upf
+    pp_name = 'F_ONCV_PBE-1.2.upf'
     pp_path = os.path.join(STATIC_DIR, pp_name)
     with open(pp_path, 'rb') as stream:
         pseudo = UpfData(stream)
-        upf_sg15['si'] = pseudo
+        upf_sg15['f'] = pseudo
 
     for element, upf in upf_sg15.items():
-        res, node = run_delta(code, upf)
+        node = run_delta(code, upf, dual=8.0)
         node.description = f'sg15/{element}'
         print(node)
 

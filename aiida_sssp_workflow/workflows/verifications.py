@@ -36,6 +36,11 @@ def parse_pseudo_info(pseudo: UpfData):
 
     return orm.Dict(dict=info)
 
+DEFAULT_PROPERTIES_LIST = lambda: orm.List(list=[
+        'delta_factor', 
+        'convergence:cohesive_energy', 
+        'convergence:phonon_frequencies',
+        'convergence:pressure'])
 
 class VerificationWorkChain(WorkChain):
     """The verification workflow to run all test for the given pseudopotential"""
@@ -47,6 +52,7 @@ class VerificationWorkChain(WorkChain):
         30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150
     ]
 
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -57,6 +63,9 @@ class VerificationWorkChain(WorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
+        spec.input('properties_list', valid_type=orm.List, 
+                    default=DEFAULT_PROPERTIES_LIST,
+                    help='The preperties will be calculated, passed as a list.')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
                     help='The protocol to use for the workchain.')
         spec.input('dual', valid_type=orm.Float,
@@ -84,8 +93,8 @@ class VerificationWorkChain(WorkChain):
                             help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
                             help='results of convergence pressure calculation.')
-        # spec.output_namespace('convergence_bands', dynamic=True,
-        #                       help='results of convergence bands calculation.')
+        spec.output_namespace('convergence_bands', dynamic=True,
+                              help='results of convergence bands calculation.')
 
         spec.exit_code(811, 'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
             message='The sub-workflows {processes} is not finished ok.')
@@ -158,47 +167,53 @@ class VerificationWorkChain(WorkChain):
         """
         running all verification workflows
         """
+        properties_list = self.inputs.properties_list.get_list()
+
         ##
         # delta factor
         ##
-        running = self.submit(DeltaFactorWorkChain,
-                              **self.ctx.delta_factor_inputs)
-        self.report(f'submit workchain delta factor pk={running}')
+        if 'delta_factor' in properties_list:
+            running = self.submit(DeltaFactorWorkChain,
+                                **self.ctx.delta_factor_inputs)
+            self.report(f'submit workchain delta factor pk={running}')
 
-        self.to_context(verify_delta_factor=running)
-        self.ctx.workchains['delta_factor'] = running
-
-        ##
-        # phonon frequencies convergence test
-        ##
-        running = self.submit(ConvergencePhononFrequencies,
-                              **self.ctx.phonon_frequencies_inputs)
-        self.report(
-            f'submit workchain phonon frequencies convergence pk={running.pk}')
-
-        self.to_context(verify_phonon_frequencies=running)
-        self.ctx.workchains['convergence_phonon_frequencies'] = running
+            self.to_context(verify_delta_factor=running)
+            self.ctx.workchains['delta_factor'] = running
 
         ##
         # Cohesive energy
         ##
-        running = self.submit(ConvergenceCohesiveEnergy,
-                              **self.ctx.cohesive_energy_inputs)
-        self.report(
-            f'submit workchain cohesive energy convergence pk={running.pk}')
+        if 'convergence:cohesive_energy' in properties_list:
+            running = self.submit(ConvergenceCohesiveEnergy,
+                                **self.ctx.cohesive_energy_inputs)
+            self.report(
+                f'submit workchain cohesive energy convergence pk={running.pk}')
 
-        self.to_context(verify_cohesive_energy=running)
-        self.ctx.workchains['convergence_cohesive_energy'] = running
+            self.to_context(verify_cohesive_energy=running)
+            self.ctx.workchains['convergence_cohesive_energy'] = running
+            
+        ##
+        # phonon frequencies convergence test
+        ##
+        if 'convergence:phonon_frequencies' in properties_list:
+            running = self.submit(ConvergencePhononFrequencies,
+                                **self.ctx.phonon_frequencies_inputs)
+            self.report(
+                f'submit workchain phonon frequencies convergence pk={running.pk}')
+
+            self.to_context(verify_phonon_frequencies=running)
+            self.ctx.workchains['convergence_phonon_frequencies'] = running
 
         ##
         # Pressure
         ##
-        running = self.submit(ConvergencePressureWorkChain,
-                              **self.ctx.pressure_inputs)
-        self.report(f'submit workchain pressure convergence pk={running.pk}')
+        if 'convergence:pressure' in properties_list:
+            running = self.submit(ConvergencePressureWorkChain,
+                                **self.ctx.pressure_inputs)
+            self.report(f'submit workchain pressure convergence pk={running.pk}')
 
-        self.to_context(verify_pressure=running)
-        self.ctx.workchains['convergence_pressure'] = running
+            self.to_context(verify_pressure=running)
+            self.ctx.workchains['convergence_pressure'] = running
 
         # ##
         # # bands
