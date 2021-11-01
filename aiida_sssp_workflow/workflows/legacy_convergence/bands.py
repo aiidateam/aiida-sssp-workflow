@@ -69,7 +69,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
         """Extra setup for fluorine element"""
         cif_file = get_standard_cif_filename_from_element('SiF4')
         self.ctx.structure = orm.CifData.get_or_create(
-            cif_file)[0].get_structure(primitive_cell=True)
+            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 
         # setting pseudos
         import_path = importlib_resources.path(
