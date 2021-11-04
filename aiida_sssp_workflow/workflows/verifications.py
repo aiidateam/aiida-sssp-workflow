@@ -7,7 +7,6 @@ from aiida import orm
 from aiida.engine import WorkChain
 from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
-from aiida.orm.nodes.process import calculation
 
 from aiida.plugins import WorkflowFactory, DataFactory
 
@@ -36,11 +35,12 @@ def parse_pseudo_info(pseudo: UpfData):
 
     return orm.Dict(dict=info)
 
+
 DEFAULT_PROPERTIES_LIST = lambda: orm.List(list=[
-        'delta_factor', 
-        'convergence:cohesive_energy', 
-        'convergence:phonon_frequencies',
-        'convergence:pressure'])
+    'delta_factor', 'convergence:cohesive_energy',
+    'convergence:phonon_frequencies', 'convergence:pressure'
+])
+
 
 class VerificationWorkChain(WorkChain):
     """The verification workflow to run all test for the given pseudopotential"""
@@ -52,7 +52,6 @@ class VerificationWorkChain(WorkChain):
         30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150
     ]
 
-
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -63,7 +62,7 @@ class VerificationWorkChain(WorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('properties_list', valid_type=orm.List, 
+        spec.input('properties_list', valid_type=orm.List,
                     default=DEFAULT_PROPERTIES_LIST,
                     help='The preperties will be calculated, passed as a list.')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
@@ -174,7 +173,7 @@ class VerificationWorkChain(WorkChain):
         ##
         if 'delta_factor' in properties_list:
             running = self.submit(DeltaFactorWorkChain,
-                                **self.ctx.delta_factor_inputs)
+                                  **self.ctx.delta_factor_inputs)
             self.report(f'submit workchain delta factor pk={running}')
 
             self.to_context(verify_delta_factor=running)
@@ -185,21 +184,23 @@ class VerificationWorkChain(WorkChain):
         ##
         if 'convergence:cohesive_energy' in properties_list:
             running = self.submit(ConvergenceCohesiveEnergy,
-                                **self.ctx.cohesive_energy_inputs)
+                                  **self.ctx.cohesive_energy_inputs)
             self.report(
-                f'submit workchain cohesive energy convergence pk={running.pk}')
+                f'submit workchain cohesive energy convergence pk={running.pk}'
+            )
 
             self.to_context(verify_cohesive_energy=running)
             self.ctx.workchains['convergence_cohesive_energy'] = running
-            
+
         ##
         # phonon frequencies convergence test
         ##
         if 'convergence:phonon_frequencies' in properties_list:
             running = self.submit(ConvergencePhononFrequencies,
-                                **self.ctx.phonon_frequencies_inputs)
+                                  **self.ctx.phonon_frequencies_inputs)
             self.report(
-                f'submit workchain phonon frequencies convergence pk={running.pk}')
+                f'submit workchain phonon frequencies convergence pk={running.pk}'
+            )
 
             self.to_context(verify_phonon_frequencies=running)
             self.ctx.workchains['convergence_phonon_frequencies'] = running
@@ -209,8 +210,9 @@ class VerificationWorkChain(WorkChain):
         ##
         if 'convergence:pressure' in properties_list:
             running = self.submit(ConvergencePressureWorkChain,
-                                **self.ctx.pressure_inputs)
-            self.report(f'submit workchain pressure convergence pk={running.pk}')
+                                  **self.ctx.pressure_inputs)
+            self.report(
+                f'submit workchain pressure convergence pk={running.pk}')
 
             self.to_context(verify_pressure=running)
             self.ctx.workchains['convergence_pressure'] = running
@@ -244,7 +246,7 @@ class VerificationWorkChain(WorkChain):
                 processes=not_finished_ok)
 
         # parse the info of the input pseudo
-        self.out('pseudo_info', self.ctx.pseudo_info)   
+        self.out('pseudo_info', self.ctx.pseudo_info)
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""

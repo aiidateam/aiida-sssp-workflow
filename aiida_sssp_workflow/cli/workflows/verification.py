@@ -4,7 +4,6 @@ Module contain the launch cmdline method of verification workflow
 """
 import os
 import click
-import numpy as np
 
 from aiida.plugins import WorkflowFactory, DataFactory
 from aiida import orm
@@ -31,6 +30,7 @@ PH_CODE = OverridableOption(
     type=types.CodeParamType(entry_point='quantumespresso.ph'),
     help='A single code identified by its ID, UUID or label.')
 
+
 @cmd_launch.command('verification')
 @click.argument('pseudo', nargs=1, type=PathOrUrl(exists=True, readable=True))
 @PW_CODE(required=True)
@@ -45,7 +45,8 @@ PH_CODE = OverridableOption(
 @options.DESCRIPTION()
 @decorators.with_dbenv()
 def launch_workflow(pw_code, ph_code, pseudo, protocol, dual, clean_workdir,
-                    max_num_machines, max_wallclock_seconds, with_mpi, daemon, description):
+                    max_num_machines, max_wallclock_seconds, with_mpi, daemon,
+                    description):
     """Run the workflow to verification"""
     from aiida_sssp_workflow.utils import get_default_options
     UpfData = DataFactory('pseudo.upf')
@@ -69,4 +70,3 @@ def launch_workflow(pw_code, ph_code, pseudo, protocol, dual, clean_workdir,
     builder.clean_workdir = orm.Bool(clean_workdir)
 
     launch.launch_process(builder, daemon, description)
-    

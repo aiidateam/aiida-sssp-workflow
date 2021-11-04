@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from pseudo_parser.upf_parser import *
+from pseudo_parser.upf_parser import parse_z_valence, parse_element, parse_pseudo_type
 
 
 @pytest.mark.parametrize('content', (

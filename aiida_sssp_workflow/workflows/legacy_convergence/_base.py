@@ -12,7 +12,6 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
     get_standard_cif_filename_from_element
-import pseudo_parser
 
 UpfData = DataFactory('pseudo.upf')
 

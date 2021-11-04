@@ -13,7 +13,7 @@ from aiida_sssp_workflow.utils import update_dict, \
     get_standard_cif_filename_from_element
 from aiida_sssp_workflow.calculations.calculate_delta import calculate_delta
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
-from pseudo_parser.upf_parser import parse_pseudo_type
+from pseudo_parser.upf_parser import parse_pseudo_type, parse_element
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -141,8 +141,6 @@ class DeltaFactorWorkChain(WorkChain):
         the context of element, base_structure, base pw_parameters and pseudos.
         """
         # parse pseudo and output its header information
-        from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
-
         content = self.inputs.pseudo.get_content()
         element = parse_element(content)
         pseudo_type = parse_pseudo_type(content)
