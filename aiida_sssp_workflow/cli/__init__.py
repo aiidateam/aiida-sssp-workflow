@@ -19,3 +19,4 @@ def cmd_root(profile):  # pylint: disable=unused-argument
 
 
 from aiida_sssp_workflow.cli.workflows import cmd_workflow
+from aiida_sssp_workflow.cli.tools import dump_output

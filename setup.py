@@ -8,7 +8,7 @@ except ImportError:
 
 
 def setup_package():
-    """Install the `aiida-pseudo` package."""
+    """Install the `aiida-sssp-workflow` package."""
     import json
     from setuptools import setup, find_packages
 

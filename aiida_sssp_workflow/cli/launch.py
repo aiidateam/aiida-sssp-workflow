@@ -5,7 +5,7 @@ import os
 import click
 
 
-def launch_process(process, daemon, **inputs):
+def launch_process(process, daemon, description, **inputs):
     """Launch a process with the given inputs.
     If not sent to the daemon, the results will be displayed after the calculation finishes.
     :param process: the process class
@@ -23,6 +23,7 @@ def launch_process(process, daemon, **inputs):
 
     if daemon:
         node = launch.submit(process, **inputs)
+        node.description = description
         click.echo(f'Submitted {process_name}<{node.pk}> to the daemon')
     else:
         if inputs.get('metadata', {}).get('dry_run', False):

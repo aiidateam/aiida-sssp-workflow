@@ -1,28 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Running phonon frequencies convergence workflow
+Running verification workchain example
 """
-import numpy as np
 import os
 
 from aiida import orm
-from aiida.plugins import WorkflowFactory, DataFactory
 
+from aiida.plugins import WorkflowFactory, DataFactory
 from aiida.engine import run_get_node
 
 UpfData = DataFactory('pseudo.upf')
-ConvergencePhononFrequenciesWorkChain = WorkflowFactory(
-    'sssp_workflow.legacy_convergence.phonon_frequencies')
+VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../', '_static')
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
-
-def run_phonon_cov(pw_code, ph_code, upf, dual=4.0):
+def run_verification(pw_code, ph_code, upf, dual=4.0):
     inputs = {
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
+        'properties_list': orm.List(list=['convergence:cohesive_energy']),
         'protocol': orm.Str('test'),
         'dual': orm.Float(dual),
         'options': orm.Dict(
@@ -33,11 +31,11 @@ def run_phonon_cov(pw_code, ph_code, upf, dual=4.0):
                     'max_wallclock_seconds': 1800 * 3,
                     'withmpi': False,
                 }),
-        'parallelization': orm.Dict(dict={}),
+        # 'parallelization': orm.Dict(dict={}),
         'clean_workdir': orm.Bool(False),
     }
-    res, node = run_get_node(ConvergencePhononFrequenciesWorkChain, **inputs)
 
+    res, node = run_get_node(VerificationWorkChain, **inputs)
     return res, node
 
 
@@ -48,14 +46,14 @@ if __name__ == '__main__':
     ph_code = load_code('ph-6.7@localhost')
 
     upf_sg15 = {}
-    # sg15/Si_ONCV_PBE-1.2.upf
-    pp_name = 'Si_ONCV_PBE-1.2.upf'
+    # wentz/Sm.GGA-PBE-paw-v1.0.UPF
+    pp_name = 'Sm.GGA-PBE-paw-v1.0.UPF'
     pp_path = os.path.join(STATIC_DIR, pp_name)
     with open(pp_path, 'rb') as stream:
         pseudo = UpfData(stream)
-        upf_sg15['si'] = pseudo
+        upf_sg15['sm'] = pseudo
 
     for element, upf in upf_sg15.items():
-        res, node = run_phonon_cov(pw_code, ph_code, upf, dual=4.0)
+        res, node = run_verification(pw_code, ph_code, upf, dual=8.0)
         node.description = f'sg15/{element}'
         print(node)

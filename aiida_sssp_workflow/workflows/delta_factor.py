@@ -10,9 +10,10 @@ from aiida.plugins import DataFactory
 from aiida_sssp_workflow.utils import update_dict, \
     MAGNETIC_ELEMENTS, \
     RARE_EARTH_ELEMENTS, \
-    helper_parse_upf, get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element
 from aiida_sssp_workflow.calculations.calculate_delta import calculate_delta
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
+from pseudo_parser.upf_parser import parse_pseudo_type, parse_element
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -95,6 +96,8 @@ class DeltaFactorWorkChain(WorkChain):
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
                     help='The protocol to use for the workchain.')
+        spec.input('dual', valid_type=orm.Float,
+                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -138,11 +141,14 @@ class DeltaFactorWorkChain(WorkChain):
         the context of element, base_structure, base pw_parameters and pseudos.
         """
         # parse pseudo and output its header information
-        element = self.inputs.pseudo.element
+        content = self.inputs.pseudo.get_content()
+        element = parse_element(content)
+        pseudo_type = parse_pseudo_type(content)
         self.ctx.element = element
+        self.ctx.pseudo_type = pseudo_type
+        self.ctx.pseudos = {element: self.inputs.pseudo}
 
         self.ctx.pw_parameters = {}
-        self.ctx.pseudos = {element: self.inputs.pseudo}
 
         # Structures for delta factor calculation as provided in
         # http:// molmod.ugent.be/deltacodesdft/
@@ -234,11 +240,14 @@ class DeltaFactorWorkChain(WorkChain):
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 8 for all other type of PP.
-        upf_header = helper_parse_upf(self.inputs.pseudo)
-        if upf_header['pseudo_type'] in ['NC', 'SL']:
+        if self.ctx.pseudo_type in ['NC', 'SL']:
             dual = 4.0
         else:
             dual = 8.0
+
+        if 'dual' in self.inputs:
+            dual = self.inputs.dual
+
         parameters['SYSTEM']['ecutrho'] = self._ECUTWFC * dual
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,

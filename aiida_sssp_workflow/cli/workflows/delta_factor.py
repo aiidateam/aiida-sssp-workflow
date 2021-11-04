@@ -27,9 +27,10 @@ from .. import launch
 @options.MAX_WALLCLOCK_SECONDS()
 @options.WITH_MPI()
 @options.DAEMON()
+@options.DESCRIPTION()
 @decorators.with_dbenv()
 def launch_workflow(code, pseudo, protocol, clean_workdir, max_num_machines,
-                    max_wallclock_seconds, with_mpi, daemon):
+                    max_wallclock_seconds, with_mpi, daemon, description):
     """Run the workflow to calculate delta factor"""
     from aiida_sssp_workflow.utils import get_default_options
     UpfData = DataFactory('pseudo.upf')
@@ -50,4 +51,4 @@ def launch_workflow(code, pseudo, protocol, clean_workdir, max_num_machines,
     builder.options = orm.Dict(dict=metadata_options)
     builder.clean_workdir = orm.Bool(clean_workdir)
 
-    launch.launch_process(builder, daemon)
+    launch.launch_process(builder, daemon, description)

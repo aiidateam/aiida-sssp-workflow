@@ -21,6 +21,8 @@ disable = [
     'too-many-branches',
     'too-many-locals',
     'protected-access',
+    'missing-module-docstring',
+    'cyclic-import',
 ]
 
 [tool.pylint.miscellaneous]
@@ -42,6 +44,7 @@ good-names = [
     'StructureData',
     'UpfData',
     'PwCalculation',
+    'pk',
 ]
 
 [tool.pytest.ini_options]
