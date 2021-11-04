@@ -1,5 +1,13 @@
 ## aiida-sssp-workflow
 
+### 0.2.0-beta.0
+the release are ready to be run by command line interface.
+Will be the first stable backend of aiidalab-sssp app.
+
+- The legacy convergence workchains are all extended from _base convergence work chain.
+- The pseudo_parser library is add for pseudopotential parsing only.
+- Add CLI interface for verification workflow and the properties can be chosen.
+- Test verification (at `test` protocol) for silicon, fluorine(SiF4 in convergence WF), gold and a lanthenide element Samarium (Sm). Fix some issues.
 
 ### 0.2.0-alpha.1
 The release to correctly deploy the documentation and install the package in aiidalab
