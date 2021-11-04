@@ -2,7 +2,7 @@
 """Pre-defined overridable options for commonly used command line interface parameters."""
 import click
 
-from aiida.cmdline.params.options import DESCRIPTION, OverridableOption
+from aiida.cmdline.params.options import OverridableOption
 
 PROTOCOL = OverridableOption('-P',
                              '--protocol',
