@@ -51,7 +51,7 @@ class BaseConvergenceWorkChain(WorkChain):
                    help='Pseudopotential to be verified')
         spec.input('options', valid_type=orm.Dict, required=False,
                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                    help='The protocol to use for the workchain.')
         spec.input_namespace('parameters', help='Para')
         spec.input('parameters.ecutrho_list', valid_type=orm.List, default=PARA_ECUTRHO_LIST,

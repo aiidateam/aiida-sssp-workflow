@@ -1,0 +1,57 @@
+efficiency:
+    name: 'efficiency'
+    description: 'Smallest computational cost at reasonable accuracy for example in high-throughput calculation.'
+
+    delta_factor:
+        precesion: 1 # meV/atom (if possible)
+
+    convergence:
+
+        cohesive_energy:
+            tolerance: 0.0001 # (eV/atom)
+            convergence_conv_thr: 0.002 # (eV/atom)
+            convergence_window: 3
+
+        phonon_frequencies:
+            tolerance: 0.1 # 0.1(%)
+            convergence_conv_thr: 2.0 # 2.0(%)
+            convergence_window: 3
+
+        pressure:
+            tolerance: 0.1 # 0.1(%)
+            convergence_conv_thr: 1.0 # 1.0(%)
+            convergence_window: 3
+
+        bands_distance:
+            tolerance: 0.001 # eV
+            convergence_conv_thr: 0.01 # eV
+            convergence_window: 3
+
+precesion:
+    name: 'precesion'
+    description: 'Most accurate at reasonable cost.'
+
+    delta_factor:
+        precesion: 0 # 0 for as smallest one even hard to converge
+
+    convergence:
+
+        cohesive_energy:
+            tolerance: 0.0001 # (eV/atom)
+            convergence_conv_thr: 0.002 # (eV/atom)
+            convergence_window: 3
+
+        phonon_frequencies:
+            tolerance: 0.1 # 0.1(%)
+            convergence_conv_thr: 2.0 # 2.0(%)
+            convergence_window: 3
+
+        pressure:
+            tolerance: 0.1 # 0.1(%)
+            convergence_conv_thr: 1.0 # 1.0(%)
+            convergence_window: 3
+
+        bands_distance:
+            tolerance: 0.001 # eV
+            convergence_conv_thr: 0.01 # eV
+            convergence_window: 3

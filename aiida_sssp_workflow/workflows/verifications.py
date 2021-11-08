@@ -65,7 +65,7 @@ class VerificationWorkChain(WorkChain):
         spec.input('properties_list', valid_type=orm.List,
                     default=DEFAULT_PROPERTIES_LIST,
                     help='The preperties will be calculated, passed as a list.')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
         spec.input('dual', valid_type=orm.Float,
                     help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')

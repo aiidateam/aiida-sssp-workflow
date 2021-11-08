@@ -94,7 +94,7 @@ class DeltaFactorWorkChain(WorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
         spec.input('dual', valid_type=orm.Float,
                     help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
@@ -129,7 +129,7 @@ class DeltaFactorWorkChain(WorkChain):
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
         import_path = importlib_resources.path('aiida_sssp_workflow',
-                                               'sssp_protocol.yml')
+                                               'CALC_PROTOCOL.yml')
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 

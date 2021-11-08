@@ -57,7 +57,7 @@ The options of ``aiida-sssp-workflow workflow launch verification`` are::
                                       label.  [required]
 
       -P, --protocol TEXT             The protocol used in verification.
-                                      [default: efficiency]
+                                      [default: theos]
 
       -D, --dual INTEGER              The dual between ecutwfc and ecutrho.
                                       [default: 8]

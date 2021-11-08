@@ -1,6 +1,6 @@
-efficiency:
-    name: 'efficiency'
-    description: 'Protocol to verify a pseudopotential.'
+theos:
+    name: 'theos'
+    description: 'The THEOS protocol for pseudopotential veerifications.'
 
     delta_factor:
         occupations: smearing
@@ -9,87 +9,6 @@ efficiency:
         electron_conv_thr: 1.0e-10
         kpoints_distance: 0.1
         ecutwfc: 200.0
-        wall_time_seconds: 3600
-        scale_count: 7
-        scale_increment: 0.01
-
-    convergence:
-
-        cohesive_energy:
-            occupations: smearing
-            degauss: 0.00735
-            bulk_smearing: 'marzari-vanderbilt'
-            atom_smearing: 'gaussian'
-            electron_conv_thr: 1.0e-10
-            kpoints_distance: 0.15
-            vacuum_length: 12.0
-
-            max_evaluate: 15 # number of evaluation run, not include ref
-            reference_ecutwfc: 200.0
-
-            tolerance: 0.0001 # (eV/atom)
-            convergence_conv_thr: 0.002 # (eV/atom)
-            convergence_window: 3
-
-        phonon_frequencies:
-            occupations: smearing
-            degauss: 0.00735
-            smearing: 'marzari-vanderbilt'
-            electron_conv_thr: 1.0e-10
-            kpoints_distance: 0.15
-            qpoints_list:
-                - [0.5, 0.5, 0.5]
-            ph:
-                epsilon: false
-                tr2_ph: 1.0e-16
-
-            max_evaluate: 15 # number of evaluation run, not include ref
-            reference_ecutwfc: 200.0
-
-            tolerance: 0.1 # 0.1(%)
-            convergence_conv_thr: 2.0 # 2.0(%)
-            convergence_window: 3
-
-        pressure:
-            occupations: smearing
-            degauss: 0.00735
-            smearing: 'marzari-vanderbilt'
-            electron_conv_thr: 1.0e-10
-            kpoints_distance: 0.15
-
-            max_evaluate: 15 # number of evaluation run, not include ref
-            reference_ecutwfc: 200.0
-
-            tolerance: 0.1 # 0.1(%)
-            convergence_conv_thr: 1.0 # 1.0(%)
-            convergence_window: 3
-
-        bands_distance:
-            occupations: smearing
-            degauss: 0.00735
-            smearing: 'marzari-vanderbilt'
-            electron_conv_thr: 1.0e-10
-            kpoints_distance: 0.15
-
-            max_evaluate: 15 # number of evaluation run, not include ref
-            reference_ecutwfc: 200.0
-
-            tolerance: 0.001 # eV
-            convergence_conv_thr: 0.01 # eV
-            convergence_window: 3
-
-precision:
-    name: 'precision'
-    description: 'Protocol to verify a pseudopotential.'
-
-    delta_factor:
-        occupations: smearing
-        degauss: 0.00735
-        smearing: 'marzari-vanderbilt'
-        electron_conv_thr: 1.0e-10
-        kpoints_distance: 0.1
-        ecutwfc: 200.0
-        wall_time_seconds: 3600
         scale_count: 7
         scale_increment: 0.02
 
@@ -104,9 +23,8 @@ precision:
             kpoints_distance: 0.15
             vacuum_length: 12.0
 
-            tolerance: 0.0001 # (eV/atom)
-            convergence_conv_thr: 0.002 # (eV/atom)
-            convergence_window: 3
+            max_evaluate: 15 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
 
         phonon_frequencies:
             occupations: smearing
@@ -120,9 +38,8 @@ precision:
                 epsilon: false
                 tr2_ph: 1.0e-16
 
-            tolerance: 0.1 # 0.1(%)
-            convergence_conv_thr: 1.0 # 2.0(%)
-            convergence_window: 3
+            max_evaluate: 15 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
 
         pressure:
             occupations: smearing
@@ -131,22 +48,18 @@ precision:
             electron_conv_thr: 1.0e-10
             kpoints_distance: 0.15
 
-            tolerance: 0.1 # 0.1(%)
-            convergence_conv_thr: 0.5 # 1.0(%)
-            convergence_window: 3
+            max_evaluate: 15 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
 
         bands_distance:
             occupations: smearing
             degauss: 0.00735
             smearing: 'marzari-vanderbilt'
             electron_conv_thr: 1.0e-10
-            scf_kpoints_distance: 0.15
-            band_kpoints_distance: 0.20
-            init_nbnd_factor: 2.0
+            kpoints_distance: 0.15
 
-            tolerance: 0.001 # eV
-            convergence_conv_thr: 0.01 # eV
-            convergence_window: 3
+            max_evaluate: 15 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
 
 test:
     name: 'test-only'
@@ -186,10 +99,6 @@ test:
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
 
-            tolerance: 0.0001 # (eV/atom)
-            convergence_conv_thr: 0.002 # (eV/atom)
-            convergence_window: 3
-
         phonon_frequencies:
             occupations: smearing
             degauss: 0.00735
@@ -205,10 +114,6 @@ test:
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
 
-            tolerance: 0.1 # 0.1(%)
-            convergence_conv_thr: 2.0 # 2.0(%)
-            convergence_window: 3
-
         pressure:
             occupations: smearing
             degauss: 0.00735
@@ -218,10 +123,6 @@ test:
 
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
-
-            tolerance: 0.1 # 0.1(%)
-            convergence_conv_thr: 1.0 # 1.0(%)
-            convergence_window: 3
 
         bands_distance:
             occupations: smearing
@@ -233,6 +134,65 @@ test:
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
 
-            tolerance: 0.001 # eV
-            convergence_conv_thr: 0.01 # eV
-            convergence_window: 3
+theos-test:
+    name: 'theos-test'
+    description: 'The THEOS protocol for pseudopotential veerifications. Test version with final and less middle convergence points.'
+
+    delta_factor:
+        occupations: smearing
+        degauss: 0.00735
+        smearing: 'marzari-vanderbilt'
+        electron_conv_thr: 1.0e-10
+        kpoints_distance: 0.1
+        ecutwfc: 200.0
+        scale_count: 7
+        scale_increment: 0.02
+
+    convergence:
+
+        cohesive_energy:
+            occupations: smearing
+            degauss: 0.00735
+            bulk_smearing: 'marzari-vanderbilt'
+            atom_smearing: 'gaussian'
+            electron_conv_thr: 1.0e-10
+            kpoints_distance: 0.15
+            vacuum_length: 12.0
+
+            max_evaluate: 5 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
+
+        phonon_frequencies:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-10
+            kpoints_distance: 0.15
+            qpoints_list:
+                - [0.5, 0.5, 0.5]
+            ph:
+                epsilon: false
+                tr2_ph: 1.0e-16
+
+            max_evaluate: 5 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
+
+        pressure:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-10
+            kpoints_distance: 0.15
+
+            max_evaluate: 5 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
+
+        bands_distance:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-10
+            kpoints_distance: 0.15
+
+            max_evaluate: 5 # number of evaluation run, not include ref
+            reference_ecutwfc: 200.0
