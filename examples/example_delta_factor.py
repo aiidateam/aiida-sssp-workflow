@@ -20,7 +20,7 @@ def run_delta(code, upf, dual):
         'code': code,
         'pseudo': upf,
         'dual': orm.Float(dual),
-        'protocol': orm.Str('efficiency'),
+        'protocol': orm.Str('theos'),
         'options': orm.Dict(
                 dict={
                     'resources': {
