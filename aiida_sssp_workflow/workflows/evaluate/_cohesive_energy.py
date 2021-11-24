@@ -212,11 +212,16 @@ class CohesiveEnergyWorkChain(WorkChain):
         element_energy = {}
         for child in self.ctx.workchain_atom_children:
             element = child.inputs.pw.structure.get_kind_names()[0]
-            if not child.is_finished_ok:
+            if not child.is_finished_ok and child.exit_status < 700:
+                # exit_status > 700 for all the warnings
                 self.report(
                     f'PwBaseWorkChain of element={element} atom energy evaluation failed'
                     f' with exit status {child.exit_status}')
                 return self.exit_codes.ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY
+
+            if child.exit_status > 700:
+                self.report(f'atom calculation [{child.pk}] finished[{child.exit_status}]: '
+                            f'{child.exit_message}')
 
             output_parameters = child.outputs.output_parameters
 
