@@ -111,12 +111,6 @@ class _EquationOfStateWorkChain(WorkChain):
         inputs.kpoints = kpoints.store()
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
-        if 'options' in self.inputs:
-            inputs.pw.metadata.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            inputs.pw.metadata.options = get_default_options(with_mpi=True)
 
         builder = process_class.get_builder()
 
