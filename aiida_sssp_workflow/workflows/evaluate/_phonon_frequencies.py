@@ -161,6 +161,13 @@ class PhononFrequenciesWorkChain(WorkChain):
         """
         set the inputs and submit ph calculation to get quantities for phonon evaluation
         """
+        # convert parallelization to CMDLINE for PH
+        # since ph calculation now doesn't support parallelization
+        cmdline_list = []
+        for key, value in self.ctx.parallelization.items():
+            cmdline_list.append(str(key))
+            cmdline_list.append(str(value))
+        
         inputs = {
             'metadata': {
                 'call_link_label': 'PH'
@@ -173,7 +180,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'metadata': {
                     'options': self.ctx.options,
                 },
-                # CMDLINE setting for parallelization
+                'settings': orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
             },
         }
 

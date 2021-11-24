@@ -62,6 +62,8 @@ class VerificationWorkChain(WorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
+        spec.input('label', valid_type=orm.Str, required=False,
+                    help='label store for display as extra attribut.')
         spec.input('properties_list', valid_type=orm.List,
                     default=DEFAULT_PROPERTIES_LIST,
                     help='The preperties will be calculated, passed as a list.')
@@ -121,12 +123,29 @@ class VerificationWorkChain(WorkChain):
         self.report(
             f'parallelization options set to {self.ctx.parallelization}')
 
+    @staticmethod
+    def _label_from_pseudo_info(pseudo_info) -> str:
+        """derive a label string from pseudo_info dict"""
+        element = pseudo_info['element']
+        pp_type = pseudo_info['pp_type']
+        z_valence = pseudo_info['z_valence']
+        
+        return f'{element}/z={z_valence}/{pp_type}'
+    
     def init_setup(self):
         """prepare inputs for all verification process"""
 
         # set the extra attributes for the node
         self.ctx.pseudo_info = parse_pseudo_info(self.inputs.pseudo)
-        self.node.set_extra_many(self.ctx.pseudo_info.get_dict())
+        pseudo_info = self.ctx.pseudo_info.get_dict()
+        self.node.set_extra_many(pseudo_info)
+        
+        if 'label' in self.inputs:
+            label = self.inputs.label.value
+        else:
+            label = self._label_from_pseudo_info(pseudo_info)
+            
+        self.node.set_extra('label', label)
 
         base_inputs = {
             'pseudo': self.inputs.pseudo,
