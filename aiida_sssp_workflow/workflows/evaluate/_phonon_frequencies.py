@@ -167,7 +167,7 @@ class PhononFrequenciesWorkChain(WorkChain):
         for key, value in self.ctx.parallelization.items():
             cmdline_list.append(f'-{str(key)}')
             cmdline_list.append(str(value))
-        
+
         inputs = {
             'metadata': {
                 'call_link_label': 'PH'

@@ -220,8 +220,9 @@ class CohesiveEnergyWorkChain(WorkChain):
                 return self.exit_codes.ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY
 
             if child.exit_status > 700:
-                self.report(f'atom calculation [{child.pk}] finished[{child.exit_status}]: '
-                            f'{child.exit_message}')
+                self.report(
+                    f'atom calculation [{child.pk}] finished[{child.exit_status}]: '
+                    f'{child.exit_message}')
 
             output_parameters = child.outputs.output_parameters
 

@@ -158,8 +158,7 @@ class VerificationWorkChain(WorkChain):
 
         self.ctx.delta_factor_inputs = base_inputs.copy()
         self.ctx.delta_factor_inputs['code'] = self.inputs.pw_code
-        # always use a hard coded high dual in verification
-        self.ctx.delta_factor_inputs['dual'] = orm.Float(8.0)
+        self.ctx.delta_factor_inputs['dual'] = self.inputs.dual
 
         self.ctx.phonon_frequencies_inputs = base_inputs.copy()
         self.ctx.phonon_frequencies_inputs['pw_code'] = self.inputs.pw_code
