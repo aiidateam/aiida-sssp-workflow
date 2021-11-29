@@ -1,5 +1,8 @@
 ## aiida-sssp-workflow
 
+### 0.2.0-beta.1
+Fix some issues with running verification on eiger and kindly as the fixes for the production release.
+
 ### 0.2.0-beta.0
 the release are ready to be run by command line interface.
 Will be the first stable backend of aiidalab-sssp app.
