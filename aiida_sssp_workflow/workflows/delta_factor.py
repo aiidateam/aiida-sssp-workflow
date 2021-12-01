@@ -156,7 +156,7 @@ class DeltaFactorWorkChain(WorkChain):
         # https://doi.org/10.1016/j.commatsci.2014.07.030
         cif_file = get_standard_cif_filename_from_element(element)
         self.ctx.structure = orm.CifData.get_or_create(
-            cif_file)[0].get_structure(primitive_cell=False)
+            cif_file, use_first=True)[0].get_structure(primitive_cell=False)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
