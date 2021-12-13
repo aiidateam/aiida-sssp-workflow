@@ -5,7 +5,6 @@ Create the structure of isolate atom
 """
 from aiida import orm
 from aiida.engine import calcfunction, WorkChain, append_
-from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
@@ -172,7 +171,7 @@ class CohesiveEnergyWorkChain(WorkChain):
             atom_kpoints = orm.KpointsData()
             atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
-            atom_inputs = AttributeDict({
+            atom_inputs = {
                 'metadata': {
                     'call_link_label': 'atom_scf'
                 },
@@ -189,7 +188,14 @@ class CohesiveEnergyWorkChain(WorkChain):
                     'parallelization': orm.Dict(dict=self.ctx.parallelization),
                 },
                 'kpoints': atom_kpoints,
-            })
+            }
+
+            resources = {
+                'num_machines': 1,
+                'num_mpiprocs_per_machine': 1,
+            }
+            atom_inputs['pw']['metadata']['options'].setdefault(
+                'resource', resources)
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.report(f'Submit atomic SCF of {element}.')

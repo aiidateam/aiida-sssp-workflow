@@ -30,6 +30,8 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
     diffs = np.array(input_frequencies) - np.array(ref_frequencies)
     weights = np.array(ref_frequencies)
 
+    omega_max = np.amax(input_frequencies)
+
     absolute_diff = np.mean(diffs)
     absolute_max_diff = np.amax(diffs)
 
@@ -38,6 +40,7 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
 
     return orm.Dict(
         dict={
+            'omega_max': omega_max,
             'relative_diff': relative_diff,
             'relative_max_diff': relative_max_diff,
             'absolute_diff': absolute_diff,
