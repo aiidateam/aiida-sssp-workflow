@@ -79,10 +79,6 @@ def helper_get_v0_b0_b1(element: str):
     import re
     from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 
-    if element == 'F':
-        # Use SiF4 as reference of fluorine(F)
-        return 19.3583, 74.0411, 4.1599
-
     if element in RARE_EARTH_ELEMENTS:
         element_str = f'{element}N'
     else:
