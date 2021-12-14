@@ -16,6 +16,8 @@ UpfData = DataFactory('pseudo.upf')
 
 class PhononFrequenciesWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+    _MAX_WALLCLOCK_SECONDS = 3600
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
