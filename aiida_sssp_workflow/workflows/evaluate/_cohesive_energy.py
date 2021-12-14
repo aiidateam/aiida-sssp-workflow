@@ -192,12 +192,12 @@ class CohesiveEnergyWorkChain(WorkChain):
                 'kpoints': atom_kpoints,
             }
 
-            resources = {
-                'num_machines': 1,
-                'num_mpiprocs_per_machine': 1,
-            }
-            atom_inputs['pw']['metadata']['options'].setdefault(
-                'resource', resources)
+            # resources = {
+            #     'num_machines': 1,
+            #     'num_mpiprocs_per_machine': 1,
+            # }
+            # atom_inputs['pw']['metadata']['options'].setdefault(
+            #     'resources', resources)
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.report(f'Submit atomic SCF of {element}.')
