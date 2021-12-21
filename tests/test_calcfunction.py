@@ -102,9 +102,9 @@ def test_get_v0_b0_b1():
     assert B1 == 4.461
 
     V0, B0, B1 = helper_get_v0_b0_b1('F')
-    assert V0 == 19.3583
-    assert B0 == 74.0411
-    assert B1 == 4.1599
+    assert V0 == 19.1666
+    assert B0 == 34.325
+    assert B1 == 3.93
 
 
 @pytest.mark.skip(reason='Tackle after all convergence wf fixed')
