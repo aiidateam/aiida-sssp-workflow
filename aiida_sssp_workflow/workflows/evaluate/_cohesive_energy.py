@@ -104,8 +104,8 @@ class CohesiveEnergyWorkChain(WorkChain):
     def validate_structure(self):
         """Create isolate atom and validate structure"""
         # create isolate atom structure
-        elements = self.inputs.structure.get_kind_names()
         formula_list = self.inputs.structure.get_ase().get_chemical_symbols()
+        elements = list(dict.fromkeys(formula_list))
         dict_element_and_count = {
             element: formula_list.count(element)
             for element in formula_list
@@ -144,6 +144,21 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.report(
             f'parallelization options set to {self.ctx.parallelization}')
 
+    @staticmethod
+    def _get_pseudo(element, pseudos):
+        """
+        get the pseudo by element from input pseudos dict
+        the tricky is for the element name with number like in mag structure
+        the pseudo get from the first found.
+        """
+        try:
+            pseudo = pseudos[element]
+        except KeyError:
+            key = f'{element}1'
+            pseudo = pseudos[key]
+
+        return pseudo
+
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
         bulk_inputs = {
@@ -169,7 +184,7 @@ class CohesiveEnergyWorkChain(WorkChain):
         )
         self.to_context(workchain_bulk_energy=running_bulk_energy)
 
-        for element, pseudo in self.ctx.pseudos.items():
+        for element, structure in self.ctx.d_element_structure.items():
             atom_kpoints = orm.KpointsData()
             atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
@@ -178,10 +193,11 @@ class CohesiveEnergyWorkChain(WorkChain):
                     'call_link_label': 'atom_scf'
                 },
                 'pw': {
-                    'structure': self.ctx.d_element_structure[element],
+                    'structure': structure,
                     'code': self.inputs.code,
                     'pseudos': {
-                        element: pseudo
+                        element: self._get_pseudo(element,
+                                                  self.inputs.pseudos),
                     },
                     'parameters': orm.Dict(dict=self.ctx.atom_parameters),
                     'metadata': {

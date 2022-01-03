@@ -44,13 +44,39 @@ if __name__ == '__main__':
 
     code = load_code('pw-6.7@localhost')
 
+    # upf_sg15 = {}
+    # # sg15/Si_ONCV_PBE-1.2.upf
+    # pp_name = 'Si_ONCV_PBE-1.2.upf'
+    # pp_path = os.path.join(STATIC_DIR, pp_name)
+    # with open(pp_path, 'rb') as stream:
+    #     pseudo = UpfData(stream)
+    #     upf_sg15['si'] = pseudo
+
+    # for element, upf in upf_sg15.items():
+    #     res, node = run_cohesive_cov(code, upf, dual=4.0)
+    #     node.description = f'sg15/{element}'
+    #     print(node)
+
+    # upf_sg15 = {}
+    # # sg15/O_ONCV_PBE-1.2.upf
+    # pp_name = 'O_ONCV_PBE-1.2.upf'
+    # pp_path = os.path.join(STATIC_DIR, pp_name)
+    # with open(pp_path, 'rb') as stream:
+    #     pseudo = UpfData(stream)
+    #     upf_sg15['o'] = pseudo
+
+    # for element, upf in upf_sg15.items():
+    #     res, node = run_cohesive_cov(code, upf, dual=4.0)
+    #     node.description = f'sg15/{element}'
+    #     print(node)
+
     upf_sg15 = {}
-    # sg15/Si_ONCV_PBE-1.2.upf
-    pp_name = 'Si_ONCV_PBE-1.2.upf'
+    # sg15/F_ONCV_PBE-1.2.upf
+    pp_name = 'F_ONCV_PBE-1.2.upf'
     pp_path = os.path.join(STATIC_DIR, pp_name)
     with open(pp_path, 'rb') as stream:
         pseudo = UpfData(stream)
-        upf_sg15['si'] = pseudo
+        upf_sg15['o'] = pseudo
 
     for element, upf in upf_sg15.items():
         res, node = run_cohesive_cov(code, upf, dual=4.0)

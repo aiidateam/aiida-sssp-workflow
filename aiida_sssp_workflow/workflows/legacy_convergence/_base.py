@@ -11,7 +11,9 @@ from aiida.engine import WorkChain, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
-    get_standard_cif_filename_from_element, update_dict
+    MAGNETIC_ELEMENTS, \
+    get_standard_cif_filename_from_element, \
+    update_dict
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -48,6 +50,8 @@ class BaseLegacyWorkChain(WorkChain):
 
         spec.outline(
             cls.init_setup,
+            if_(cls.is_magnetic_element)(
+                cls.extra_setup_for_magnetic_element, ),
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element, ),
             if_(cls.is_fluorine_element)(
@@ -99,8 +103,16 @@ class BaseLegacyWorkChain(WorkChain):
         # reason. But we do the structure setup for SiF4 in the following step:
         # `cls.extra_setup_for_fluorine_element`
         cif_file = get_standard_cif_filename_from_element(element)
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
+        self.ctx.cif = orm.CifData.get_or_create(cif_file, use_first=True)[0]
+        self.ctx.structure = self.ctx.cif.get_structure(primitive_cell=True)
+
+    def is_magnetic_element(self):
+        """Check if the element is magnetic"""
+        return self.ctx.element in MAGNETIC_ELEMENTS
+
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        self.ctx.structure = self.ctx.cif.get_structure(primitive_cell=False)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
