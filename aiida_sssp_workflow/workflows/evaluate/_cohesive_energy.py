@@ -216,6 +216,8 @@ class CohesiveEnergyWorkChain(WorkChain):
 
         self.ctx.bulk_energy = workchain_bulk_energy.outputs.output_parameters[
             'energy']
+        calc_time = workchain_bulk_energy.outputs.output_parameters[
+            'wall_time_seconds']
 
         element_energy = {}
         for child in self.ctx.workchain_atom_children:
@@ -238,7 +240,9 @@ class CohesiveEnergyWorkChain(WorkChain):
             atom_smearing_energy = output_parameters['energy_smearing']
             atom_energy = atom_free_energy - atom_smearing_energy
             element_energy[element] = atom_energy
+            calc_time += output_parameters['wall_time_seconds']
 
+        self.ctx.calc_time = calc_time
         self.ctx.element_energy = element_energy
 
     def results(self):
@@ -260,6 +264,8 @@ class CohesiveEnergyWorkChain(WorkChain):
             'structure_formula': self.inputs.structure.get_formula(),
             'energy_unit': 'eV',
             'energy_per_atom_unit': 'eV/atom',
+            'total_calc_time': self.ctx.calc_time,
+            'time_unit': 's',
         }
         parameters_dict.update(element_energy)
         output_parameters = orm.Dict(dict=parameters_dict)

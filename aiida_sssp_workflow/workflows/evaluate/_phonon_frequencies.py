@@ -159,6 +159,9 @@ class PhononFrequenciesWorkChain(WorkChain):
         except NotExistentAttributeError:
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER
 
+        self.ctx.calc_time = workchain.outputs.output_parameters[
+            'wall_time_seconds']
+
     def run_ph(self):
         """
         set the inputs and submit ph calculation to get quantities for phonon evaluation
@@ -200,7 +203,14 @@ class PhononFrequenciesWorkChain(WorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_PH
 
-        self.out('output_parameters', workchain.outputs.output_parameters)
+        self.ctx.calc_time += workchain.outputs.output_parameters[
+            'wall_time_seconds']
+        output_parameters = workchain.outputs.output_parameters.get_dict()
+        output_parameters.update({
+            'total_calc_time': self.ctx.calc_time,
+            'time_unit': 's',
+        })
+        self.out('output_parameters', orm.Dict(dict=output_parameters).store())
 
     def results(self):
         """
