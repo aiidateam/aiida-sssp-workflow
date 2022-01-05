@@ -13,6 +13,11 @@ from aiida.engine import run_get_node
 UpfData = DataFactory('pseudo.upf')
 VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 
+# [
+#     'delta_factor', 'convergence:cohesive_energy',
+#     'convergence:phonon_frequencies', 'convergence:pressure'
+# ]
+
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
 def run_verification(pw_code, ph_code, upf, dual=4.0):
@@ -20,19 +25,20 @@ def run_verification(pw_code, ph_code, upf, dual=4.0):
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
-        'properties_list': orm.List(list=['convergence:cohesive_energy']),
+        'properties_list': orm.List(list=['convergence:phonon_frequencies']),
         'protocol': orm.Str('test'),
         'dual': orm.Float(dual),
         'options': orm.Dict(
                 dict={
                     'resources': {
-                        'num_machines': 1
+                        'num_machines': 1,
+                        'num_mpiprocs_per_machine': 4,
                     },
                     'max_wallclock_seconds': 1800 * 3,
-                    'withmpi': False,
+                    'withmpi': True,
                 }),
         # 'parallelization': orm.Dict(dict={}),
-        'clean_workdir': orm.Bool(False),
+        'clean_workdir_level': orm.Int(0),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)

@@ -11,7 +11,7 @@ from aiida.engine import WorkChain, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
-    get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element, update_dict
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -83,6 +83,7 @@ class BaseLegacyWorkChain(WorkChain):
         # parse pseudo and output its header information
         from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
+        self.ctx.extra_parameters = {}
         content = self.inputs.pseudo.get_content()
         element = parse_element(content)
         pseudo_type = parse_pseudo_type(content)
@@ -105,9 +106,32 @@ class BaseLegacyWorkChain(WorkChain):
         """Check if the element is rare earth"""
         return self.ctx.element in RARE_EARTH_ELEMENTS
 
-    @abstractmethod
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
+        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+                                               'N.pbe-n-radius_5.UPF')
+        with import_path as pp_path, open(pp_path, 'rb') as stream:
+            upf_nitrogen = UpfData(stream)
+            self.ctx.pseudos['N'] = upf_nitrogen
+
+        # In rare earth case, increase the initial number of bands,
+        # otherwise the occupation will not fill up in the highest band
+        # which always trigger the `PwBaseWorkChain` sanity check.
+        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
+        nbands_factor = 2
+
+        extra_parameters = {
+            'SYSTEM': {
+                'nbnd': int(nbands * nbands_factor),
+                'nspin': 2,
+                'starting_magnetization': {
+                    self.ctx.element: 0.2,
+                    'N': 0.0,
+                },
+            },
+        }
+        self.ctx.extra_parameters = update_dict(self.ctx.extra_parameters,
+                                             extra_parameters)
 
     def is_fluorine_element(self):
         """Check if the element is magnetic"""

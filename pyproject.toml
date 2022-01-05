@@ -23,6 +23,7 @@ disable = [
     'protected-access',
     'missing-module-docstring',
     'cyclic-import',
+    'useless-super-delegation',
 ]
 
 [tool.pylint.miscellaneous]

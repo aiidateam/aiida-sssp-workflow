@@ -65,26 +65,7 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         # yapy: enable
 
     def extra_setup_for_rare_earth_element(self):
-        """Extra setup for rare earth element"""
-        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                               'N.pbe-n-radius_5.UPF')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_nitrogen = UpfData(stream)
-            self.ctx.pseudos['N'] = upf_nitrogen
-
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
-
-        extra_parameters = {
-            'SYSTEM': {
-                'nbnd': int(nbands * nbands_factor),
-            },
-        }
-        self.ctx.bulk_parameters = update_dict(self.ctx.pw_parameters,
-                                               extra_parameters)
+        super().extra_setup_for_rare_earth_element()
 
     def extra_setup_for_fluorine_element(self):
         """Extra setup for fluorine element"""
@@ -140,6 +121,9 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
                 'tstress': True,
             },
         }
+
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+                                        self.ctx.extra_parameters)
 
         self.ctx.ph_parameters = {
             'INPUTPH': {
