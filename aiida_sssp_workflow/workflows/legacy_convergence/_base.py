@@ -83,7 +83,7 @@ class BaseLegacyWorkChain(WorkChain):
         # parse pseudo and output its header information
         from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
-        self.ctx.extra_parameters = {}
+        self.ctx.extra_pw_parameters = {}
         content = self.inputs.pseudo.get_content()
         element = parse_element(content)
         pseudo_type = parse_pseudo_type(content)
@@ -120,7 +120,7 @@ class BaseLegacyWorkChain(WorkChain):
         nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
         nbands_factor = 2
 
-        extra_parameters = {
+        extra_pw_parameters = {
             'SYSTEM': {
                 'nbnd': int(nbands * nbands_factor),
                 'nspin': 2,
@@ -129,9 +129,12 @@ class BaseLegacyWorkChain(WorkChain):
                     'N': 0.0,
                 },
             },
+            'ELECTRONS': {
+                'diagonalization': 'cg',
+            }
         }
-        self.ctx.extra_parameters = update_dict(self.ctx.extra_parameters,
-                                             extra_parameters)
+        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters,
+                                             extra_pw_parameters)
 
     def is_fluorine_element(self):
         """Check if the element is magnetic"""

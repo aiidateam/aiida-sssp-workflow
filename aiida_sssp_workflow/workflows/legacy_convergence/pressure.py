@@ -139,7 +139,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         }
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-                                        self.ctx.extra_parameters)
+                                        self.ctx.extra_pw_parameters)
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 8 for all other type of PP.
