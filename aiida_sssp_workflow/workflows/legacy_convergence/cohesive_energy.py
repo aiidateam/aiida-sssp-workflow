@@ -103,7 +103,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         }
 
         self.ctx.bulk_parameters = update_dict(self.ctx.bulk_parameters,
-                                        self.ctx.extra_parameters)
+                                        self.ctx.extra_pw_parameters)
 
         self.ctx.atom_parameters = {
             'SYSTEM': {

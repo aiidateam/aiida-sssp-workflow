@@ -64,8 +64,21 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         # yapy: enable
 
+    def init_setup(self):
+        super().init_setup()
+        self.ctx.extra_ph_parameters = {}
+        self.ctx.extra_pw_parameters = {}
+
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()
+
+        extra_ph_parameters = {
+            'INPUTPH': {
+                'diagonalization': 'cg',
+            }
+        }
+        self.ctx.extra_ph_parameters = update_dict(self.ctx.extra_ph_parameters,
+                                             extra_ph_parameters)
 
     def extra_setup_for_fluorine_element(self):
         """Extra setup for fluorine element"""
@@ -123,7 +136,7 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         }
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-                                        self.ctx.extra_parameters)
+                                        self.ctx.extra_pw_parameters)
 
         self.ctx.ph_parameters = {
             'INPUTPH': {
@@ -131,6 +144,9 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
                 'epsil': self._PH_EPSILON,
             }
         }
+
+        self.ctx.ph_parameters = update_dict(self.ctx.ph_parameters,
+                                        self.ctx.extra_ph_parameters)
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 8 for all other type of PP.
