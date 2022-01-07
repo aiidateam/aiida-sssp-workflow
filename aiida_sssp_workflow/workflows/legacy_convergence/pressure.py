@@ -10,7 +10,7 @@ from aiida.engine import append_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element, convergence_analysis
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
@@ -73,6 +73,9 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
     # parameters control inner EOS reference workflow
     _EOS_SCALE_COUNT = 7
     _EOS_SCALE_INCREMENT = 0.02
+    
+    _EVALUATE_WORKCHAIN = PressureWorkChain
+    _MEASURE_OUT_PROPERTY = 'relative_diff'
 
     @classmethod
     def define(cls, spec):
@@ -93,27 +96,15 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()
 
-    def extra_setup_for_fluorine_element(self):
-        """Extra setup for fluorine element"""
-        cif_file = get_standard_cif_filename_from_element('SiF4')
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
-
-        # setting pseudos
-        import_path = importlib_resources.path(
-            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_silicon = UpfData(stream)
-            self.ctx.pseudos['Si'] = upf_silicon
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol['convergence']['pressure']
+        super().setup_code_parameters_from_protocol()
+        
+        protocol = self.ctx.protocol_calculation['convergence']['pressure']
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
@@ -122,6 +113,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
 
         self._MAX_EVALUATE = protocol['max_evaluate']
         self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
+        self._NUM_OF_RHO_TEST = protocol['num_of_rho_test']
 
         self.ctx.max_evaluate = self._MAX_EVALUATE
         self.ctx.reference_ecutwfc = self._REFERENCE_ECUTWFC
@@ -145,23 +137,20 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
                                         self.ctx.extra_pw_parameters)
 
-        # set the ecutrho according to the type of pseudopotential
-        # dual 4 for NC and 8 for all other type of PP.
-        if self.ctx.pseudo_type in ['NC', 'SL']:
-            dual = 4.0
-        else:
-            dual = 8.0
-
-        if 'dual' in self.inputs:
-            dual = self.inputs.dual
-
-        self.ctx.dual = dual
-
         self.ctx.kpoints_distance = self._KDISTANCE
 
         self.report(
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
+        
+    def setup_criteria_parameters_from_protocol(self):
+        """Input validation"""
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+
+        # Read from protocol if parameters not set from inputs
+        super().setup_criteria_parameters_from_protocol()
+
+        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['pressure']
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -189,14 +178,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         """
         run on reference calculation
         """
-        ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.dual
-        inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
-
-        running = self.submit(PressureWorkChain, **inputs)
-        self.report(f'launching reference PressureWorkChain<{running.pk}>')
-
-        self.to_context(reference=running)
+        super().run_reference()
 
         # For pressure convergence workflow, the birch murnagen fitting result is used to
         # calculating the pressure. There is an extra workflow (run at ecutwfc of reference point)
@@ -204,7 +186,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
 
         # This workflow is shared with delta factor workchain for birch murnagan fitting.
         ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.dual
+        ecutrho = ecutwfc * self.ctx.init_dual
         parameters = {
             'SYSTEM': {
                 'ecutwfc': ecutwfc,
@@ -242,30 +224,31 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         self.report(f'launching _EquationOfStateWorkChain<{running.pk}>')
 
         self.to_context(extra_reference=running)
-
-    def run_samples(self):
-        """
-        run on all other evaluation sample points
-        """
-        workchain = self.ctx.reference
-
+        
+    def inspect_reference(self):
+        super().inspect_reference()
+            
+        workchain = self.ctx.extra_reference
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBaseWorkChain pk={workchain.pk} for reference run is failed.'
+                f'{workchain.process_label} pk={workchain.pk} for reference run is failed with exit_code={workchain.exit_status}.'
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                label='reference')
+                label='extra_reference')
+            
+        extra_reference = self.ctx.extra_reference
+        extra_reference_parameters = extra_reference.outputs.output_birch_murnaghan_fit
 
-        for idx in range(self.ctx.max_evaluate):
-            ecutwfc = self._ECUTWFC_LIST[idx]
-            ecutrho = ecutwfc * self.ctx.dual
-            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
+        V0 = extra_reference_parameters['volume0']
+        B0 = extra_reference_parameters['bulk_modulus0']
+        B1 = extra_reference_parameters['bulk_deriv0']
 
-            running = self.submit(PressureWorkChain, **inputs)
-            self.report(f'launching [{idx}] PressureWorkChain<{running.pk}>')
-
-            self.to_context(children=append_(running))
-
+        self.ctx.extra_parameters={
+            'V0': orm.Float(V0),
+            'B0': orm.Float(B0),
+            'B1': orm.Float(B1)
+        }
+            
     def get_result_metadata(self):
         return {
             'absolute_unit': 'GPascal',
@@ -283,22 +266,3 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
                                          **extra_parameters).get_dict()
 
         return res
-
-    def results(self):
-        """
-        results
-        """
-        extra_reference = self.ctx.extra_reference
-        extra_reference_parameters = extra_reference.outputs.output_birch_murnaghan_fit
-
-        V0 = extra_reference_parameters['volume0']
-        B0 = extra_reference_parameters['bulk_modulus0']
-        B1 = extra_reference_parameters['bulk_deriv0']
-
-        output_parameters = self.result_general_process(extra_parameters={
-            'V0': orm.Float(V0),
-            'B0': orm.Float(B0),
-            'B1': orm.Float(B1)
-        })
-
-        self.out('output_parameters', orm.Dict(dict=output_parameters).store())

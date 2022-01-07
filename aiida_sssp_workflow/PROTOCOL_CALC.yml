@@ -98,21 +98,23 @@ test:
 
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
+            num_of_rho_test: 5 # number of calculation in fix wfc cutoff stage
 
         phonon_frequencies:
             occupations: smearing
             degauss: 0.00735
             smearing: 'marzari-vanderbilt'
-            electron_conv_thr: 1.0e-8
+            electron_conv_thr: 1.0e-6
             kpoints_distance: 0.5
             qpoints_list:
                 - [0.5, 0.5, 0.5]
             ph:
                 epsilon: false
-                tr2_ph: 1.0e-16
+                tr2_ph: 1.0e-8
 
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
+            num_of_rho_test: 5 # number of calculation in fix wfc cutoff stage
 
         pressure:
             occupations: smearing
@@ -123,6 +125,7 @@ test:
 
             max_evaluate: 3 # number of evaluation run, not include ref
             reference_ecutwfc: 60.0
+            num_of_rho_test: 5 # number of calculation in fix wfc cutoff stage
 
         bands_distance:
             occupations: smearing

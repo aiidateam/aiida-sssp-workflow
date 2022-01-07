@@ -62,13 +62,15 @@ class VerificationWorkChain(WorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
+        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+                    help='The calculation protocol to use for the workchain.')
+        spec.input('protocol_criteria', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+                    help='The criteria protocol to use for the workchain.')
         spec.input('label', valid_type=orm.Str, required=False,
                     help='label store for display as extra attribut.')
         spec.input('properties_list', valid_type=orm.List,
                     default=DEFAULT_PROPERTIES_LIST,
                     help='The preperties will be calculated, passed as a list.')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
-                    help='The protocol to use for the workchain.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -147,7 +149,7 @@ class VerificationWorkChain(WorkChain):
 
         base_inputs = {
             'pseudo': self.inputs.pseudo,
-            'protocol': self.inputs.protocol,
+            'protocol_calculation': self.inputs.protocol_calculation,
             'options': orm.Dict(dict=self.ctx.options),
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
             'clean_workdir':
@@ -156,19 +158,23 @@ class VerificationWorkChain(WorkChain):
 
         self.ctx.delta_factor_inputs = base_inputs.copy()
         self.ctx.delta_factor_inputs['code'] = self.inputs.pw_code
+        
+        self.ctx.cohesive_energy_inputs = base_inputs.copy()
+        self.ctx.cohesive_energy_inputs['code'] = self.inputs.pw_code
+        self.ctx.cohesive_energy_inputs['protocol_criteria'] = self.inputs.protocol_criteria
 
         self.ctx.phonon_frequencies_inputs = base_inputs.copy()
         self.ctx.phonon_frequencies_inputs['pw_code'] = self.inputs.pw_code
         self.ctx.phonon_frequencies_inputs['ph_code'] = self.inputs.ph_code
+        self.ctx.phonon_frequencies_inputs['protocol_criteria'] = self.inputs.protocol_criteria
 
         self.ctx.pressure_inputs = base_inputs.copy()
         self.ctx.pressure_inputs['code'] = self.inputs.pw_code
-
-        self.ctx.cohesive_energy_inputs = base_inputs.copy()
-        self.ctx.cohesive_energy_inputs['code'] = self.inputs.pw_code
+        self.ctx.pressure_inputs['protocol_criteria'] = self.inputs.protocol_criteria
 
         self.ctx.bands_distance_inputs = base_inputs.copy()
         self.ctx.bands_distance_inputs['code'] = self.inputs.pw_code
+        self.ctx.bands_distance_inputs['protocol_criteria'] = self.inputs.protocol_criteria 
 
         # to collect workchains in a dict
         self.ctx.workchains = {}

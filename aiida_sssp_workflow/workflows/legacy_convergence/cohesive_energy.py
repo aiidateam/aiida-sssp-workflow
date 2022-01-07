@@ -9,7 +9,7 @@ from aiida import orm
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element, convergence_analysis
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import CohesiveEnergyWorkChain
 
@@ -22,14 +22,14 @@ def helper_cohesive_energy_difference(input_parameters: orm.Dict,
     """calculate the cohesive energy difference from parameters"""
     res_energy = input_parameters['cohesive_energy_per_atom']
     ref_energy = ref_parameters['cohesive_energy_per_atom']
-    absolute_diff = res_energy - ref_energy
+    absolute_diff = abs(res_energy - ref_energy) * 1000.0
     relative_diff = abs((res_energy - ref_energy) / ref_energy) * 100
 
     res = {
         'cohesive_energy_per_atom': res_energy,
         'absolute_diff': absolute_diff,
         'relative_diff': relative_diff,
-        'absolute_unit': 'eV/atom',
+        'absolute_unit': 'meV/atom',
         'relative_unit': '%'
     }
 
@@ -39,6 +39,9 @@ def helper_cohesive_energy_difference(input_parameters: orm.Dict,
 class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
+    
+    _EVALUATE_WORKCHAIN = CohesiveEnergyWorkChain
+    _MEASURE_OUT_PROPERTY = 'absolute_diff'
 
     @classmethod
     def define(cls, spec):
@@ -76,9 +79,9 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol['convergence']['cohesive_energy']
+        super().setup_code_parameters_from_protocol()
+
+        protocol = self.ctx.protocol_calculation['convergence']['cohesive_energy']
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._BULK_SMEARING = protocol['bulk_smearing']
@@ -89,6 +92,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
         self._MAX_EVALUATE = protocol['max_evaluate']
         self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
+        self._NUM_OF_RHO_TEST = protocol['num_of_rho_test']
 
         self.ctx.vacuum_length = self._VACUUM_LENGTH
 
@@ -120,18 +124,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             },
         }
 
-        # set the ecutrho according to the type of pseudopotential
-        # dual 4 for NC and 8 for all other type of PP.
-        if self.ctx.pseudo_type in ['NC', 'SL']:
-            dual = 4.0
-        else:
-            dual = 8.0
-
-        if 'dual' in self.inputs:
-            dual = self.inputs.dual
-
-        self.ctx.dual = dual
-
         self.ctx.kpoints_distance = self._KDISTANCE
 
         self.report(
@@ -140,6 +132,15 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         self.report(
             f'The atom parameters for convergence is: {self.ctx.atom_parameters}'
         )
+
+    def setup_criteria_parameters_from_protocol(self):
+        """Input validation"""
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+
+        # Read from protocol if parameters not set from inputs
+        super().setup_criteria_parameters_from_protocol()
+
+        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['cohesive_energy']
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -165,44 +166,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
         return inputs
 
-    def run_reference(self):
-        """
-        run on reference calculation
-        """
-        ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.dual
-        inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
-
-        running = self.submit(CohesiveEnergyWorkChain, **inputs)
-        self.report(
-            f'launching reference CohesiveEnergyWorkChain<{running.pk}>')
-
-        return ToContext(reference=running)
-
-    def run_samples(self):
-        """
-        run on all other evaluation sample points
-        """
-        workchain = self.ctx.reference
-
-        if not workchain.is_finished_ok:
-            self.report(
-                f'PwBaseWorkChain pk={workchain.pk} for reference run is failed.'
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                label='reference')
-
-        for idx in range(self.ctx.max_evaluate):
-            ecutwfc = self._ECUTWFC_LIST[idx]
-            ecutrho = ecutwfc * self.ctx.dual
-            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
-
-            running = self.submit(CohesiveEnergyWorkChain, **inputs)
-            self.report(
-                f'launching [{idx}] CohesiveEnergyWorkChain<{running.pk}>')
-
-            self.to_context(children=append_(running))
-
     def helper_compare_result_extract_fun(self, sample_node, reference_node,
                                           **kwargs):
         """extract"""
@@ -219,8 +182,3 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             'absolute_unit': 'eV/atom',
             'relative_unit': '%',
         }
-
-    def results(self):
-        output_parameters = self.result_general_process()
-
-        self.out('output_parameters', orm.Dict(dict=output_parameters).store())

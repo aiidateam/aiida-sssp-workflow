@@ -36,7 +36,7 @@ class DeltaFactorWorkChain(WorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
@@ -83,7 +83,7 @@ class DeltaFactorWorkChain(WorkChain):
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
         import_path = importlib_resources.path('aiida_sssp_workflow',
-                                               'CALC_PROTOCOL.yml')
+                                               'PROTOCOL_CALC.yml')
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 
@@ -188,7 +188,7 @@ class DeltaFactorWorkChain(WorkChain):
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol_name = self.inputs.protocol.value
+        protocol_name = self.inputs.protocol_calculation.value
         protocol = self._get_protocol()[protocol_name]
         protocol = protocol['delta_factor']
         self._DEGAUSS = protocol['degauss']

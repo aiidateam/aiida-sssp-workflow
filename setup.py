@@ -26,7 +26,7 @@ def setup_package():
               '': ['*'],
               'aiida_sssp_workflow': [
                   'REF/CIFs/*.cif', 'REF/CIFs_REN/*.cif', 'REF/UPFs/*.UPF',
-                  'CALC_PROTOCOL.yml'
+                  'PROTOCOL_CALC.yml'
               ],
           },
           long_description=description,

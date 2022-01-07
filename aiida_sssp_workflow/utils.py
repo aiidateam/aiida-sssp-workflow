@@ -6,6 +6,7 @@ import importlib_resources
 
 from aiida.plugins import DataFactory
 from aiida import orm
+from aiida.engine import calcfunction
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -189,3 +190,32 @@ def helper_get_magnetic_inputs(structure: orm.StructureData):
             }
 
     return mag_structure, parameters
+
+
+@calcfunction
+def convergence_analysis(xy: orm.List, criteria: orm.Dict):
+    """
+    xy is a list of xy tuple [(x1, y1), (x2, y2), ...] and
+    criteria is a dict of {'mode': 'a', 'bounds': (0.0, 0.2)}
+    """
+    # sort xy
+    sorted_xy = sorted(xy.get_list(), key=lambda k: k[0], reverse=True)
+    criteria_dict = criteria.get_dict()
+    mode = criteria_dict['mode']
+    parameters = criteria_dict['parameters']
+
+    cutoff, value = sorted_xy[0]
+    if mode == 0:
+        bounds = parameters['bounds']
+        eps = parameters['eps']
+        # from max cutoff, after some x all y is out of bound
+        for x, y in sorted_xy:
+            if bounds[0] - eps < y < bounds[1] + eps:
+                cutoff, value = x, y
+            else:
+                break
+
+    return {
+        'cutoff': orm.Float(cutoff),
+        'value': orm.Float(value),
+    }
