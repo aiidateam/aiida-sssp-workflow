@@ -36,8 +36,6 @@ class DeltaFactorWorkChain(WorkChain):
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
-        spec.input('dual', valid_type=orm.Float,
-                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -185,8 +183,7 @@ class DeltaFactorWorkChain(WorkChain):
         else:
             dual = 8.0
 
-        if 'dual' in self.inputs:
-            dual = self.inputs.dual
+        # TODO: dual to larger for extrem elemets like O and Fe and Hf
 
         parameters['SYSTEM']['ecutrho'] = self._ECUTWFC * dual
 

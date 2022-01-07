@@ -15,24 +15,27 @@ VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
+<<<<<<< HEAD
 def run_verification(pw_code, ph_code, upf, dual):
+=======
+def run_verification(pw_code, ph_code, upf):
+>>>>>>> dual auto set for delta factor
     inputs = {
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
-        'dual': orm.Float(dual),
         'protocol': orm.Str('test'),
         'properties_list': orm.List(list=[
-            # 'delta_factor',
+            'delta_factor',
             # 'convergence:cohesive_energy',
             # 'convergence:phonon_frequencies',
-            'convergence:pressure',
+            # 'convergence:pressure',
         ]),
         'options': orm.Dict(
                 dict={
                     'resources': {
                         'num_machines': 1,
-                        'num_mpiprocs_per_machine': 2,
+                        'num_mpiprocs_per_machine': 4,
                     },
                     'max_wallclock_seconds': 1800 * 3,
                     'withmpi': True,
@@ -59,6 +62,6 @@ if __name__ == '__main__':
         upf['si'] = pseudo
 
     for element, upf in upf.items():
-        res, node = run_verification(pw_code, ph_code, upf, dual=4.0)
+        res, node = run_verification(pw_code, ph_code, upf)
         node.description = pp_label
         print(node)
