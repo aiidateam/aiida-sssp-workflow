@@ -50,7 +50,7 @@ if __name__ == '__main__':
     ph_code = load_code('ph-6.7@localhost')
 
     upf = {}
-    pp_label = 'sg15/O_ONCV_PBE-1.2.upf'
+    pp_label = 'psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF'
     pp_name = pp_label.split('/')[1]
     pp_path = os.path.join(STATIC_DIR, pp_name)
     with open(pp_path, 'rb') as stream:
