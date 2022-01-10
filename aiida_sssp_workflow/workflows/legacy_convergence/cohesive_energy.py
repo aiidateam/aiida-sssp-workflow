@@ -51,6 +51,10 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     def init_setup(self):
         super().init_setup()
 
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        super().extra_setup_for_magnetic_element()
+
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()
 
