@@ -46,11 +46,12 @@ def convergence_analysis(xy: orm.List, criteria: orm.Dict):
     sorted_xy = sorted(xy.get_list(), key=lambda k: k[0], reverse=True)
     criteria_dict = criteria.get_dict()
     mode = criteria_dict['mode']
+    parameters = criteria_dict['parameters']
 
     cutoff, value = sorted_xy[0]
     if mode == 0:
-        bounds = criteria_dict['bounds']
-        eps = criteria_dict['eps']
+        bounds = parameters['bounds']
+        eps = parameters['eps']
         # from max cutoff, after some x all y is out of bound
         for x, y in sorted_xy:
             if bounds[0] - eps < y < bounds[1] + eps:
@@ -104,9 +105,9 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol['convergence']['cohesive_energy']
+        super().setup_code_parameters_from_protocol()
+
+        protocol = self.ctx.protocol_calculation['convergence']['cohesive_energy']
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._BULK_SMEARING = protocol['bulk_smearing']
@@ -156,6 +157,15 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         self.report(
             f'The atom parameters for convergence is: {self.ctx.atom_parameters}'
         )
+
+    def setup_criteria_parameters_from_protocol(self):
+        """Input validation"""
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+
+        # Read from protocol if parameters not set from inputs
+        super().setup_criteria_parameters_from_protocol()
+
+        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['cohesive_energy']
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -231,11 +241,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         # from the fix dual result find the converge wfc cutoff
         x = output_parameters['ecutwfc']
         y = output_parameters['relative_diff']
-        criteria = {
-            'mode': 0,
-            'bounds': (0.0, 0.01),
-            'eps': 1e-7,
-        }
+        criteria = self.ctx.criteria['fix_dual_stage']
         res = convergence_analysis(orm.List(list=list(zip(x, y))),
                                    orm.Dict(dict=criteria))
 
@@ -283,11 +289,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             # from the fix wfc cutoff result find the converge rho cutoff
             x = output_parameters['ecutrho']
             y = output_parameters['relative_diff']
-            criteria = {
-                'mode': 0,
-                'bounds': (0.0, 0.01),
-                'eps': 1e-7,
-            }
+            criteria = self.ctx.criteria['fix_dual_stage']
             res = convergence_analysis(orm.List(list=list(zip(x, y))),
                                        orm.Dict(dict=criteria))
             self.ctx.rho_cutoff, y_value = res['cutoff'].value, res[

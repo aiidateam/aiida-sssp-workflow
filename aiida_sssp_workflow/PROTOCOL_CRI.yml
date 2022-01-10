@@ -1,0 +1,52 @@
+test:
+    name: 'test-only'
+    description: 'Protocol to run test of workflow.'
+
+    convergence:
+
+        cohesive_energy:
+            fix_dual_stage:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.01]
+                    eps: 1.0e-7
+            fix_cutoff_stage:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.01]
+                    eps: 1.0e-7
+
+        phonon_frequencies:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+            qpoints_list:
+                - [0.5, 0.5, 0.5]
+            ph:
+                epsilon: false
+                tr2_ph: 1.0e-16
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+
+        pressure:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+
+        bands_distance:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0

@@ -38,8 +38,10 @@ class BaseLegacyWorkChain(WorkChain):
         # yapf: disable
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
-                    help='The protocol to use for the workchain.')
+        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+                    help='The calculation protocol to use for the workchain.')
+        spec.input('protocol_criteria', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+                    help='The criteria protocol to use for the workchain.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -56,6 +58,7 @@ class BaseLegacyWorkChain(WorkChain):
             if_(cls.is_fluorine_element)(
                 cls.extra_setup_for_fluorine_element, ),
             cls.setup_code_parameters_from_protocol,
+            cls.setup_criteria_parameters_from_protocol,
             cls.setup_code_resource_options,
             cls.run_reference,
             cls.run_samples_fix_dual,
@@ -76,10 +79,14 @@ class BaseLegacyWorkChain(WorkChain):
             message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
 
-    def _get_protocol(self):
+    def _get_protocol(self, ptype):
         """Load and read protocol from faml file to a verbose dict"""
-        import_path = importlib_resources.path('aiida_sssp_workflow',
-                                               'PROTOCOL_CALC.yml')
+        if ptype == 'calculation':
+            filename = 'PROTOCOL_CALC.yml'
+        else:
+            filename = 'PROTOCOL_CRI.yml'
+
+        import_path = importlib_resources.path('aiida_sssp_workflow', filename)
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 
@@ -186,9 +193,15 @@ class BaseLegacyWorkChain(WorkChain):
     def extra_setup_for_fluorine_element(self):
         """Extra setup for fluorine element"""
 
-    @abstractmethod
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
+        protocol_name = self.inputs.protocol_calculation.value
+        self.ctx.protocol_calculation = self._get_protocol(ptype='calculation')[protocol_name]
+
+    def setup_criteria_parameters_from_protocol(self):
+        """Input validation"""
+        protocol_name = self.inputs.protocol_criteria.value
+        self.ctx.protocol_criteria = self._get_protocol(ptype='criteria')[protocol_name]
 
     def setup_code_resource_options(self):
         """

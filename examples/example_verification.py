@@ -20,7 +20,8 @@ def run_verification(pw_code, ph_code, upf):
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
-        'protocol': orm.Str('test'),
+        'protocol_calculation': orm.Str('test'),
+        'protocol_criteria': orm.Str('test'),
         'properties_list': orm.List(list=[
             # 'delta_factor',
             'convergence:cohesive_energy',
