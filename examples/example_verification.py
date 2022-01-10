@@ -15,19 +15,15 @@ VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
-<<<<<<< HEAD
-def run_verification(pw_code, ph_code, upf, dual):
-=======
 def run_verification(pw_code, ph_code, upf):
->>>>>>> dual auto set for delta factor
     inputs = {
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
         'protocol': orm.Str('test'),
         'properties_list': orm.List(list=[
-            'delta_factor',
-            # 'convergence:cohesive_energy',
+            # 'delta_factor',
+            'convergence:cohesive_energy',
             # 'convergence:phonon_frequencies',
             # 'convergence:pressure',
         ]),

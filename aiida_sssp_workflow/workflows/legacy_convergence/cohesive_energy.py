@@ -36,6 +36,34 @@ def helper_cohesive_energy_difference(input_parameters: orm.Dict,
     return orm.Dict(dict=res)
 
 
+@calcfunction
+def convergence_analysis(xy: orm.List, criteria: orm.Dict):
+    """
+    xy is a list of xy tuple [(x1, y1), (x2, y2), ...] and
+    criteria is a dict of {'mode': 'a', 'bounds': (0.0, 0.2)}
+    """
+    # sort xy
+    sorted_xy = sorted(xy.get_list(), key=lambda k: k[0], reverse=True)
+    criteria_dict = criteria.get_dict()
+    mode = criteria_dict['mode']
+
+    cutoff, value = sorted_xy[0]
+    if mode == 0:
+        bounds = criteria_dict['bounds']
+        eps = criteria_dict['eps']
+        # from max cutoff, after some x all y is out of bound
+        for x, y in sorted_xy:
+            if bounds[0] - eps < y < bounds[1] + eps:
+                cutoff, value = x, y
+            else:
+                break
+
+    return {
+        'cutoff': orm.Float(cutoff),
+        'value': orm.Float(value),
+    }
+
+
 class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
@@ -120,18 +148,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             },
         }
 
-        # set the ecutrho according to the type of pseudopotential
-        # dual 4 for NC and 8 for all other type of PP.
-        if self.ctx.pseudo_type in ['NC', 'SL']:
-            dual = 4.0
-        else:
-            dual = 8.0
-
-        if 'dual' in self.inputs:
-            dual = self.inputs.dual
-
-        self.ctx.dual = dual
-
         self.ctx.kpoints_distance = self._KDISTANCE
 
         self.report(
@@ -170,7 +186,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         run on reference calculation
         """
         ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.dual
+        ecutrho = ecutwfc * self.ctx.init_dual
         inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
         running = self.submit(CohesiveEnergyWorkChain, **inputs)
@@ -179,7 +195,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
         return ToContext(reference=running)
 
-    def run_samples(self):
+    def run_samples_fix_dual(self):
         """
         run on all other evaluation sample points
         """
@@ -194,14 +210,92 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
         for idx in range(self.ctx.max_evaluate):
             ecutwfc = self._ECUTWFC_LIST[idx]
-            ecutrho = ecutwfc * self.ctx.dual
+            ecutrho = ecutwfc * self.ctx.init_dual
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(CohesiveEnergyWorkChain, **inputs)
             self.report(
                 f'launching [{idx}] CohesiveEnergyWorkChain<{running.pk}>')
 
-            self.to_context(children=append_(running))
+            self.to_context(children_fix_dual=append_(running))
+
+    def inspect_fix_dual(self):
+        # include reference node in the last
+        sample_nodes = self.ctx.children_fix_dual + [self.ctx.reference]
+        output_parameters = self.result_general_process(
+            self.ctx.reference, sample_nodes)
+
+        self.out('fix_dual_output_parameters',
+                 orm.Dict(dict=output_parameters).store())
+
+        # from the fix dual result find the converge wfc cutoff
+        x = output_parameters['ecutwfc']
+        y = output_parameters['relative_diff']
+        criteria = {
+            'mode': 0,
+            'bounds': (0.0, 0.01),
+            'eps': 1e-7,
+        }
+        res = convergence_analysis(orm.List(list=list(zip(x, y))),
+                                   orm.Dict(dict=criteria))
+
+        self.ctx.wfc_cutoff, y_value = res['cutoff'].value, res['value'].value
+
+        self.report(
+            f'The wfc convergence at {self.ctx.wfc_cutoff} with value={y_value}'
+        )
+
+    def run_samples_fix_wfc_cutoff(self):
+        """
+        run on all other evaluation sample points
+        """
+        import numpy as np
+
+        ecutwfc = self.ctx.wfc_cutoff
+        for dual in np.linspace(self.ctx.min_dual, self.ctx.init_dual,
+                                10):  # do 10 rho change TODO: set in protocol
+            ecutrho = ecutwfc * dual
+            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
+
+            running = self.submit(CohesiveEnergyWorkChain, **inputs)
+            self.report(
+                f'launching [dual={dual}] CohesiveEnergyWorkChain<{running.pk}>'
+            )
+
+            self.to_context(children_fix_ecutwfc=append_(running))
+
+    def inspect_fix_wfc_cutoff(self):
+
+        # use the convergence sample point of fix dual workflow as reference
+        reference = None
+        for child in self.ctx.children_fix_dual:
+            if child.inputs.ecutwfc.value == self.ctx.wfc_cutoff:
+                reference = child
+                break
+
+        if reference:
+            output_parameters = self.result_general_process(
+                reference, self.ctx.children_fix_ecutwfc)
+
+            self.out('fix_wfc_cutoff_output_parameters',
+                     orm.Dict(dict=output_parameters).store())
+
+            # from the fix wfc cutoff result find the converge rho cutoff
+            x = output_parameters['ecutrho']
+            y = output_parameters['relative_diff']
+            criteria = {
+                'mode': 0,
+                'bounds': (0.0, 0.01),
+                'eps': 1e-7,
+            }
+            res = convergence_analysis(orm.List(list=list(zip(x, y))),
+                                       orm.Dict(dict=criteria))
+            self.ctx.rho_cutoff, y_value = res['cutoff'].value, res[
+                'value'].value
+
+            self.report(
+                f'The rho convergence at {self.ctx.rho_cutoff} with value={y_value}'
+            )
 
     def helper_compare_result_extract_fun(self, sample_node, reference_node,
                                           **kwargs):
@@ -220,7 +314,11 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             'relative_unit': '%',
         }
 
-    def results(self):
-        output_parameters = self.result_general_process()
+    def final_results(self):
+        output_parameters = {
+            'wfc_cutoff': self.ctx.wfc_cutoff,
+            'rho_cutoff': self.ctx.rho_cutoff,
+        }
 
-        self.out('output_parameters', orm.Dict(dict=output_parameters).store())
+        self.out('final_output_parameters',
+                 orm.Dict(dict=output_parameters).store())

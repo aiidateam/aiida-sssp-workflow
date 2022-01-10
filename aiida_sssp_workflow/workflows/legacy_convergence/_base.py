@@ -40,8 +40,6 @@ class BaseLegacyWorkChain(WorkChain):
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
-        spec.input('dual', valid_type=orm.Float,
-                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -60,12 +58,19 @@ class BaseLegacyWorkChain(WorkChain):
             cls.setup_code_parameters_from_protocol,
             cls.setup_code_resource_options,
             cls.run_reference,
-            cls.run_samples,
-            cls.results,
+            cls.run_samples_fix_dual,
+            cls.inspect_fix_dual,
+            cls.run_samples_fix_wfc_cutoff,
+            cls.inspect_fix_wfc_cutoff,
+            cls.final_results,
         )
 
-        spec.output('output_parameters', valid_type=orm.Dict, required=True,
+        spec.output('fix_dual_output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include results of all calculations.')
+        spec.output('fix_wfc_cutoff_output_parameters', valid_type=orm.Dict, required=True,
+                    help='The output parameters include results of all calculations.')
+        spec.output('final_output_parameters', valid_type=orm.Dict, required=True,
+                    help='The output parameters of two stage convergence test.')
 
         spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED',
             message='The sub process for `{label}` did not finish successfully.')
@@ -94,6 +99,19 @@ class BaseLegacyWorkChain(WorkChain):
         pseudo_type = parse_pseudo_type(content)
         self.ctx.element = element
         self.ctx.pseudo_type = pseudo_type
+
+        # set the ecutrho according to the type of pseudopotential
+        # dual 4 for NC and 10 for all other type of PP.
+        if self.ctx.pseudo_type in ['NC', 'SL']:
+            self.ctx.init_dual = 4.0
+            self.ctx.min_dual = 2.0
+        else:
+            # the initial dual set to 10 to make sure it is enough and converged
+            # In the follow up steps will converge on ecutrho
+            self.ctx.init_dual = 10.0
+            self.ctx.min_dual = 4.0
+
+        # TODO: for extrem high dual elements: O Fe Hf etc.
 
         self.ctx.pseudos = {element: self.inputs.pseudo}
 
@@ -201,9 +219,20 @@ class BaseLegacyWorkChain(WorkChain):
         """
 
     @abstractmethod
-    def run_samples(self):
+    def run_samples_fix_dual(self):
         """
         run on all other evaluation sample points
+        """
+
+    @abstractmethod
+    def inspect_fix_dual(self):
+        """
+        inspect the convergence run of fix dual and set the converge cutoff for follows.
+        """
+
+    def inspect_fix_wfc_cutoff(self):
+        """
+        run on different rho cutoffs
         """
 
     @abstractmethod
@@ -231,14 +260,12 @@ class BaseLegacyWorkChain(WorkChain):
         """
 
     @abstractmethod
-    def results(self):
+    def run_samples_fix_wfc_cutoff(self):
         """set results of sub-workflows to output ports"""
 
-    def result_general_process(self, **kwargs) -> dict:
+    def result_general_process(self, reference_node, sample_nodes, **kwargs) -> dict:
         """set results of sub-workflows to output ports"""
-        reference_node = self.ctx.reference
-
-        children = self.ctx.children + [reference_node]
+        children = sample_nodes
         success_children = [
             child for child in children if child.is_finished_ok
         ]
@@ -267,6 +294,10 @@ class BaseLegacyWorkChain(WorkChain):
         d_output_parameters['ecutrho'] = ecutrho_list
 
         return d_output_parameters
+
+    @abstractmethod
+    def final_results(self):
+        """If more to parse for the final"""
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
