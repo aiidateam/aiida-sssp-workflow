@@ -9,8 +9,7 @@ from aiida import orm
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element, \
-    helper_get_magnetic_inputs
+    get_standard_cif_filename_from_element
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import CohesiveEnergyWorkChain
 
@@ -55,17 +54,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
         super().extra_setup_for_magnetic_element()
-
-        self.ctx.structure, self.ctx.magnetic_extra_parameters = helper_get_magnetic_inputs(
-            self.ctx.structure)
-        self.ctx.extra_parameters = update_dict(self.ctx.extra_parameters, self.ctx.magnetic_extra_parameters)
-
-        # setting pseudos
-        pseudos = {}
-        pseudo = self.inputs.pseudo
-        for kind_name in self.ctx.structure.get_kind_names():
-            pseudos[kind_name] = pseudo
-        self.ctx.pseudos = pseudos
 
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()

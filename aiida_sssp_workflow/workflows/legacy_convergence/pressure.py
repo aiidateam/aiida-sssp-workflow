@@ -86,6 +86,10 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         super().init_setup()
         self.ctx.pw_parameters = {}
 
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        super().extra_setup_for_magnetic_element()
+
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()
 

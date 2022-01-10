@@ -13,7 +13,8 @@ from aiida.plugins import DataFactory
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
     MAGNETIC_ELEMENTS, \
     get_standard_cif_filename_from_element, \
-    update_dict
+    update_dict, \
+    helper_get_magnetic_inputs
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -113,6 +114,17 @@ class BaseLegacyWorkChain(WorkChain):
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
         self.ctx.structure = self.ctx.cif.get_structure(primitive_cell=False)
+
+        self.ctx.structure, self.ctx.magnetic_extra_parameters = helper_get_magnetic_inputs(
+            self.ctx.structure)
+        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, self.ctx.magnetic_extra_parameters)
+
+        # setting pseudos
+        pseudos = {}
+        pseudo = self.inputs.pseudo
+        for kind_name in self.ctx.structure.get_kind_names():
+            pseudos[kind_name] = pseudo
+        self.ctx.pseudos = pseudos
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
