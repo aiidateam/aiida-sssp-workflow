@@ -4,15 +4,16 @@ import yaml
 import importlib_resources
 
 from aiida import orm
-from aiida.engine import WorkChain, ToContext, if_
+from aiida.engine import WorkChain, ToContext, if_, append_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
     MAGNETIC_ELEMENTS, \
     RARE_EARTH_ELEMENTS, \
     get_standard_cif_filename_from_element, \
+    get_standard_cif_filename_dict_from_element, \
     helper_get_magnetic_inputs
-from aiida_sssp_workflow.calculations.calculate_delta import calculate_delta
+from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
 from pseudo_parser.upf_parser import parse_pseudo_type, parse_element
 
@@ -24,6 +25,7 @@ class DeltaFactorWorkChain(WorkChain):
     # pylint: disable=too-many-instance-attributes
 
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
+    _OXIDE_STRUCTURES = ['XO', 'XO2','XO3', 'X2O', 'X2O3', 'X2O5']
 
     @classmethod
     def define(cls, spec):
@@ -36,8 +38,6 @@ class DeltaFactorWorkChain(WorkChain):
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
-        spec.input('dual', valid_type=orm.Float,
-                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -49,19 +49,33 @@ class DeltaFactorWorkChain(WorkChain):
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element,
             ),
-            if_(cls.is_magnetic_element)(
-                cls.extra_setup_for_magnetic_element,
-            ),
+            # To compatible with common-wf, the magnism is not on. 
+            # if_(cls.is_magnetic_element)(
+            #     cls.extra_setup_for_magnetic_element,
+            # ),
             cls.setup_pw_parameters_from_protocol,
             cls.setup_pw_resource_options,
             cls.run_eos,
             cls.inspect_eos,
-            cls.calculate_delta_calc,
+            cls.run_delta_analyze,
         )
-        spec.expose_outputs(_EquationOfStateWorkChain,
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from EOS.'})
-        spec.output('output_delta_factor', valid_type=orm.Dict, required=True,
-                    help='The delta factor of the pseudopotential.')
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X EOS.'})
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='XO',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from XO EOS.'})
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='XO2',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from XO2 EOS.'})
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='XO3',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from XO3 EOS.'})
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X2O',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X2O EOS.'})
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X2O3',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X2O3 EOS.'})
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X2O5',
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X2O5 EOS.'})
+        spec.output_namespace('output_delta_analyze', dynamic=True,
+                    help='The output of delta factor and other measures to describe the accuracy of EOS compare '
+                        ' with the AE equation of state.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
                     message=f'The {_EquationOfStateWorkChain.__name__} sub process failed.')
         # yapf: enable
@@ -86,17 +100,35 @@ class DeltaFactorWorkChain(WorkChain):
         pseudo_type = parse_pseudo_type(content)
         self.ctx.element = element
         self.ctx.pseudo_type = pseudo_type
-        self.ctx.pseudos = {element: self.inputs.pseudo}
+        self.ctx.pseudos_elementary = {element: self.inputs.pseudo}
+        
+        # Import oxygen pseudopotential file and set the pseudos
+        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+                                               'O.pbe-n-kjpaw_psl.0.1.UPF')
+        with import_path as pp_path, open(pp_path, 'rb') as stream:
+            pseudo_O = UpfData(stream)
+            
+        self.ctx.pseudos_oxide = {
+            element: self.inputs.pseudo, 
+            'O': pseudo_O,
+        }
 
         self.ctx.pw_parameters = {}
 
         # Structures for delta factor calculation as provided in
         # http:// molmod.ugent.be/deltacodesdft/
         # Exception for lanthanides use nitride structures from
-        # https://doi.org/10.1016/j.commatsci.2014.07.030
-        cif_file = get_standard_cif_filename_from_element(element)
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=False)
+        # https://doi.org/10.1016/j.commatsci.2014.07.030 and from 
+        # common-workflow set from
+        # https://github.com/aiidateam/commonwf-oxides-scripts/tree/main/0-preliminary-do-not-run/cifs-set2
+        cif_dict = get_standard_cif_filename_dict_from_element(element)
+        
+        # keys here are: X, (BCC), (FCC), XO, XO2, (XO3), (X2O), (X2O3), (X2O5)
+        # parentatheses means not supported yet.
+        self.ctx.structures = {}
+        for key in cif_dict.keys():
+            self.ctx.structures[key] = orm.CifData.get_or_create(
+                cif_dict[key], use_first=True)[0].get_structure(primitive_cell=False)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
@@ -119,6 +151,9 @@ class DeltaFactorWorkChain(WorkChain):
         extra_parameters = {
             'SYSTEM': {
                 'nbnd': int(nbands * nbands_factor),
+                # Althrough magnetic off for mag element
+                # still turn on for Lanths for converge reason
+                # Furthure investigation needed in future.
                 'nspin': 2,
                 'starting_magnetization': {
                     self.ctx.element: 0.2,
@@ -129,24 +164,24 @@ class DeltaFactorWorkChain(WorkChain):
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
                                              extra_parameters)
 
-    def is_magnetic_element(self):
-        """Check if the element is magnetic"""
-        return self.ctx.element in MAGNETIC_ELEMENTS
+    # def is_magnetic_element(self):
+    #     """Check if the element is magnetic"""
+    #     return self.ctx.element in MAGNETIC_ELEMENTS
 
-    def extra_setup_for_magnetic_element(self):
-        """Extra setup for magnetic element"""
-        # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
-        self.ctx.structure, extra_parameters = helper_get_magnetic_inputs(
-            self.ctx.structure)
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-                                             extra_parameters)
+    # def extra_setup_for_magnetic_element(self):
+    #     """Extra setup for magnetic element"""
+    #     # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
+    #     self.ctx.structure, extra_parameters = helper_get_magnetic_inputs(
+    #         self.ctx.structure)
+    #     self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+    #                                          extra_parameters)
 
-        # setting pseudos
-        pseudos = {}
-        pseudo = self.inputs.pseudo
-        for kind_name in self.ctx.structure.get_kind_names():
-            pseudos[kind_name] = pseudo
-        self.ctx.pseudos = pseudos
+    #     # setting pseudos
+    #     pseudos = {}
+    #     pseudo = self.inputs.pseudo
+    #     for kind_name in self.ctx.structure.get_kind_names():
+    #         pseudos[kind_name] = pseudo
+    #     self.ctx.pseudos = pseudos
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -178,17 +213,15 @@ class DeltaFactorWorkChain(WorkChain):
             },
         }
 
-        # set the ecutrho according to the type of pseudopotential
-        # dual 4 for NC and 8 for all other type of PP.
-        if self.ctx.pseudo_type in ['NC', 'SL']:
-            dual = 4.0
-        else:
-            dual = 8.0
+        # # set the ecutrho according to the type of pseudopotential
+        # # dual 4 for NC and 8 for all other type of PP.
+        # if self.ctx.pseudo_type in ['NC', 'SL']:
+        #     dual = 4.0
+        # else:
+        #     dual = 8.0
 
-        if 'dual' in self.inputs:
-            dual = self.inputs.dual
-
-        parameters['SYSTEM']['ecutrho'] = self._ECUTWFC * dual
+        # TBD: Always use dual=8 since pseudo_O here is non-NC
+        parameters['SYSTEM']['ecutrho'] = self._ECUTWFC * 8
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
                                              parameters)
@@ -218,23 +251,26 @@ class DeltaFactorWorkChain(WorkChain):
         self.report(f'resource options set to {self.ctx.options}')
         self.report(
             f'parallelization options set to {self.ctx.parallelization}')
-
-    def run_eos(self):
-        """run eos workchain"""
+        
+    def _get_inputs(self, name, structure):
+        if 'O' in name:
+            # pseudos for oxides
+            pseudos = self.ctx.pseudos_oxide
+        else:
+            pseudos = self.ctx.pseudos_elementary
         # yapf: disable
-        self.report(f'{self.ctx.pw_parameters}')
         inputs = {
-            'structure': self.ctx.structure,
+            'structure': structure,
             'kpoints_distance': orm.Float(self._KDISTANCE),
             'scale_count': orm.Int(self._SCALE_COUNT),
             'scale_increment': orm.Float(self._SCALE_INCREMENT),
             'metadata': {
-                'call_link_label': 'eos'
+                'call_link_label': f'{name}_EOS'
             },
             'scf': {
                 'pw': {
                     'code': self.inputs.code,
-                    'pseudos': self.ctx.pseudos,
+                    'pseudos': pseudos,
                     'parameters': orm.Dict(dict=self.ctx.pw_parameters),
                     'metadata': {
                         'options': self.ctx.options
@@ -244,46 +280,69 @@ class DeltaFactorWorkChain(WorkChain):
             }
         }
         # yapf: enable
+        
+        return inputs
 
-        running = self.submit(_EquationOfStateWorkChain, **inputs)
-        self.report(f'launching _EquationOfStateWorkChain<{running.pk}>')
+    def run_eos(self):
+        """run eos workchain"""
+        self.report(f'{self.ctx.pw_parameters}')
 
-        return ToContext(workchain_eos=running)
+        for name, structure in self.ctx.structures.items():
+            inputs = self._get_inputs(name, structure)
+
+            future = self.submit(_EquationOfStateWorkChain, **inputs)
+            self.report(f'launching _EquationOfStateWorkChain<{future.pk}> for {name} structure.')
+
+            self.to_context(**{f'{name}_eos': future})
 
     def inspect_eos(self):
         """Inspect the results of _EquationOfStateWorkChain"""
-        workchain = self.ctx.workchain_eos
+        failed = []
+        for key in self.ctx.structures.keys():
+            workchain = self.ctx[f'{key}_eos']
 
-        if not workchain.is_finished_ok:
-            self.report(
-                f'_EquationOfStateWorkChain failed with exit status {workchain.exit_status}'
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
+            if not workchain.is_finished_ok:
+                self.report(
+                    f'_EquationOfStateWorkChain of {key} failed with exit status {workchain.exit_status}'
+                )
+                failed.append(key)
 
-        self.out_many(
-            self.exposed_outputs(
-                workchain,
-                _EquationOfStateWorkChain,
-            ))
+            self.out_many(
+                self.exposed_outputs(
+                    workchain,
+                    _EquationOfStateWorkChain,
+                    namespace=key,
+                ))
+        
+        if failed:
+            pass
+            # TODO ERROR
 
-        self.ctx.output_birch_murnaghan_fit = workchain.outputs.output_birch_murnaghan_fit
-
-    def calculate_delta_calc(self):
+    def run_delta_analyze(self):
         """calculate the delta factor"""
-        output_bmf = self.ctx.output_birch_murnaghan_fit
+        
+        for structure_name in ['X'] + self._OXIDE_STRUCTURES:
+            try:
+                output_bmf = self.outputs[structure_name].get('output_birch_murnaghan_fit')
+            except KeyError:
+                self.report(f'Can not get the key {structure_name} from outputs.')
+                continue
+            
+            if 'O' in structure_name:
+                # delta analyze of unitary structures, V0 is per atoms, B1 unit is GPa
+                V0 = orm.Float(output_bmf['volume0'])
+            else:
+                # delta analyze of oxide structures, V0 is whole structure, B1 unit is eV A^3
+                V0 = orm.Float(output_bmf['volume0']/output_bmf['num_of_atoms'])
+            inputs = {
+                'element': orm.Str(self.ctx.element),
+                'structure': orm.Str(structure_name),
+                'V0': V0,
+                'B0': orm.Float(output_bmf['bulk_modulus0']),
+                'B1': orm.Float(output_bmf['bulk_deriv0']),
+            }
 
-        inputs = {
-            'element': orm.Str(self.ctx.element),
-            'V0': orm.Float(output_bmf['volume0']),
-            'B0': orm.Float(output_bmf['bulk_modulus0']),
-            'B1': orm.Float(output_bmf['bulk_deriv0']),
-        }
-        output_delta_factor = calculate_delta(**inputs)
-        self.out('output_delta_factor', output_delta_factor)
-
-        self.report(
-            f'The birch murnaghan fitting results are: {output_delta_factor.get_dict()}'
-        )
+            self.out(f'output_delta_analyze.output_{structure_name}', delta_analyze(**inputs))
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""

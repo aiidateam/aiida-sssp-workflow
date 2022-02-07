@@ -69,8 +69,6 @@ class VerificationWorkChain(WorkChain):
                     help='The preperties will be calculated, passed as a list.')
         spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
-        spec.input('dual', valid_type=orm.Float,
-                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -158,24 +156,19 @@ class VerificationWorkChain(WorkChain):
 
         self.ctx.delta_factor_inputs = base_inputs.copy()
         self.ctx.delta_factor_inputs['code'] = self.inputs.pw_code
-        self.ctx.delta_factor_inputs['dual'] = self.inputs.dual
 
         self.ctx.phonon_frequencies_inputs = base_inputs.copy()
         self.ctx.phonon_frequencies_inputs['pw_code'] = self.inputs.pw_code
         self.ctx.phonon_frequencies_inputs['ph_code'] = self.inputs.ph_code
-        self.ctx.phonon_frequencies_inputs['dual'] = self.inputs.dual
 
         self.ctx.pressure_inputs = base_inputs.copy()
         self.ctx.pressure_inputs['code'] = self.inputs.pw_code
-        self.ctx.pressure_inputs['dual'] = self.inputs.dual
 
         self.ctx.cohesive_energy_inputs = base_inputs.copy()
         self.ctx.cohesive_energy_inputs['code'] = self.inputs.pw_code
-        self.ctx.cohesive_energy_inputs['dual'] = self.inputs.dual
 
         self.ctx.bands_distance_inputs = base_inputs.copy()
         self.ctx.bands_distance_inputs['code'] = self.inputs.pw_code
-        self.ctx.bands_distance_inputs['dual'] = self.inputs.dual
 
         # to collect workchains in a dict
         self.ctx.workchains = {}
@@ -254,11 +247,12 @@ class VerificationWorkChain(WorkChain):
         not_finished_ok_wf = {}
         self.ctx.finished_ok_wf = {}
         for wname, workchain in self.ctx.workchains.items():
-            if workchain.is_finished_ok:
-                self.ctx.finished_ok_wf[wname] = workchain.pk
-                for label in workchain.outputs:
-                    self.out(f'{wname}.{label}', workchain.outputs[label])
-            else:
+            # dump all output as it is to verification workflow output
+            self.ctx.finished_ok_wf[wname] = workchain.pk
+            for label in workchain.outputs:
+                self.out(f'{wname}.{label}', workchain.outputs[label])
+                
+            if not workchain.is_finished_ok:
                 self.report(
                     f'The sub-workflow {wname} pk={workchain.pk} not finished ok.'
                 )

@@ -18,6 +18,7 @@ def birch_murnaghan_fit(volume_energy: orm.Dict):
 
     volumes = np.array(list(volume_energy['volumes'].values()))
     energies = np.array(list(volume_energy['energies'].values()))
+    num_of_atoms = volume_energy['num_of_atoms']
     fitdata = np.polyfit(volumes**(-2. / 3.), energies, 3, full=True)
 
     ssr = fitdata[1]
@@ -54,9 +55,12 @@ def birch_murnaghan_fit(volume_energy: orm.Dict):
         dict={
             'volume0': round(volume0, 7),
             'energy0': round(energy0, 7),
-            'bulk_modulus0': round(bulk_modulus0 * echarge * 1.0e21, 7),
+            'num_of_atoms': int(num_of_atoms),
+            'bulk_modulus0': round(bulk_modulus0, 7),
+            'bulk_modulus0_GPa': round(bulk_modulus0 * echarge * 1.0e21, 7),
             'bulk_deriv0': round(bulk_deriv0, 7),
             'residuals0': round(residuals0[0]),
-            'volume0_unit': 'A^3/atom',
-            'bulk_modulus0_unit': 'GPa',
+            'volume0_unit': 'A^3',
+            'bulk_modulus0_unit': 'eV A^3',
+            'bulk_modulus0_GPa_unit': 'GPa',
         })

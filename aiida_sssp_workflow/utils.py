@@ -55,6 +55,30 @@ def get_standard_cif_filename_from_element(element: str) -> str:
 
     return filename
 
+def get_standard_cif_filename_dict_from_element(element: str) -> dict:
+    """
+    This function only used in delta factor wf to run on multiple structures
+    include oxides.
+    
+    get cif filename from element for different structure return a dict
+    """
+    cif_dict = {}
+    
+    if element in RARE_EARTH_ELEMENTS:
+        raise ValueError(f'Not supported yet for element={element}.')
+    else:
+        fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs',
+                                         f'{element}.cif')
+        with fpath as path:
+            cif_dict['X'] = str(path)
+            
+        for s in ['XO', 'XO2','XO3', 'X2O', 'X2O3', 'X2O5']:
+            fpath = importlib_resources.path('aiida_sssp_workflow.REF.CIFs_OXIDES',
+                                            f'{element}_{s}.cif')
+            with fpath as path:
+                cif_dict[s] = str(path)
+
+    return cif_dict
 
 def parse_upf(upf_content: str) -> dict:
     """

@@ -156,8 +156,9 @@ class _EquationOfStateWorkChain(WorkChain):
         volume_energy = {
             'volumes': {},
             'energies': {},
-            'volume_unit': 'A^3/atom',
-            'energy_unit': 'eV/atom',
+            'num_of_atoms': sum(self.inputs.structure.get_composition().values()),
+            'volume_unit': 'A^3',
+            'energy_unit': 'eV',
         }
         for index, child in enumerate(self.ctx.children):
             volume = child.outputs.output_parameters['volume']
@@ -166,8 +167,8 @@ class _EquationOfStateWorkChain(WorkChain):
             num_of_atoms = child.outputs.output_parameters['number_of_atoms']
             self.report(
                 f'Image {index}: volume={volume}, total energy={energy}')
-            volume_energy['volumes'][index] = volume / num_of_atoms
-            volume_energy['energies'][index] = energy / num_of_atoms
+            volume_energy['volumes'][index] = volume
+            volume_energy['energies'][index] = energy
 
         output_volume_energy = orm.Dict(dict=volume_energy).store()
         output_birch_murnaghan_fit = birch_murnaghan_fit(output_volume_energy)
