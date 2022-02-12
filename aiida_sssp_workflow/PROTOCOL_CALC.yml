@@ -25,6 +25,7 @@ theos:
 
             max_evaluate: 15 # number of evaluation run, not include ref
             reference_ecutwfc: 200.0
+            num_of_rho_test: 10 # number of calculation in fix wfc cutoff stage
 
         phonon_frequencies:
             occupations: smearing
@@ -40,6 +41,7 @@ theos:
 
             max_evaluate: 15 # number of evaluation run, not include ref
             reference_ecutwfc: 200.0
+            num_of_rho_test: 10 # number of calculation in fix wfc cutoff stage
 
         pressure:
             occupations: smearing
@@ -50,6 +52,7 @@ theos:
 
             max_evaluate: 15 # number of evaluation run, not include ref
             reference_ecutwfc: 200.0
+            num_of_rho_test: 10 # number of calculation in fix wfc cutoff stage
 
         bands_distance:
             occupations: smearing
@@ -60,6 +63,7 @@ theos:
 
             max_evaluate: 15 # number of evaluation run, not include ref
             reference_ecutwfc: 200.0
+            num_of_rho_test: 10 # number of calculation in fix wfc cutoff stage
 
 test:
     name: 'test-only'
