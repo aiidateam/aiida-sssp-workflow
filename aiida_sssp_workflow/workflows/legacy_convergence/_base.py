@@ -132,11 +132,20 @@ class BaseLegacyWorkChain(WorkChain):
         if self.ctx.pseudo_type in ['NC', 'SL']:
             self.ctx.init_dual = 4.0
             self.ctx.min_dual = 2.0
+            self.ctx.max_dual = 4.0
+            self.ctx.dual_scan_list = [2.0, 2.5, 3.0, 3.5, 4.0]
         else:
             # the initial dual set to 10 to make sure it is enough and converged
             # In the follow up steps will converge on ecutrho
             self.ctx.init_dual = 8.0
             self.ctx.min_dual = 6.0
+            
+            # For the non-NC pseudos we should be careful that high charge density cutoff 
+            # is needed. 
+            # We set the scan range from dual=8.0 to dual=18.0 to find the best 
+            # charge density cutoff. 
+            self.ctx.max_dual = self.ctx.init_dual + 10
+            self.ctx.dual_scan_list = [6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 12.0, 15.0, 18.0]
 
         # TODO: for extrem high dual elements: O Fe Hf etc.
 
@@ -333,8 +342,7 @@ class BaseLegacyWorkChain(WorkChain):
         import numpy as np
 
         ecutwfc = self.ctx.wfc_cutoff
-        for dual in np.linspace(self.ctx.min_dual, self.ctx.init_dual + 2,
-                                self._NUM_OF_RHO_TEST):
+        for dual in self.ctx.dual_scan_list:
             ecutrho = ecutwfc * dual
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
@@ -346,7 +354,7 @@ class BaseLegacyWorkChain(WorkChain):
             self.to_context(children_rho=append_(running))
         
     def inspect_rho_convergence_test(self):
-        sample_nodes = self.ctx.children_rho + [self.ctx.reference]
+        sample_nodes = self.ctx.children_rho
         
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
