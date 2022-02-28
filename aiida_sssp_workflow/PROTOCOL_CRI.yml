@@ -1,0 +1,104 @@
+precision:
+    name: 'new SSSP precision'
+    description: 'Protocol to pick the precision pseudopotestials.'
+
+    convergence:
+
+        cohesive_energy:
+            wfc_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 2.0]
+                    eps: 1.0e-3
+            rho_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 2.0]
+                    eps: 1.0e-3
+
+        phonon_frequencies:
+            wfc_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 1.0]
+                    eps: 1.0e-3
+            rho_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 1.0]
+                    eps: 1.0e-3
+
+        pressure:
+            wfc_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.5]
+                    eps: 1.0e-3
+            rho_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.5]
+                    eps: 1.0e-3
+
+        bands_distance:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+
+
+test:
+    name: 'test-only will be the precision and efficiency respectively'
+    description: 'Protocol to run test of workflow.'
+
+    convergence:
+
+        cohesive_energy:
+            wfc_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.6]
+                    eps: 1.0e-3
+            rho_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.5]
+                    eps: 1.0e-3
+
+        phonon_frequencies:
+            wfc_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 1.0]
+                    eps: 1.0e-3
+            rho_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 1.0]
+                    eps: 1.0e-3
+
+        pressure:
+            wfc_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.5]
+                    eps: 1.0e-3
+            rho_test:
+                mode: 0
+                parameters:
+                    bounds: [0.0, 0.5]
+                    eps: 1.0e-3
+
+        bands_distance:
+            occupations: smearing
+            degauss: 0.00735
+            smearing: 'marzari-vanderbilt'
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0

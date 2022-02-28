@@ -19,10 +19,12 @@ disable = [
     'too-many-arguments',
     'too-many-ancestors',
     'too-many-branches',
+    'too-many-public-methods',
     'too-many-locals',
     'protected-access',
     'missing-module-docstring',
     'cyclic-import',
+    'useless-super-delegation',
 ]
 
 [tool.pylint.miscellaneous]
@@ -34,6 +36,8 @@ good-names = [
     'j',
     'k',
     'x',
+    'y',
+    'xy',
     'V0',
     'B0',
     'B1',

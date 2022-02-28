@@ -62,19 +62,21 @@ class VerificationWorkChain(WorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
+        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+                    help='The calculation protocol to use for the workchain.')
+        spec.input('protocol_criteria', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+                    help='The criteria protocol to use for the workchain.')
+        spec.input('label', valid_type=orm.Str, required=False,
+                    help='label store for display as extra attribut.')
         spec.input('properties_list', valid_type=orm.List,
                     default=DEFAULT_PROPERTIES_LIST,
                     help='The preperties will be calculated, passed as a list.')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
-                    help='The protocol to use for the workchain.')
-        spec.input('dual', valid_type=orm.Float,
-                    help='The dual to derive ecutrho from ecutwfc.(only for legacy convergence wf).')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+        spec.input('clean_workdir_level', valid_type=orm.Int, default=lambda: orm.Int(1),
+                    help='0 for not clean; 1 for clean finished ok workchain; 9 for clean all.')
 
         spec.outline(
             cls.setup_code_resource_options,
@@ -121,16 +123,33 @@ class VerificationWorkChain(WorkChain):
         self.report(
             f'parallelization options set to {self.ctx.parallelization}')
 
+    @staticmethod
+    def _label_from_pseudo_info(pseudo_info) -> str:
+        """derive a label string from pseudo_info dict"""
+        element = pseudo_info['element']
+        pp_type = pseudo_info['pp_type']
+        z_valence = pseudo_info['z_valence']
+
+        return f'{element}/z={z_valence}/{pp_type}'
+
     def init_setup(self):
         """prepare inputs for all verification process"""
 
         # set the extra attributes for the node
         self.ctx.pseudo_info = parse_pseudo_info(self.inputs.pseudo)
-        self.node.set_extra_many(self.ctx.pseudo_info.get_dict())
+        pseudo_info = self.ctx.pseudo_info.get_dict()
+        self.node.set_extra_many(pseudo_info)
+
+        if 'label' in self.inputs:
+            label = self.inputs.label.value
+        else:
+            label = self._label_from_pseudo_info(pseudo_info)
+
+        self.node.set_extra('label', label)
 
         base_inputs = {
             'pseudo': self.inputs.pseudo,
-            'protocol': self.inputs.protocol,
+            'protocol_calculation': self.inputs.protocol_calculation,
             'options': orm.Dict(dict=self.ctx.options),
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
             'clean_workdir':
@@ -139,25 +158,23 @@ class VerificationWorkChain(WorkChain):
 
         self.ctx.delta_factor_inputs = base_inputs.copy()
         self.ctx.delta_factor_inputs['code'] = self.inputs.pw_code
-        # always use a hard coded high dual in verification
-        self.ctx.delta_factor_inputs['dual'] = orm.Float(8.0)
+        
+        self.ctx.cohesive_energy_inputs = base_inputs.copy()
+        self.ctx.cohesive_energy_inputs['code'] = self.inputs.pw_code
+        self.ctx.cohesive_energy_inputs['protocol_criteria'] = self.inputs.protocol_criteria
 
         self.ctx.phonon_frequencies_inputs = base_inputs.copy()
         self.ctx.phonon_frequencies_inputs['pw_code'] = self.inputs.pw_code
         self.ctx.phonon_frequencies_inputs['ph_code'] = self.inputs.ph_code
-        self.ctx.phonon_frequencies_inputs['dual'] = self.inputs.dual
+        self.ctx.phonon_frequencies_inputs['protocol_criteria'] = self.inputs.protocol_criteria
 
         self.ctx.pressure_inputs = base_inputs.copy()
         self.ctx.pressure_inputs['code'] = self.inputs.pw_code
-        self.ctx.pressure_inputs['dual'] = self.inputs.dual
-
-        self.ctx.cohesive_energy_inputs = base_inputs.copy()
-        self.ctx.cohesive_energy_inputs['code'] = self.inputs.pw_code
-        self.ctx.cohesive_energy_inputs['dual'] = self.inputs.dual
+        self.ctx.pressure_inputs['protocol_criteria'] = self.inputs.protocol_criteria
 
         self.ctx.bands_distance_inputs = base_inputs.copy()
         self.ctx.bands_distance_inputs['code'] = self.inputs.pw_code
-        self.ctx.bands_distance_inputs['dual'] = self.inputs.dual
+        self.ctx.bands_distance_inputs['protocol_criteria'] = self.inputs.protocol_criteria 
 
         # to collect workchains in a dict
         self.ctx.workchains = {}
@@ -230,35 +247,66 @@ class VerificationWorkChain(WorkChain):
 
     def report_and_results(self):
         """result"""
-        not_finished_ok = {}
+        # parse the info of the input pseudo
+        self.out('pseudo_info', self.ctx.pseudo_info)
+
+        not_finished_ok_wf = {}
+        self.ctx.finished_ok_wf = {}
         for wname, workchain in self.ctx.workchains.items():
-            if workchain.is_finished_ok:
-                for label in workchain.outputs:
-                    self.out(f'{wname}.{label}', workchain.outputs[label])
-            else:
+            # dump all output as it is to verification workflow output
+            self.ctx.finished_ok_wf[wname] = workchain.pk
+            for label in workchain.outputs:
+                self.out(f'{wname}.{label}', workchain.outputs[label])
+                
+            if not workchain.is_finished_ok:
                 self.report(
                     f'The sub-workflow {wname} pk={workchain.pk} not finished ok.'
                 )
-                not_finished_ok[wname] = workchain.pk
+                not_finished_ok_wf[wname] = workchain.pk
 
-        if not_finished_ok:
+        if not_finished_ok_wf:
             return self.exit_codes.WARNING_NOT_ALL_SUB_WORKFLOW_OK.format(
-                processes=not_finished_ok)
-
-        # parse the info of the input pseudo
-        self.out('pseudo_info', self.ctx.pseudo_info)
+                processes=not_finished_ok_wf)
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
         super().on_terminated()
 
-        if self.inputs.clean_workdir.value is False:
+        clean_workdir_level = self.inputs.clean_workdir_level.value
+        if clean_workdir_level == 9:
+            # extermination all all!!
+            cleaned_calcs = self._clean_workdir(self.node)
+
+            if cleaned_calcs:
+                self.report(
+                    f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
+                )
+
+        elif clean_workdir_level == 0:
             self.report('remote folders will not be cleaned')
             return
 
-        cleaned_calcs = []
+        elif clean_workdir_level == 1:
+            # only clean finished ok work chain
+            from aiida.orm import load_node
 
-        for called_descendant in self.node.called_descendants:
+            for wname, pk in self.ctx.finished_ok_wf.items():
+                node = load_node(pk)
+                cleaned_calcs = self._clean_workdir(node)
+
+                if cleaned_calcs:
+                    self.report(
+                        f'cleaned remote folders of calculations '
+                        f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, cleaned_calcs))}"
+                    )
+
+    @staticmethod
+    def _clean_workdir(wfnode):
+        """clean the remote folder of all calculation in the workchain node
+        return the node pk of cleaned calculation.
+        """
+        cleaned_calcs = []
+        for called_descendant in wfnode.called_descendants:
             if isinstance(called_descendant, orm.CalcJobNode):
                 try:
                     called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
@@ -266,7 +314,4 @@ class VerificationWorkChain(WorkChain):
                 except (IOError, OSError, KeyError):
                     pass
 
-        if cleaned_calcs:
-            self.report(
-                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
-            )
+        return cleaned_calcs

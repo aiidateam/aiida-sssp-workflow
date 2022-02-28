@@ -7,7 +7,7 @@ from aiida.cmdline.params.options import OverridableOption
 PROTOCOL = OverridableOption('-P',
                              '--protocol',
                              type=click.STRING,
-                             default='efficiency',
+                             default='theos',
                              show_default=True,
                              help='The protocol used in verification.')
 

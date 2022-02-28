@@ -31,6 +31,8 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
 
 class PressureWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+    _MAX_WALLCLOCK_SECONDS = 3600
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -64,11 +66,9 @@ class PressureWorkChain(WorkChain):
             cls.inspect_scf,
         )
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
-                    help='The output parameters include cohesive energy of the structure.')
-        spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY',
-                    message='PwBaseWorkChain of atom energy evaluation failed.')
-        spec.exit_code(212, 'ERROR_SUB_PROCESS_FAILED_BULK_ENERGY',
-                    message='PwBaseWorkChain of bulk structure energy evaluation failed with exit status.')
+                    help='The output parameters include pressure of the structure.')
+        spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_SCF',
+                    message='PwBaseWorkChain of pressure scf evaluation failed.')
         # yapf: enable
 
     def setup_base_parameters(self):

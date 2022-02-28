@@ -1,5 +1,11 @@
 ## aiida-sssp-workflow
 
+### 0.2.0
+- Add rho and wfc convergence test workflows in convergence verification at the same time
+- Delta factor verification on oxides and compare the results with AE
+### 0.2.0-beta.1
+Fix some issues with running verification on eiger and kindly as the fixes for the production release.
+
 ### 0.2.0-beta.0
 the release are ready to be run by command line interface.
 Will be the first stable backend of aiidalab-sssp app.

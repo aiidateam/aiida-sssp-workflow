@@ -16,6 +16,8 @@ UpfData = DataFactory('pseudo.upf')
 
 class PhononFrequenciesWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+    _MAX_WALLCLOCK_SECONDS = 3600
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -157,10 +159,20 @@ class PhononFrequenciesWorkChain(WorkChain):
         except NotExistentAttributeError:
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER
 
+        self.ctx.calc_time = workchain.outputs.output_parameters[
+            'wall_time_seconds']
+
     def run_ph(self):
         """
         set the inputs and submit ph calculation to get quantities for phonon evaluation
         """
+        # convert parallelization to CMDLINE for PH
+        # since ph calculation now doesn't support parallelization
+        cmdline_list = []
+        for key, value in self.ctx.parallelization.items():
+            cmdline_list.append(f'-{str(key)}')
+            cmdline_list.append(str(value))
+
         inputs = {
             'metadata': {
                 'call_link_label': 'PH'
@@ -173,7 +185,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                 'metadata': {
                     'options': self.ctx.options,
                 },
-                # CMDLINE setting for parallelization
+                'settings': orm.Dict(dict={'CMDLINE': cmdline_list}),
             },
         }
 
@@ -191,7 +203,14 @@ class PhononFrequenciesWorkChain(WorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_PH
 
-        self.out('output_parameters', workchain.outputs.output_parameters)
+        self.ctx.calc_time += workchain.outputs.output_parameters[
+            'wall_time_seconds']
+        output_parameters = workchain.outputs.output_parameters.get_dict()
+        output_parameters.update({
+            'total_calc_time': self.ctx.calc_time,
+            'time_unit': 's',
+        })
+        self.out('output_parameters', orm.Dict(dict=output_parameters).store())
 
     def results(self):
         """

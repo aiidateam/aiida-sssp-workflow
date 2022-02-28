@@ -74,34 +74,3 @@ def helper_get_base_inputs(pseudo: UpfData, primitive_cell=True):
     }
 
 
-def helper_get_v0_b0_b1(element: str):
-    """get eos reference of element"""
-    import re
-    from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
-
-    if element == 'F':
-        # Use SiF4 as reference of fluorine(F)
-        return 19.3583, 74.0411, 4.1599
-
-    if element in RARE_EARTH_ELEMENTS:
-        element_str = f'{element}N'
-    else:
-        element_str = element
-
-    regex = re.compile(
-        rf"""{element_str}\s*
-                        (?P<V0>\d*.\d*)\s*
-                        (?P<B0>\d*.\d*)\s*
-                        (?P<B1>\d*.\d*)""", re.VERBOSE)
-    if element not in RARE_EARTH_ELEMENTS:
-        match = regex.search(WIEN2K_REF)
-        V0 = match.group('V0')
-        B0 = match.group('B0')
-        B1 = match.group('B1')
-    else:
-        match = regex.search(WIEN2K_REN_REF)
-        V0 = match.group('V0')
-        B0 = match.group('B0')
-        B1 = match.group('B1')
-
-    return float(V0), float(B0), float(B1)

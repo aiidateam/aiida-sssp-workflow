@@ -10,7 +10,7 @@ from aiida.engine import append_, ToContext
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element
+    get_standard_cif_filename_from_element, convergence_analysis
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import PhononFrequenciesWorkChain
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
@@ -30,6 +30,8 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
     diffs = np.array(input_frequencies) - np.array(ref_frequencies)
     weights = np.array(ref_frequencies)
 
+    omega_max = np.amax(input_frequencies)
+
     absolute_diff = np.mean(diffs)
     absolute_max_diff = np.amax(diffs)
 
@@ -38,6 +40,7 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
 
     return orm.Dict(
         dict={
+            'omega_max': omega_max,
             'relative_diff': relative_diff,
             'relative_max_diff': relative_max_diff,
             'absolute_diff': absolute_diff,
@@ -50,6 +53,9 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
 class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
+    
+    _EVALUATE_WORKCHAIN = PhononFrequenciesWorkChain
+    _MEASURE_OUT_PROPERTY = 'relative_diff'
 
     @classmethod
     def define(cls, spec):
@@ -61,49 +67,34 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         # yapy: enable
 
+    def init_setup(self):
+        super().init_setup()
+        self.ctx.extra_ph_parameters = {}
+        self.ctx.extra_pw_parameters = {}
+
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        super().extra_setup_for_magnetic_element()
+
     def extra_setup_for_rare_earth_element(self):
-        """Extra setup for rare earth element"""
-        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                               'N.pbe-n-radius_5.UPF')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_nitrogen = UpfData(stream)
-            self.ctx.pseudos['N'] = upf_nitrogen
+        super().extra_setup_for_rare_earth_element()
 
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
-
-        extra_parameters = {
-            'SYSTEM': {
-                'nbnd': int(nbands * nbands_factor),
-            },
+        extra_ph_parameters = {
+            'INPUTPH': {
+                'diagonalization': 'cg',
+            }
         }
-        self.ctx.bulk_parameters = update_dict(self.ctx.pw_parameters,
-                                               extra_parameters)
+        self.ctx.extra_ph_parameters = update_dict(self.ctx.extra_ph_parameters,
+                                             extra_ph_parameters)
 
-    def extra_setup_for_fluorine_element(self):
-        """Extra setup for fluorine element"""
-        cif_file = get_standard_cif_filename_from_element('SiF4')
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
-
-        # setting pseudos
-        import_path = importlib_resources.path(
-            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_silicon = UpfData(stream)
-            self.ctx.pseudos['Si'] = upf_silicon
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol['convergence']['phonon_frequencies']
+        super().setup_code_parameters_from_protocol()
+        protocol = self.ctx.protocol_calculation['convergence']['phonon_frequencies']
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
@@ -116,6 +107,7 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
 
         self._MAX_EVALUATE = protocol['max_evaluate']
         self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
+        self._NUM_OF_RHO_TEST = protocol['num_of_rho_test']
 
         self.ctx.qpoints_list = self._QPOINTS_LIST
 
@@ -138,6 +130,9 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
             },
         }
 
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+                                        self.ctx.extra_pw_parameters)
+
         self.ctx.ph_parameters = {
             'INPUTPH': {
                 'tr2_ph': self._PH_TR2_PH,
@@ -145,18 +140,8 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
             }
         }
 
-        # set the ecutrho according to the type of pseudopotential
-        # dual 4 for NC and 8 for all other type of PP.
-        if self.ctx.pseudo_type in ['NC', 'SL']:
-            dual = 4.0
-        else:
-            dual = 8.0
-
-        if 'dual' in self.inputs:
-            dual = self.inputs.dual
-
-        self.ctx.dual = dual
-
+        self.ctx.ph_parameters = update_dict(self.ctx.ph_parameters,
+                                        self.ctx.extra_ph_parameters)
         self.ctx.kpoints_distance = self._KDISTANCE
 
         self.report(
@@ -165,6 +150,15 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         self.report(
             f'The ph parameters for convergence is: {self.ctx.ph_parameters}'
         )
+        
+    def setup_criteria_parameters_from_protocol(self):
+        """Input validation"""
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+
+        # Read from protocol if parameters not set from inputs
+        super().setup_criteria_parameters_from_protocol()
+
+        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['phonon_frequencies']
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -190,45 +184,7 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         # yapf: enable
 
         return inputs
-
-    def run_reference(self):
-        """
-        run on reference calculation
-        """
-        ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.dual
-        inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
-
-        running = self.submit(PhononFrequenciesWorkChain, **inputs)
-        self.report(
-            f'launching reference PhononFrequenciesWorkChain<{running.pk}>')
-
-        return ToContext(reference=running)
-
-    def run_samples(self):
-        """
-        run on all other evaluation sample points
-        """
-        workchain = self.ctx.reference
-
-        if not workchain.is_finished_ok:
-            self.report(
-                f'PwBaseWorkChain pk={workchain.pk} for reference run is failed.'
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                label='reference')
-
-        for idx in range(self.ctx.max_evaluate):
-            ecutwfc = self._ECUTWFC_LIST[idx]
-            ecutrho = ecutwfc * self.ctx.dual
-            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
-
-            running = self.submit(PhononFrequenciesWorkChain, **inputs)
-            self.report(
-                f'launching [{idx}] PhononFrequenciesWorkChain<{running.pk}>')
-
-            self.to_context(children=append_(running))
-
+        
     def get_result_metadata(self):
         return {
             'absolute_unit': 'cm-1',
@@ -244,7 +200,3 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         return helper_phonon_frequencies_difference(
             sample_output, reference_output).get_dict()
 
-    def results(self):
-        output_parameters = self.result_general_process()
-
-        self.out('output_parameters', orm.Dict(dict=output_parameters).store())

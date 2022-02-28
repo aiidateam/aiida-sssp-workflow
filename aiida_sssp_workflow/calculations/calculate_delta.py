@@ -4,14 +4,14 @@ Refactor from calcDelta.py v3.1 write by Kurt Lejaeghere
 Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for
 Molecular Modeling (CMM), Ghent University, Ghent, Belgium
 """
-from io import StringIO
+import importlib_resources
+import json
 
 import numpy as np
 from aiida.engine import calcfunction
 from aiida import orm
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
-from aiida_sssp_workflow.helpers import helper_get_v0_b0_b1
 
 # pylint: disable=invalid-name
 
@@ -20,83 +20,94 @@ RARE_EARTH_ELEMENTS = [
     'Tm', 'Yb', 'Lu'
 ]
 
+def helper_get_v0_b0_b1(element: str, structure: str):
+    """get eos reference of element"""
+    import re
+
+    if element in RARE_EARTH_ELEMENTS:
+        element_str = f'{element}N'
+    else:
+        element_str = element
+
+    regex = re.compile(
+        rf"""{element_str}\s*
+                        (?P<V0>\d*.\d*)\s*
+                        (?P<B0>\d*.\d*)\s*
+                        (?P<B1>\d*.\d*)""", re.VERBOSE)
+    if element not in RARE_EARTH_ELEMENTS:
+        match = regex.search(WIEN2K_REF)
+        V0 = match.group('V0')
+        B0 = match.group('B0')
+        B1 = match.group('B1')
+    else:
+        match = regex.search(WIEN2K_REN_REF)
+        V0 = match.group('V0')
+        B0 = match.group('B0')
+        B1 = match.group('B1')
+    
+    echarge = 1.60217733e-19
+    return float(V0), float(B0) / (echarge * 1.0e21), float(B1)
+
 
 @calcfunction
-def calculate_delta(element, V0, B0, B1) -> orm.Dict:
+def delta_analyze(element, structure, V0, B0, B1) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
     """
-    if element.value in RARE_EARTH_ELEMENTS:
-        wien2k_ref = StringIO(WIEN2K_REN_REF)
+    if 'O' in structure.value:
+        # oxides
+        import_path = importlib_resources.path('aiida_sssp_workflow.REF.AE_EOS',
+                                           'WIEN2K_OXIDES.json')
+        with import_path as path, open(path, 'rb') as handle:
+            data = json.load(handle)
+
+        BM_fit = data['BM_fit_data'][f'{element.value}-{structure.value}']
+        ref_V0, ref_B0, ref_B1 = BM_fit['min_volume'], BM_fit['bulk_modulus_ev_ang3'], BM_fit['bulk_deriv']
     else:
-        # not Lanthanides elements
-        wien2k_ref = StringIO(WIEN2K_REF)
-
-    data_ref = np.loadtxt(wien2k_ref,
-                          dtype={
-                              'names': ('element', 'V0', 'B0', 'B1'),
-                              'formats': ('U2', np.float, np.float, np.float)
-                          })
-    ref_V0, ref_B0, ref_B1 = helper_get_v0_b0_b1(element.value)
-
-    # Here use dtype U2 to truncate REN to RE
-    data_tested = np.array(
-        [(element.value, V0.value, B0.value, B1.value)],
-        dtype={
-            'names': ('element', 'V0', 'B0', 'B1'),
-            'formats': ('U2', np.float, np.float, np.float),
-        })
-
-    eloverlap = [element.value]
-    if not eloverlap:
-        # TODO ExitCode
-        raise ValueError(
-            f'Element {element} is not present in the reference set')
-    eloverlap = [element.value]
+        # unitary structures    
+        ref_V0, ref_B0, ref_B1 = helper_get_v0_b0_b1(element.value, structure.value)
+    
     # Delta computation
-    Delta, Deltarel, Delta1 = _calcDelta(data_tested, data_ref, eloverlap)
+    Delta, Deltarel, Delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0.value, B0.value, B1.value)
+
+    nicola_measure = rel_errors_vec_length(ref_V0, ref_B0, ref_B1, V0.value, B0.value, B1.value, config_string=None, prefact=400, weight_b0=1/8, weight_b1=1/64)
 
     return orm.Dict(
         dict={
-            'delta': Delta[0],
-            'delta1': Delta1[0],
+            'delta': Delta,
+            'delta1': Delta1,
             'delta_unit': 'meV/atom',
-            'delta_relative': Deltarel[0],
+            'delta_relative': Deltarel,
             'delta_relative_unit': '%',
             'birch_murnaghan_results': [V0, B0, B1],
-            'reference_wien2k_V0_B0_B1': [ref_V0, ref_B0, ref_B1]
+            'reference_wien2k_V0_B0_B1': [ref_V0, ref_B0, ref_B1],
+            'V0_B0_B1_units_info': 'all atoms for oxide / per atom for unitary + eV A^3',
+            'rel_errors_vec_length': nicola_measure,
         })
 
-
-def _calcDelta(data_f, data_w, eloverlap, useasymm=False):
+def rel_errors_vec_length(v0w, b0w, b1w, v0f, b0f, b1f, config_string, prefact, weight_b0, weight_b1):
     """
-    Calculate the Delta using the data in data_f, data_w on
-    element in eloverlap
-    data_w is all-electrons result as ref
+    Returns the length of the vector formed by the relative error of V0, B0, B1
+    THE SIGNATURE OF THIS FUNCTION HAS BEEN CHOSEN TO MATCH THE ONE OF ALL THE OTHER FUNCTIONS
+    RETURNING A QUANTITY THAT IS USEFUL FOR COMPARISON, THIS SIMPLIFIES THE CODE LATER.
+    Even though config_string is not usd
+    """
+    V0err =  2*(v0w-v0f)/(v0w+v0f)
+    B0err =  2*(b0w-b0f)/(b0w+b0f)
+    B1err =  2*(b1w-b1f)/(b1w+b1f)
+    leng = np.sqrt(V0err**2+(weight_b0*B0err)**2+(weight_b1*B1err)**2)
+    return leng*prefact
+
+def _calcDelta(v0w, b0w, b1w, v0f, b0f, b1f, useasymm=False):
+    """
+    Calculate the Delta value, function copied from the official DeltaTest repository.
+    I don't understand what it does, but it works.
+    THE SIGNATURE OF THIS FUNCTION HAS BEEN CHOSEN TO MATCH THE ONE OF ALL THE OTHER FUNCTIONS
+    RETURNING A QUANTITY THAT IS USEFUL FOR COMPARISON, THIS SIMPLIFIES THE CODE LATER.
+    Even though 'config_string' is useless here.
     """
     # pylint: disable=too-many-statements, consider-using-enumerate
-    v0w = np.zeros(len(eloverlap))
-    b0w = np.zeros(len(eloverlap))
-    b1w = np.zeros(len(eloverlap))
-
-    v0f = np.zeros(len(eloverlap))
-    b0f = np.zeros(len(eloverlap))
-    b1f = np.zeros(len(eloverlap))
-
-    elw = list(data_w['element'])
-    elf = list(data_f['element'])
-
-    for i in range(len(eloverlap)):
-        searchnr = elw.index(eloverlap[i])
-        v0w[i] = data_w['V0'][searchnr]
-        b0w[i] = data_w['B0'][searchnr] * 10.**9. / 1.602176565e-19 / 10.**30.
-        b1w[i] = data_w['B1'][searchnr]
-
-        searchnr = elf.index(eloverlap[i])
-        v0f[i] = data_f['V0'][searchnr]
-        b0f[i] = data_f['B0'][searchnr] * 10.**9. / 1.602176565e-19 / 10.**30.
-        b1f[i] = data_f['B1'][searchnr]
 
     vref = 30.
     bref = 100. * 10.**9. / 1.602176565e-19 / 10.**30.

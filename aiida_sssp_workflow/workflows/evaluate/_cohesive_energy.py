@@ -5,7 +5,6 @@ Create the structure of isolate atom
 """
 from aiida import orm
 from aiida.engine import calcfunction, WorkChain, append_
-from aiida.common import AttributeDict
 from aiida.plugins import WorkflowFactory, DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
@@ -36,6 +35,8 @@ def create_isolate_atom(
 
 class CohesiveEnergyWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+    _MAX_WALLCLOCK_SECONDS = 3600
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -103,8 +104,8 @@ class CohesiveEnergyWorkChain(WorkChain):
     def validate_structure(self):
         """Create isolate atom and validate structure"""
         # create isolate atom structure
-        elements = self.inputs.structure.get_kind_names()
         formula_list = self.inputs.structure.get_ase().get_chemical_symbols()
+        elements = list(dict.fromkeys(formula_list))
         dict_element_and_count = {
             element: formula_list.count(element)
             for element in formula_list
@@ -143,6 +144,21 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.report(
             f'parallelization options set to {self.ctx.parallelization}')
 
+    @staticmethod
+    def _get_pseudo(element, pseudos):
+        """
+        get the pseudo by element from input pseudos dict
+        the tricky is for the element name with number like in mag structure
+        the pseudo get from the first found.
+        """
+        try:
+            pseudo = pseudos[element]
+        except KeyError:
+            key = f'{element}1'
+            pseudo = pseudos[key]
+
+        return pseudo
+
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
         bulk_inputs = {
@@ -168,19 +184,20 @@ class CohesiveEnergyWorkChain(WorkChain):
         )
         self.to_context(workchain_bulk_energy=running_bulk_energy)
 
-        for element, pseudo in self.ctx.pseudos.items():
+        for element, structure in self.ctx.d_element_structure.items():
             atom_kpoints = orm.KpointsData()
             atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
-            atom_inputs = AttributeDict({
+            atom_inputs = {
                 'metadata': {
                     'call_link_label': 'atom_scf'
                 },
                 'pw': {
-                    'structure': self.ctx.d_element_structure[element],
+                    'structure': structure,
                     'code': self.inputs.code,
                     'pseudos': {
-                        element: pseudo
+                        element: self._get_pseudo(element,
+                                                  self.inputs.pseudos),
                     },
                     'parameters': orm.Dict(dict=self.ctx.atom_parameters),
                     'metadata': {
@@ -189,7 +206,14 @@ class CohesiveEnergyWorkChain(WorkChain):
                     'parallelization': orm.Dict(dict=self.ctx.parallelization),
                 },
                 'kpoints': atom_kpoints,
-            })
+            }
+
+            # resources = {
+            #     'num_machines': 1,
+            #     'num_mpiprocs_per_machine': 1,
+            # }
+            # atom_inputs['pw']['metadata']['options'].setdefault(
+            #     'resources', resources)
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.report(f'Submit atomic SCF of {element}.')
@@ -208,15 +232,23 @@ class CohesiveEnergyWorkChain(WorkChain):
 
         self.ctx.bulk_energy = workchain_bulk_energy.outputs.output_parameters[
             'energy']
+        calc_time = workchain_bulk_energy.outputs.output_parameters[
+            'wall_time_seconds']
 
         element_energy = {}
         for child in self.ctx.workchain_atom_children:
             element = child.inputs.pw.structure.get_kind_names()[0]
-            if not child.is_finished_ok:
+            if not child.is_finished_ok and child.exit_status < 700:
+                # exit_status > 700 for all the warnings
                 self.report(
                     f'PwBaseWorkChain of element={element} atom energy evaluation failed'
                     f' with exit status {child.exit_status}')
                 return self.exit_codes.ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY
+
+            if child.exit_status > 700:
+                self.report(
+                    f'atom calculation [{child.pk}] finished[{child.exit_status}]: '
+                    f'{child.exit_message}')
 
             output_parameters = child.outputs.output_parameters
 
@@ -224,7 +256,9 @@ class CohesiveEnergyWorkChain(WorkChain):
             atom_smearing_energy = output_parameters['energy_smearing']
             atom_energy = atom_free_energy - atom_smearing_energy
             element_energy[element] = atom_energy
+            calc_time += output_parameters['wall_time_seconds']
 
+        self.ctx.calc_time = calc_time
         self.ctx.element_energy = element_energy
 
     def results(self):
@@ -246,6 +280,8 @@ class CohesiveEnergyWorkChain(WorkChain):
             'structure_formula': self.inputs.structure.get_formula(),
             'energy_unit': 'eV',
             'energy_per_atom_unit': 'eV/atom',
+            'total_calc_time': self.ctx.calc_time,
+            'time_unit': 's',
         }
         parameters_dict.update(element_energy)
         output_parameters = orm.Dict(dict=parameters_dict)

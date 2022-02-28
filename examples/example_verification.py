@@ -15,28 +15,34 @@ VerificationWorkChain = WorkflowFactory('sssp_workflow.verification')
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_static')
 
-def run_verification(pw_code, ph_code, upf, dual=4.0):
+def run_verification(pw_code, ph_code, upf):
     inputs = {
         'pw_code': pw_code,
         'ph_code': ph_code,
         'pseudo': upf,
-        'protocol': orm.Str('test'),
-        'dual': orm.Float(dual),
+        'protocol_calculation': orm.Str('test'),
+        'protocol_criteria': orm.Str('test'),
+        'properties_list': orm.List(list=[
+            'delta_factor',
+            'convergence:cohesive_energy',
+            'convergence:phonon_frequencies',
+            'convergence:pressure',
+        ]),
         'options': orm.Dict(
                 dict={
                     'resources': {
-                        'num_machines': 1
+                        'num_machines': 1,
+                        'num_mpiprocs_per_machine': 1,
                     },
                     'max_wallclock_seconds': 1800 * 3,
-                    'withmpi': False,
+                    'withmpi': True,
                 }),
         # 'parallelization': orm.Dict(dict={}),
-        'clean_workdir': orm.Bool(False),
+        'clean_workdir_level': orm.Int(0),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)
     return res, node
-
 
 if __name__ == '__main__':
     from aiida.orm import load_code
@@ -44,15 +50,15 @@ if __name__ == '__main__':
     pw_code = load_code('pw-6.7@localhost')
     ph_code = load_code('ph-6.7@localhost')
 
-    upf_sg15 = {}
-    # sg15/Si_ONCV_PBE-1.2.upf
-    pp_name = 'Si_ONCV_PBE-1.2.upf'
+    pp_label = 'psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF'
+    pp_name = pp_label.split('/')[1]
     pp_path = os.path.join(STATIC_DIR, pp_name)
     with open(pp_path, 'rb') as stream:
         pseudo = UpfData(stream)
-        upf_sg15['si'] = pseudo
 
-    for element, upf in upf_sg15.items():
-        res, node = run_verification(pw_code, ph_code, upf, dual=4.0)
-        node.description = f'sg15/{element}'
-        print(node)
+    res, node = run_verification(pw_code, ph_code, pseudo)
+    node.description = pp_label
+    print(node)
+    print(res)
+        
+    

@@ -46,7 +46,7 @@ class BandsDistanceWorkChain(WorkChain):
         spec.input_namespace('input_pseudos', valid_type=UpfData, dynamic=True,
                     validator=validate_input_pseudos,
                     help='A mapping of `UpfData` node to be verified onto file name:upf.')
-        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('efficiency'),
+        spec.input('protocol', valid_type=orm.Str, default=lambda: orm.Str('theos'),
                     help='The protocol to use for the workchain.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
@@ -71,7 +71,7 @@ class BandsDistanceWorkChain(WorkChain):
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
         import_path = importlib_resources.path('aiida_sssp_workflow',
-                                               'sssp_protocol.yml')
+                                               'PROTOCOL_CALC.yml')
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 
