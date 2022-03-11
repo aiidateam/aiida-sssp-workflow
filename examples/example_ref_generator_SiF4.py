@@ -95,7 +95,8 @@ def run_relax(code, structure, pseudos):
 
 
 if __name__ == "__main__":
-    import importlib_resources
+    import importlib
+
     from aiida.orm import load_code, load_node
     from aiida.plugins import DbImporterFactory, WorkflowFactory
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     structure = load_node(14903)
 
     # pseudos are from SSSP-v1.1 precision
-    fpath = importlib_resources.path(
+    fpath = importlib.resources.path(
         "aiida_sssp_workflow.REF.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.UPF"
     )
     with fpath as path:
@@ -119,7 +120,7 @@ if __name__ == "__main__":
         upf_silicon = orm.UpfData.get_or_create(filename)[0]
         si_pseudo = upf_silicon
 
-    fpath = importlib_resources.path("aiida_sssp_workflow.REF.UPFs", "F.oncvpsp.upf")
+    fpath = importlib.resources.path("aiida_sssp_workflow.REF.UPFs", "F.oncvpsp.upf")
     with fpath as path:
         filename = str(path)
         upf_silicon = orm.UpfData.get_or_create(filename)[0]

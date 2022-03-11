@@ -2,7 +2,8 @@
 """
 Bands distance of many input pseudos
 """
-import importlib_resources
+import importlib
+
 import yaml
 from aiida import orm
 from aiida.engine import WorkChain, append_, if_
@@ -74,7 +75,7 @@ class BandsDistanceWorkChain(WorkChain):
 
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
-        import_path = importlib_resources.path('aiida_sssp_workflow',
+        import_path = importlib.resources.path('aiida_sssp_workflow',
                                                'PROTOCOL_CALC.yml')
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
@@ -113,7 +114,7 @@ class BandsDistanceWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+        import_path = importlib.resources.path('aiida_sssp_workflow.REF.UPFs',
                                                'N.pbe-n-radius_5.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_nitrogen = UpfData(stream)

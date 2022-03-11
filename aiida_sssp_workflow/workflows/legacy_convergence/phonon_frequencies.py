@@ -2,7 +2,8 @@
 """
 Convergence test on phonon frequencies of a given pseudopotential
 """
-import importlib_resources
+import importlib
+
 from aiida import orm
 from aiida.engine import ToContext, append_, calcfunction
 from aiida.plugins import DataFactory

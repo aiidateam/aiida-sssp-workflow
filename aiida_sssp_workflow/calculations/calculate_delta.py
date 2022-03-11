@@ -4,9 +4,9 @@ Refactor from calcDelta.py v3.1 write by Kurt Lejaeghere
 Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for
 Molecular Modeling (CMM), Ghent University, Ghent, Belgium
 """
+import importlib
 import json
 
-import importlib_resources
 import numpy as np
 from aiida import orm
 from aiida.engine import calcfunction
@@ -73,7 +73,7 @@ def delta_analyze(element, structure, V0, B0, B1) -> orm.Dict:
     """
     if "O" in structure.value:
         # oxides
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             "aiida_sssp_workflow.REF.AE_EOS", "WIEN2K_OXIDES.json"
         )
         with import_path as path, open(path, "rb") as handle:

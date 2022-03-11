@@ -2,7 +2,8 @@
 """
 Convergence test on bands of a given pseudopotential
 """
-import importlib_resources
+import importlib
+
 from aiida import orm
 from aiida.engine import ToContext, append_
 from aiida.plugins import DataFactory
@@ -48,7 +49,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+        import_path = importlib.resources.path('aiida_sssp_workflow.REF.UPFs',
                                                'N.pbe-n-radius_5.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_nitrogen = UpfData(stream)
@@ -73,7 +74,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
             cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 
         # setting pseudos
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_silicon = UpfData(stream)

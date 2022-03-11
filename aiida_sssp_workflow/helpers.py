@@ -2,7 +2,8 @@
 """
 Module comtain helper functions for workflows
 """
-import importlib_resources
+import importlib
+
 import seekpath
 from aiida import orm
 from aiida.engine import calcfunction
@@ -57,7 +58,7 @@ def helper_get_base_inputs(pseudo: UpfData, primitive_cell=True):
         # set element to 'SiF4' to use SiF4 structure for fluorine
         element = orm.Str("SiF4")
 
-        fpath = importlib_resources.path(
+        fpath = importlib.resources.path(
             "aiida_sssp_workflow.REF.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.upf"
         )
         with fpath as path:

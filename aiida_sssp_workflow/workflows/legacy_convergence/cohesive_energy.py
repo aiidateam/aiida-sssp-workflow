@@ -2,7 +2,8 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
-import importlib_resources
+import importlib
+
 from aiida import orm
 from aiida.engine import ToContext, append_, calcfunction
 from aiida.plugins import DataFactory
@@ -72,7 +73,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 
         # setting pseudos
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_silicon = UpfData(stream)

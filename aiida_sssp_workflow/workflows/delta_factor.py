@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-import importlib_resources
+import importlib
+
 import yaml
 from aiida import orm
 from aiida.engine import ToContext, WorkChain, append_, if_
@@ -84,7 +85,7 @@ class DeltaFactorWorkChain(WorkChain):
 
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             "aiida_sssp_workflow", "PROTOCOL_CALC.yml"
         )
         with import_path as pp_path, open(pp_path, "rb") as handle:
@@ -108,7 +109,7 @@ class DeltaFactorWorkChain(WorkChain):
         self.ctx.pseudos_elementary = {element: self.inputs.pseudo}
 
         # Import oxygen pseudopotential file and set the pseudos
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             "aiida_sssp_workflow.REF.UPFs", "O.pbe-n-kjpaw_psl.0.1.upf"
         )
         with import_path as pp_path, open(pp_path, "rb") as stream:
@@ -143,7 +144,7 @@ class DeltaFactorWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             "aiida_sssp_workflow.REF.UPFs", "N.pbe-n-radius_5.upf"
         )
         with import_path as pp_path, open(pp_path, "rb") as stream:

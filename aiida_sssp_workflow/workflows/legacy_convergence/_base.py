@@ -2,9 +2,9 @@
 """
 Base legacy work chain
 """
+import importlib
 from abc import ABCMeta, abstractmethod
 
-import importlib_resources
 import yaml
 from aiida import orm
 from aiida.engine import WorkChain, append_, if_
@@ -109,7 +109,7 @@ class BaseLegacyWorkChain(WorkChain):
         else:
             filename = 'PROTOCOL_CRI.yml'
 
-        import_path = importlib_resources.path('aiida_sssp_workflow', filename)
+        import_path = importlib.resources.path('aiida_sssp_workflow', filename)
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 
@@ -189,7 +189,7 @@ class BaseLegacyWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
+        import_path = importlib.resources.path('aiida_sssp_workflow.REF.UPFs',
                                                'N.pbe-n-radius_5.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_nitrogen = UpfData(stream)
@@ -228,7 +228,7 @@ class BaseLegacyWorkChain(WorkChain):
             cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 
         # setting pseudos
-        import_path = importlib_resources.path(
+        import_path = importlib.resources.path(
             'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_silicon = UpfData(stream)
