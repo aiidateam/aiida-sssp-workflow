@@ -4,13 +4,13 @@ A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
 from aiida import orm
-from aiida.engine import calcfunction, WorkChain, ToContext
-from aiida.plugins import WorkflowFactory, DataFactory
+from aiida.engine import ToContext, WorkChain, calcfunction
+from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
 
-PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
-UpfData = DataFactory('pseudo.upf')
+PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
+UpfData = DataFactory("pseudo.upf")
 
 
 @calcfunction
@@ -20,17 +20,20 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
     """
     import numpy as np
 
-    output_stress = output_trajectory.get_array('stress')[0]
-    stress_unit = output_parameters['stress_units']
+    output_stress = output_trajectory.get_array("stress")[0]
+    stress_unit = output_parameters["stress_units"]
     hydrostatic_stress = np.trace(output_stress) / 3.0
-    return orm.Dict(dict={
-        'stress_unit': stress_unit,
-        'hydrostatic_stress': hydrostatic_stress,
-    })
+    return orm.Dict(
+        dict={
+            "stress_unit": stress_unit,
+            "hydrostatic_stress": hydrostatic_stress,
+        }
+    )
 
 
 class PressureWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+
     _MAX_WALLCLOCK_SECONDS = 3600
 
     @classmethod
@@ -76,9 +79,9 @@ class PressureWorkChain(WorkChain):
         pw_parameters = self.inputs.pw_base_parameters.get_dict()
 
         parameters = {
-            'SYSTEM': {
-                'ecutwfc': self.inputs.ecutwfc,
-                'ecutrho': self.inputs.ecutrho,
+            "SYSTEM": {
+                "ecutwfc": self.inputs.ecutwfc,
+                "ecutrho": self.inputs.ecutrho,
             },
         }
         pw_parameters = update_dict(pw_parameters, parameters)
@@ -95,47 +98,44 @@ class PressureWorkChain(WorkChain):
         """
         setup resource options and parallelization for `PwCalculation` from inputs
         """
-        if 'options' in self.inputs:
+        if "options" in self.inputs:
             self.ctx.options = self.inputs.options.get_dict()
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
             self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
-                with_mpi=True)
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS, with_mpi=True
+            )
 
-        if 'parallelization' in self.inputs:
+        if "parallelization" in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
 
-        self.report(f'resource options set to {self.ctx.options}')
-        self.report(
-            f'parallelization options set to {self.ctx.parallelization}')
+        self.report(f"resource options set to {self.ctx.options}")
+        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def run_scf(self):
         """
         set the inputs and submit scf
         """
         inputs = {
-            'metadata': {
-                'call_link_label': 'SCF'
-            },
-            'pw': {
-                'structure': self.inputs.structure,
-                'code': self.inputs.code,
-                'pseudos': self.ctx.pseudos,
-                'parameters': orm.Dict(dict=self.ctx.pw_parameters),
-                'metadata': {
-                    'options': self.ctx.options,
+            "metadata": {"call_link_label": "SCF"},
+            "pw": {
+                "structure": self.inputs.structure,
+                "code": self.inputs.code,
+                "pseudos": self.ctx.pseudos,
+                "parameters": orm.Dict(dict=self.ctx.pw_parameters),
+                "metadata": {
+                    "options": self.ctx.options,
                 },
-                'parallelization': orm.Dict(dict=self.ctx.parallelization),
+                "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
-            'kpoints_distance': self.ctx.kpoints_distance,
+            "kpoints_distance": self.ctx.kpoints_distance,
         }
 
         running = self.submit(PwBaseWorkflow, **inputs)
-        self.report(f'Running pw calculation pk={running.pk}')
+        self.report(f"Running pw calculation pk={running.pk}")
         return ToContext(workchain_scf=running)
 
     def inspect_scf(self):
@@ -144,7 +144,7 @@ class PressureWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}'
+                f"PwBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
@@ -153,5 +153,6 @@ class PressureWorkChain(WorkChain):
 
         # Return the output parameters of current workchain
         output_parameters = helper_get_hydrostatic_stress(
-            output_trajectory, output_parameters)
-        self.out('output_parameters', output_parameters)
+            output_trajectory, output_parameters
+        )
+        self.out("output_parameters", output_parameters)

@@ -3,49 +3,51 @@
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import WorkChain, append_, calcfunction
-from aiida.plugins import WorkflowFactory, CalculationFactory
+from aiida.plugins import CalculationFactory, WorkflowFactory
 
-PwBaseWorkChain = WorkflowFactory('quantumespresso.pw.base')
-birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
+PwBaseWorkChain = WorkflowFactory("quantumespresso.pw.base")
+birch_murnaghan_fit = CalculationFactory("sssp_workflow.birch_murnaghan_fit")
 
 
 def validate_inputs(value, _):
     """Validate the entire input namespace."""
-    if 'scale_factors' not in value and ('scale_count' not in value
-                                         and 'scale_count' not in value):
-        return 'neither `scale_factors` nor the pair of `scale_count` and `scale_increment` were defined.'
+    if "scale_factors" not in value and (
+        "scale_count" not in value and "scale_count" not in value
+    ):
+        return "neither `scale_factors` nor the pair of `scale_count` and `scale_increment` were defined."
 
 
 def validate_scale_factors(value, _):
     """Validate the `validate_scale_factors` input."""
     if value and len(value) < 3:
-        return 'need at least 3 scaling factors.'
+        return "need at least 3 scaling factors."
 
 
 def validate_scale_count(value, _):
     """Validate the `scale_count` input."""
     if value is not None and value < 3:
-        return 'need at least 3 scaling factors.'
+        return "need at least 3 scaling factors."
 
 
 def validate_scale_increment(value, _):
     """Validate the `scale_increment` input."""
     if value is not None and not 0 < value < 1:
-        return 'scale increment needs to be between 0 and 1.'
+        return "scale increment needs to be between 0 and 1."
 
 
 @calcfunction
-def scale_structure(structure: orm.StructureData,
-                    scale_factor: orm.Float) -> orm.StructureData:
+def scale_structure(
+    structure: orm.StructureData, scale_factor: orm.Float
+) -> orm.StructureData:
     """Scale the structure with the given scaling factor."""
     ase = structure.get_ase().copy()
-    ase.set_cell(ase.get_cell() * float(scale_factor)**(1 / 3),
-                 scale_atoms=True)
+    ase.set_cell(ase.get_cell() * float(scale_factor) ** (1 / 3), scale_atoms=True)
     return orm.StructureData(ase=ase)
 
 
 class _EquationOfStateWorkChain(WorkChain):
     """Workflow to compute the equation of state for a given crystal structure."""
+
     @classmethod
     def define(cls, spec):
         # yapf: disable
@@ -80,7 +82,7 @@ class _EquationOfStateWorkChain(WorkChain):
 
     def get_scale_factors(self):
         """Return the list of scale factors."""
-        if 'scale_factors' in self.inputs:
+        if "scale_factors" in self.inputs:
             return self.inputs.scale_factors
 
         count = self.inputs.scale_count.value
@@ -96,18 +98,18 @@ class _EquationOfStateWorkChain(WorkChain):
         structure = scale_structure(self.inputs.structure, scale_factor)
         unscaled_structure = self.inputs.structure
 
-        inputs = AttributeDict(
-            self.exposed_inputs(PwBaseWorkChain, namespace='scf'))
+        inputs = AttributeDict(self.exposed_inputs(PwBaseWorkChain, namespace="scf"))
 
         parameters = inputs.pw.parameters.get_dict()
-        parameters.setdefault('CONTROL', {})['calculation'] = 'scf'
+        parameters.setdefault("CONTROL", {})["calculation"] = "scf"
 
         kpoints = orm.KpointsData()
         kpoints.set_cell_from_structure(unscaled_structure)
         kpoints.set_kpoints_mesh_from_density(
-            distance=self.inputs.kpoints_distance.value)
+            distance=self.inputs.kpoints_distance.value
+        )
 
-        inputs.metadata.call_link_label = 'scf'
+        inputs.metadata.call_link_label = "scf"
         inputs.kpoints = kpoints.store()
         inputs.pw.structure = structure
         inputs.pw.parameters = orm.Dict(dict=parameters)
@@ -123,7 +125,7 @@ class _EquationOfStateWorkChain(WorkChain):
         scale_factor = self.get_scale_factors()[0]
         builder = self.get_sub_workchain_builder(scale_factor)
         self.report(
-            f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`'
+            f"submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`"
         )
         self.ctx.previous_workchain = self.submit(builder)
         self.to_context(children=append_(self.ctx.previous_workchain))
@@ -134,15 +136,14 @@ class _EquationOfStateWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBaseWorkChain pk={workchain.pk} for first scale structure run is failed.'
+                f"PwBaseWorkChain pk={workchain.pk} for first scale structure run is failed."
             )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                cls=PwBaseWorkChain)
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=PwBaseWorkChain)
 
         for scale_factor in self.get_scale_factors()[1:]:
             builder = self.get_sub_workchain_builder(scale_factor)
             self.report(
-                f'submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`'
+                f"submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`"
             )
             self.to_context(children=append_(self.submit(builder)))
 
@@ -150,32 +151,31 @@ class _EquationOfStateWorkChain(WorkChain):
         """Inspect all children workflows to make sure they finished successfully."""
         if any(not child.is_finished_ok for child in self.ctx.children):
             process_class = PwBaseWorkChain
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                cls=process_class)
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=process_class)
 
         volume_energy = {
-            'volumes': {},
-            'energies': {},
-            'num_of_atoms': sum(self.inputs.structure.get_composition().values()),
-            'volume_unit': 'A^3',
-            'energy_unit': 'eV',
+            "volumes": {},
+            "energies": {},
+            "num_of_atoms": sum(self.inputs.structure.get_composition().values()),
+            "volume_unit": "A^3",
+            "energy_unit": "eV",
         }
         for index, child in enumerate(self.ctx.children):
-            volume = child.outputs.output_parameters['volume']
+            volume = child.outputs.output_parameters["volume"]
             energy = child.outputs.output_parameters[
-                'energy']  # Already the free energy E-TS (metal)
-            num_of_atoms = child.outputs.output_parameters['number_of_atoms']
-            self.report(
-                f'Image {index}: volume={volume}, total energy={energy}')
-            volume_energy['volumes'][index] = volume
-            volume_energy['energies'][index] = energy
+                "energy"
+            ]  # Already the free energy E-TS (metal)
+            num_of_atoms = child.outputs.output_parameters["number_of_atoms"]
+            self.report(f"Image {index}: volume={volume}, total energy={energy}")
+            volume_energy["volumes"][index] = volume
+            volume_energy["energies"][index] = energy
 
         output_volume_energy = orm.Dict(dict=volume_energy).store()
         output_birch_murnaghan_fit = birch_murnaghan_fit(output_volume_energy)
 
         self.report(
-            f'The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}'
+            f"The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}"
         )
 
-        self.out('output_volume_energy', output_volume_energy)
-        self.out('output_birch_murnaghan_fit', output_birch_murnaghan_fit)
+        self.out("output_volume_energy", output_volume_energy)
+        self.out("output_birch_murnaghan_fit", output_birch_murnaghan_fit)

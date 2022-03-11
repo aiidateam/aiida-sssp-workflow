@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """dump verification result"""
 import json
-import click
 
-from aiida.orm import load_node, Dict
+import click
+from aiida.orm import Dict, load_node
 
 from aiida_sssp_workflow.cli import cmd_root
 
@@ -17,8 +17,8 @@ def flaten_output(attr_dict):
             flaten_output(value)
 
 
-@cmd_root.command('dump')
-@click.argument('pk', nargs=1, type=int)
+@cmd_root.command("dump")
+@click.argument("pk", nargs=1, type=int)
 def dump_output(pk):
     """dump the verification result"""
     node = load_node(pk)

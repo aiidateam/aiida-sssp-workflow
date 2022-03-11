@@ -4,15 +4,15 @@ from aiida import orm
 from aiida.engine import run_get_node
 from aiida.plugins import WorkflowFactory
 
-DeltaFactorWorkChain = WorkflowFactory('sssp_workflow.delta_factor')
+DeltaFactorWorkChain = WorkflowFactory("sssp_workflow.delta_factor")
 
 
 def test_delta_factor_default(mocked_pw67, pp_silicon_sg15):
     """test delta factor workflow the default"""
     inputs = {
-        'code': mocked_pw67,
-        'pseudo': pp_silicon_sg15,
-        'protocol': orm.Str('test')
+        "code": mocked_pw67,
+        "pseudo": pp_silicon_sg15,
+        "protocol": orm.Str("test"),
     }
 
     _, node = run_get_node(DeltaFactorWorkChain, **inputs)

@@ -3,15 +3,14 @@
 WorkChain calculate the bands for certain pseudopotential
 """
 import numpy as np
-
 from aiida import orm
-from aiida.engine import WorkChain, ToContext, while_, if_, calcfunction
-from aiida.plugins import WorkflowFactory, DataFactory
+from aiida.engine import ToContext, WorkChain, calcfunction, if_, while_
+from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
 
-PwBandsWorkChain = WorkflowFactory('quantumespresso.pw.bands')
-UpfData = DataFactory('pseudo.upf')
+PwBandsWorkChain = WorkflowFactory("quantumespresso.pw.bands")
+UpfData = DataFactory("pseudo.upf")
 
 
 @calcfunction
@@ -23,23 +22,24 @@ def create_kpoints_from_distance(structure, distance, force_parity):
     :param force_parity: a Bool to specify whether the generated mesh should maintain parity
     :returns: a KpointsData with the generated mesh
     """
-    from numpy import linalg
     from aiida.orm import KpointsData
+    from numpy import linalg
 
-    epsilon = 1E-5
+    epsilon = 1e-5
 
     kpoints = KpointsData()
     kpoints.set_cell_from_structure(structure)
-    kpoints.set_kpoints_mesh_from_density(distance.value,
-                                          force_parity=force_parity.value)
+    kpoints.set_kpoints_mesh_from_density(
+        distance.value, force_parity=force_parity.value
+    )
 
     lengths_vector = [linalg.norm(vector) for vector in structure.cell]
     lengths_kpoint = kpoints.get_kpoints_mesh()[0]
 
     is_symmetric_cell = all(
-        abs(length - lengths_vector[0]) < epsilon for length in lengths_vector)
-    is_symmetric_mesh = all(length == lengths_kpoint[0]
-                            for length in lengths_kpoint)
+        abs(length - lengths_vector[0]) < epsilon for length in lengths_vector
+    )
+    is_symmetric_mesh = all(length == lengths_kpoint[0] for length in lengths_kpoint)
 
     # If the vectors of the cell all have the same length, the kpoint mesh should be isotropic as well
     if is_symmetric_cell and not is_symmetric_mesh:
@@ -121,20 +121,20 @@ class BandsWorkChain(WorkChain):
         pw_parameters = self.inputs.pw_base_parameters.get_dict()
 
         parameters = {
-            'SYSTEM': {
-                'ecutwfc': self.inputs.ecutwfc,
-                'ecutrho': self.inputs.ecutrho,
+            "SYSTEM": {
+                "ecutwfc": self.inputs.ecutwfc,
+                "ecutrho": self.inputs.ecutrho,
             },
         }
 
         pw_scf_parameters = update_dict(pw_parameters, parameters)
 
         parameters = {
-            'SYSTEM': {
-                'ecutwfc': self.inputs.ecutwfc,
-                'ecutrho': self.inputs.ecutrho,
-                'noinv': True,
-                'nosym': True,
+            "SYSTEM": {
+                "ecutwfc": self.inputs.ecutwfc,
+                "ecutrho": self.inputs.ecutrho,
+                "noinv": True,
+                "nosym": True,
             },
         }
 
@@ -150,7 +150,8 @@ class BandsWorkChain(WorkChain):
         self.ctx.lowest_highest_eigenvalue = 0.0
 
         self.ctx.bands_kpoints = create_kpoints_from_distance(
-            self.inputs.structure, self.ctx.kpoints_distance, orm.Bool(False))
+            self.inputs.structure, self.ctx.kpoints_distance, orm.Bool(False)
+        )
 
     def validate_structure(self):
         """doc"""
@@ -160,51 +161,50 @@ class BandsWorkChain(WorkChain):
         """
         setup resource options and parallelization for `PwCalculation` from inputs
         """
-        if 'options' in self.inputs:
+        if "options" in self.inputs:
             self.ctx.options = self.inputs.options.get_dict()
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
             self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
-                with_mpi=True)
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS, with_mpi=True
+            )
 
-        if 'parallelization' in self.inputs:
+        if "parallelization" in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
 
-        self.report(f'resource options set to {self.ctx.options}')
-        self.report(
-            f'parallelization options set to {self.ctx.parallelization}')
+        self.report(f"resource options set to {self.ctx.options}")
+        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def _get_base_bands_inputs(self):
         """
         get the inputs for raw band workflow
         """
         inputs = {
-            'structure': self.inputs.structure,
-            'scf': {
-                'pw': {
-                    'code': self.inputs.code,
-                    'pseudos': self.ctx.pseudos,
-                    'parameters': orm.Dict(dict=self.ctx.pw_scf_parameters),
-                    'metadata': {
-                        'options': self.ctx.options,
+            "structure": self.inputs.structure,
+            "scf": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": self.ctx.pseudos,
+                    "parameters": orm.Dict(dict=self.ctx.pw_scf_parameters),
+                    "metadata": {
+                        "options": self.ctx.options,
                     },
-                    'parallelization': orm.Dict(dict=self.ctx.parallelization),
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
-                'kpoints_distance': self.ctx.kpoints_distance,
+                "kpoints_distance": self.ctx.kpoints_distance,
             },
-            'bands': {
-                'pw': {
-                    'code': self.inputs.code,
-                    'pseudos': self.ctx.pseudos,
-                    'parameters': orm.Dict(dict=self.ctx.pw_bands_parameters),
-                    'metadata': {
-                        'options': self.ctx.options,
+            "bands": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": self.ctx.pseudos,
+                    "parameters": orm.Dict(dict=self.ctx.pw_bands_parameters),
+                    "metadata": {
+                        "options": self.ctx.options,
                     },
-                    'parallelization': orm.Dict(dict=self.ctx.parallelization),
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
             },
         }
@@ -214,11 +214,11 @@ class BandsWorkChain(WorkChain):
     def run_bands(self):
         """run bands calculation"""
         inputs = self._get_base_bands_inputs()
-        inputs['nbands_factor'] = self.ctx.nbands_factor
-        inputs['bands_kpoints'] = self.ctx.bands_kpoints
+        inputs["nbands_factor"] = self.ctx.nbands_factor
+        inputs["bands_kpoints"] = self.ctx.bands_kpoints
 
         running = self.submit(PwBandsWorkChain, **inputs)
-        self.report(f'Running pw bands calculation pk={running.pk}')
+        self.report(f"Running pw bands calculation pk={running.pk}")
         return ToContext(workchain_bands=running)
 
     def not_enough_bands(self):
@@ -227,12 +227,12 @@ class BandsWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBandsWorkChain for bands evaluation failed with exit status {workchain.exit_status}'
+                f"PwBandsWorkChain for bands evaluation failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
-        fermi_energy = workchain.outputs.band_parameters['fermi_energy']
-        bands = workchain.outputs.band_structure.get_array('bands')
+        fermi_energy = workchain.outputs.band_parameters["fermi_energy"]
+        bands = workchain.outputs.band_structure.get_array("bands")
         self.ctx.highest_band = float(np.amin(bands[:, -1]))
 
         return self.ctx.highest_band - fermi_energy < self._BANDS_SHIFT
@@ -248,11 +248,11 @@ class BandsWorkChain(WorkChain):
     def run_band_structure(self):
         """run band structure calculation"""
         inputs = self._get_base_bands_inputs()
-        inputs['nbands_factor'] = self.ctx.nbands_factor
-        inputs['bands_kpoints_distance'] = orm.Float(self._SEEKPATH_DISTANCE)
+        inputs["nbands_factor"] = self.ctx.nbands_factor
+        inputs["bands_kpoints_distance"] = orm.Float(self._SEEKPATH_DISTANCE)
 
         running = self.submit(PwBandsWorkChain, **inputs)
-        self.report(f'Running pw band structure calculation pk={running.pk}')
+        self.report(f"Running pw band structure calculation pk={running.pk}")
         return ToContext(workchain_band_structure=running)
 
     def inspect_band_structure(self):
@@ -261,26 +261,34 @@ class BandsWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBandsWorkChain for bands structure failed with exit status {workchain.exit_status}'
+                f"PwBandsWorkChain for bands structure failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
-        self.report('pw band structure workchain successfully completed')
-        self.out('seekpath_band_structure.output_scf_parameters',
-                 workchain.outputs.scf_parameters)
-        self.out('seekpath_band_structure.output_bands_parameters',
-                 workchain.outputs.band_parameters)
-        self.out('seekpath_band_structure.output_bands_structure',
-                 workchain.outputs.band_structure)
+        self.report("pw band structure workchain successfully completed")
+        self.out(
+            "seekpath_band_structure.output_scf_parameters",
+            workchain.outputs.scf_parameters,
+        )
+        self.out(
+            "seekpath_band_structure.output_bands_parameters",
+            workchain.outputs.band_parameters,
+        )
+        self.out(
+            "seekpath_band_structure.output_bands_structure",
+            workchain.outputs.band_structure,
+        )
 
     def results(self):
         """result"""
-        self.report('pw bands workchain successfully completed')
-        self.out('output_scf_parameters',
-                 self.ctx.workchain_bands.outputs.scf_parameters)
-        self.out('output_bands_parameters',
-                 self.ctx.workchain_bands.outputs.band_parameters)
-        self.out('output_bands_structure',
-                 self.ctx.workchain_bands.outputs.band_structure)
-        self.out('output_nbands_factor',
-                 orm.Float(self.ctx.nbands_factor).store())
+        self.report("pw bands workchain successfully completed")
+        self.out(
+            "output_scf_parameters", self.ctx.workchain_bands.outputs.scf_parameters
+        )
+        self.out(
+            "output_bands_parameters", self.ctx.workchain_bands.outputs.band_parameters
+        )
+        self.out(
+            "output_bands_structure", self.ctx.workchain_bands.outputs.band_structure
+        )
+        self.out("output_nbands_factor", orm.Float(self.ctx.nbands_factor).store())

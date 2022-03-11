@@ -3,20 +3,18 @@
 Convergence workchain based on aiida-optimize by
 inherit `aiida_optimize.engines._convergence::_ConvergenceImpl`
 """
-import typing as ty
 import itertools
+import typing as ty
 
 import numpy as np
-
-from aiida_optimize.engines.base import OptimizationEngineWrapper
-from aiida_optimize.engines._convergence import _ConvergenceImpl
-from aiida_optimize.engines._result_mapping import Result
-from aiida_optimize.helpers import get_nested_result
-
 from aiida import orm
 from aiida.orm.nodes.data.base import to_aiida_type
+from aiida_optimize.engines._convergence import _ConvergenceImpl
+from aiida_optimize.engines._result_mapping import Result
+from aiida_optimize.engines.base import OptimizationEngineWrapper
+from aiida_optimize.helpers import get_nested_result
 
-__all__ = ['TwoInputsTwoFactorsConvergence']
+__all__ = ["TwoInputsTwoFactorsConvergence"]
 
 
 class _TwoInputsTwoFactorsConvergenceImpl(_ConvergenceImpl):
@@ -73,8 +71,7 @@ class _TwoInputsTwoFactorsConvergenceImpl(_ConvergenceImpl):
         # count the number of results that not satisfy conv_thr
         # the more not satisfied the more add to the next iteration
         # if all under the conv_thr add (zero) new iteration
-        num_new_iters_conv_thr = (np.array(results_in_window) >
-                                  self.conv_thr).sum()
+        num_new_iters_conv_thr = (np.array(results_in_window) > self.conv_thr).sum()
 
         # Use the max(greedy) number of the two types of criterion
         num_new_iters = max(num_new_iters_tol, num_new_iters_conv_thr)
@@ -108,8 +105,7 @@ class _TwoInputsTwoFactorsConvergenceImpl(_ConvergenceImpl):
         # check if the maximum distance is less than the tolerance
         # import ipdb; ipdb.set_trace()
         is_tol_converge = bool(np.max(distances) < self.tol)
-        is_conv_thr_converge = bool(
-            np.max(self._result_window) < self.conv_thr)
+        is_conv_thr_converge = bool(np.max(self._result_window) < self.conv_thr)
 
         res = is_tol_converge and is_conv_thr_converge
 
@@ -130,11 +126,13 @@ class _TwoInputsTwoFactorsConvergenceImpl(_ConvergenceImpl):
             num_new_iters = self._num_new_iters
 
         self.current_index += num_new_iters
-        inputs = [{
-            self.input_key: to_aiida_type(self.input_values[i][0]),
-            self.extra_input_key: to_aiida_type(self.input_values[i][1]),
-        } for i in range(self.current_index -
-                         num_new_iters, self.current_index)]
+        inputs = [
+            {
+                self.input_key: to_aiida_type(self.input_values[i][0]),
+                self.extra_input_key: to_aiida_type(self.input_values[i][1]),
+            }
+            for i in range(self.current_index - num_new_iters, self.current_index)
+        ]
 
         return inputs
 
@@ -145,8 +143,9 @@ class _TwoInputsTwoFactorsConvergenceImpl(_ConvergenceImpl):
         """
         opt_index = len(self.result_values) - self.convergence_window
         opt_input = self._result_mapping[opt_index].input[self.input_key]
-        opt_output = get_nested_result(self._result_mapping[opt_index].output,
-                                       self.result_key)
+        opt_output = get_nested_result(
+            self._result_mapping[opt_index].output, self.result_key
+        )
 
         return opt_index, opt_input, opt_output
 
@@ -182,4 +181,5 @@ class TwoInputsTwoFactorsConvergence(OptimizationEngineWrapper):
             current_index=0,
             result_values=[],
             initialized=False,
-            logger=logger)
+            logger=logger,
+        )

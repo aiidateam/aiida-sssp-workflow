@@ -3,37 +3,40 @@
 Base legacy work chain
 """
 from abc import ABCMeta, abstractmethod
-from argon2 import extract_parameters
+
 import importlib_resources
 import yaml
-
 from aiida import orm
-from aiida.engine import WorkChain, if_, append_
+from aiida.engine import WorkChain, append_, if_
 from aiida.plugins import DataFactory
+from argon2 import extract_parameters
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
-    MAGNETIC_ELEMENTS, \
-    get_standard_cif_filename_from_element, \
-    update_dict, \
-    helper_get_magnetic_inputs, \
-    convergence_analysis
+from aiida_sssp_workflow.utils import (
+    MAGNETIC_ELEMENTS,
+    RARE_EARTH_ELEMENTS,
+    convergence_analysis,
+    get_standard_cif_filename_from_element,
+    helper_get_magnetic_inputs,
+    update_dict,
+)
 
 UpfData = DataFactory('pseudo.upf')
 
+
 class abstract_attribute(object):
     """lazy variable check: https://stackoverflow.com/a/32536493"""
-    def __get__(self, obj, type):   
+    def __get__(self, obj, type):
         for cls in type.__mro__:
             for name, value in cls.__dict__.items():
                 if value is self:
                     this_obj = obj if obj else type
                     raise NotImplementedError(
-                         "%r does not have the attribute %r "
-                         "(abstract from class %r)" %
-                             (this_obj, name, cls.__name__))
+                        f'{this_obj!r} does not have the attribute {name!r} (abstract from class {cls.__name__!r})'
+                    )
 
         raise NotImplementedError(
-            "%s does not set the abstract attribute <unknown>", type.__name__)
+            '%s does not set the abstract attribute <unknown>', type.__name__)
+
 
 class BaseLegacyWorkChain(WorkChain):
     """Base legacy workchain"""
@@ -139,11 +142,11 @@ class BaseLegacyWorkChain(WorkChain):
             # In the follow up steps will converge on ecutrho
             self.ctx.init_dual = 8.0
             self.ctx.min_dual = 6.0
-            
-            # For the non-NC pseudos we should be careful that high charge density cutoff 
-            # is needed. 
-            # We set the scan range from dual=8.0 to dual=18.0 to find the best 
-            # charge density cutoff. 
+
+            # For the non-NC pseudos we should be careful that high charge density cutoff
+            # is needed.
+            # We set the scan range from dual=8.0 to dual=18.0 to find the best
+            # charge density cutoff.
             self.ctx.max_dual = self.ctx.init_dual + 10
             self.ctx.dual_scan_list = [6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 12.0, 15.0, 18.0]
 
@@ -187,7 +190,7 @@ class BaseLegacyWorkChain(WorkChain):
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
         import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                               'N.pbe-n-radius_5.UPF')
+                                               'N.pbe-n-radius_5.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_nitrogen = UpfData(stream)
             self.ctx.pseudos['N'] = upf_nitrogen
@@ -226,7 +229,7 @@ class BaseLegacyWorkChain(WorkChain):
 
         # setting pseudos
         import_path = importlib_resources.path(
-            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
+            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_silicon = UpfData(stream)
             self.ctx.pseudos['Si'] = upf_silicon
@@ -275,7 +278,7 @@ class BaseLegacyWorkChain(WorkChain):
         self.report(f'launching reference {running.process_label}<{running.pk}>')
 
         self.to_context(reference=running)
-        
+
     def inspect_reference(self):
         try:
             workchain = self.ctx.reference
@@ -294,7 +297,7 @@ class BaseLegacyWorkChain(WorkChain):
         run on all other evaluation sample points
         """
         ecutrho = self._REFERENCE_ECUTWFC * self.ctx.init_dual
-        
+
         for idx in range(self.ctx.max_evaluate):
             ecutwfc = self._ECUTWFC_LIST[idx]
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
@@ -308,10 +311,10 @@ class BaseLegacyWorkChain(WorkChain):
     def inspect_wfc_convergence_test(self):
         # include reference node in the last
         sample_nodes = self.ctx.children_wfc + [self.ctx.reference]
-        
+
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
-                self.ctx.reference, 
+                self.ctx.reference,
                 sample_nodes,
                 extra_parameters=self.ctx.extra_parameters
             )
@@ -334,7 +337,7 @@ class BaseLegacyWorkChain(WorkChain):
         self.report(
             f'The wfc convergence at {self.ctx.wfc_cutoff} with value={y_value}'
         )
-        
+
     def run_rho_convergence_test(self):
         """
         run on all other evaluation sample points
@@ -352,13 +355,13 @@ class BaseLegacyWorkChain(WorkChain):
             )
 
             self.to_context(children_rho=append_(running))
-        
+
     def inspect_rho_convergence_test(self):
         sample_nodes = self.ctx.children_rho
-        
+
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
-                self.ctx.reference, 
+                self.ctx.reference,
                 sample_nodes,
                 extra_parameters=self.ctx.extra_parameters
             )

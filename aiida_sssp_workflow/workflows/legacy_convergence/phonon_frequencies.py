@@ -3,15 +3,18 @@
 Convergence test on phonon frequencies of a given pseudopotential
 """
 import importlib_resources
-
-from aiida.engine import calcfunction
 from aiida import orm
-from aiida.engine import append_, ToContext
+from aiida.engine import ToContext, append_, calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element, convergence_analysis
-from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import PhononFrequenciesWorkChain
+from aiida_sssp_workflow.utils import (
+    convergence_analysis,
+    get_standard_cif_filename_from_element,
+    update_dict,
+)
+from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import (
+    PhononFrequenciesWorkChain,
+)
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
@@ -53,7 +56,7 @@ def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
 class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
-    
+
     _EVALUATE_WORKCHAIN = PhononFrequenciesWorkChain
     _MEASURE_OUT_PROPERTY = 'relative_diff'
 
@@ -150,7 +153,7 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         self.report(
             f'The ph parameters for convergence is: {self.ctx.ph_parameters}'
         )
-        
+
     def setup_criteria_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
@@ -165,7 +168,6 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
-        # yapf: disable
         inputs = {
             'pw_code': self.inputs.pw_code,
             'ph_code': self.inputs.ph_code,
@@ -181,10 +183,9 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
             'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
-        # yapf: enable
 
         return inputs
-        
+
     def get_result_metadata(self):
         return {
             'absolute_unit': 'cm-1',
@@ -199,4 +200,3 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
 
         return helper_phonon_frequencies_difference(
             sample_output, reference_output).get_dict()
-

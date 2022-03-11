@@ -8,13 +8,14 @@ from aiida.engine import ExitCode
 from aiida.parsers.parser import Parser
 from aiida.plugins import CalculationFactory
 
-DiffCalculation = CalculationFactory('sssp_workflow')
+DiffCalculation = CalculationFactory("sssp_workflow")
 
 
 class DiffParser(Parser):
     """
     Parser class for parsing output of calculation.
     """
+
     def __init__(self, node):
         """
         Initialize Parser instance
@@ -25,9 +26,10 @@ class DiffParser(Parser):
         :param type node: :class:`aiida.orm.ProcessNode`
         """
         from aiida.common import exceptions
+
         super().__init__(node)
         if not issubclass(node.process_class, DiffCalculation):
-            raise exceptions.ParsingError('Can only parse DiffCalculation')
+            raise exceptions.ParsingError("Can only parse DiffCalculation")
 
     def parse(self, **kwargs):
         """
@@ -37,7 +39,7 @@ class DiffParser(Parser):
         """
         from aiida.orm import SinglefileData
 
-        output_filename = self.node.get_option('output_filename')
+        output_filename = self.node.get_option("output_filename")
 
         # Check that folder content is as expected
         files_retrieved = self.retrieved.list_object_names()
@@ -51,8 +53,8 @@ class DiffParser(Parser):
 
         # add output file
         self.logger.info(f"Parsing '{output_filename}'")
-        with self.retrieved.open(output_filename, 'rb') as handle:
+        with self.retrieved.open(output_filename, "rb") as handle:
             output_node = SinglefileData(file=handle)
-        self.out('sssp_workflow', output_node)
+        self.out("sssp_workflow", output_node)
 
         return ExitCode(0)

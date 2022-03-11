@@ -1,76 +1,61 @@
-# Install pre-commit hooks via:
-# pre-commit install
+---
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.5.0
-    hooks:
-    -   id: double-quote-string-fixer
-    -   id: end-of-file-fixer
-    -   id: fix-encoding-pragma
-    -   id: mixed-line-ending
-    -   id: trailing-whitespace
-        exclude: >-
-            (?x)^(
-                tests/.*.*out|
-                tests/.*.in |
-                tests/_static/.*(?<!\.py)$
-            )$
 
--   repo: https://github.com/ikamensh/flynt/
-    rev: '0.55'
-    hooks:
-    -   id: flynt
-        args: [
-            '--line-length=140',
-            '--fail-on-change',
-        ]
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.1.0
+      hooks:
+          - id: check-json
+          - id: check-yaml
+          - id: end-of-file-fixer
+          - id: trailing-whitespace
 
--   repo: https://github.com/pre-commit/mirrors-yapf
-    rev: v0.30.0
-    hooks:
-    -   id: yapf
-        name: yapf
-        types: [python]
-        args: ['-i']
-        exclude: >-
-            (?x)^(
-                examples/.*|
-            )$
+    - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+      rev: 0.1.0
+      hooks:
+          - id: yamlfmt
 
--   repo: https://github.com/PyCQA/pylint
-    rev: pylint-2.6.0
-    hooks:
-    -   id: pylint
-        language: system
-        exclude: &exclude_files >
-            (?x)^(
-                aiida_sssp_workflow/workflows/convergence/.*|
-                efermi/efermi.py|
-                aiida_sssp_workflow/helpers.py|
-                setup.py|
-                examples/.*|
-                docs/.*|
-                tests/sample_processes.py|
-                tests/.*(?<!\.py)$
-            )$
+    - repo: https://github.com/psf/black
+      rev: 22.1.0
+      hooks:
+          - id: black
+            language_version: python3 # Should be a command that runs python3.6+
+            exclude: |
+                (?x)^(
+                    aiida_sssp_workflow/workflows/legacy_convergence/cohesive_energy.py |
+                    aiida_sssp_workflow/workflows/legacy_convergence/phonon_frequencies.py |
+                    aiida_sssp_workflow/workflows/legacy_convergence/bands.py |
+                    aiida_sssp_workflow/workflows/legacy_convergence/pressure.py |
+                    aiida_sssp_workflow/workflows/bands_distance.py |
+                    aiida_sssp_workflow/workflows/legacy_convergence/_base.py
+                )$
 
--   repo: local
-    hooks:
+    - repo: https://github.com/PyCQA/flake8
+      rev: 4.0.1
+      hooks:
+          - id: flake8
+            args: [--count, --show-source, --statistics]
+            additional_dependencies:
+                - flake8-bugbear==21.3.1
+            exclude: |
+                (?x)(
+                    ^tests/ |
+                    ^examples/ |
+                    ^docs/ |
+                    ^aiida_sssp_workflow/
+                )
 
-    -   id: mypy
-        name: mypy
-        entry: mypy
-        language: python
-        types: [python]
-        require_serial: true
-        pass_filenames: true
-        files: >-
-            (?x)^(
-                aiida_sssp_workflow/__init__.py|
-            )$
+    - repo: https://github.com/pycqa/isort
+      rev: 5.10.1
+      hooks:
+          - id: isort
+            args: [--profile, black, --filter-files]
 
-    -   id: version-number
-        name: Check version numbers
-        entry: python ./.github/check_version.py
-        language: system
-        files: '^(setup.json)|(aiida_sssp_workflow/__init__.py)'
+    - repo: https://github.com/asottile/setup-cfg-fmt
+      rev: v1.20.0
+      hooks:
+          - id: setup-cfg-fmt
+
+    - repo: https://github.com/sirosen/check-jsonschema
+      rev: 0.14.0
+      hooks:
+          - id: check-github-workflows

@@ -3,19 +3,20 @@
 WorkChain calculate phonon frequencies at Gamma
 """
 from aiida import orm
-from aiida.engine import WorkChain, ToContext
 from aiida.common import NotExistentAttributeError
-from aiida.plugins import WorkflowFactory, DataFactory
+from aiida.engine import ToContext, WorkChain
+from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
 
-PwBaseWorkflow = WorkflowFactory('quantumespresso.pw.base')
-PhBaseWorkflow = WorkflowFactory('quantumespresso.ph.base')
-UpfData = DataFactory('pseudo.upf')
+PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
+PhBaseWorkflow = WorkflowFactory("quantumespresso.ph.base")
+UpfData = DataFactory("pseudo.upf")
 
 
 class PhononFrequenciesWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
+
     _MAX_WALLCLOCK_SECONDS = 3600
 
     @classmethod
@@ -74,9 +75,9 @@ class PhononFrequenciesWorkChain(WorkChain):
         pw_parameters = self.inputs.pw_base_parameters.get_dict()
 
         parameters = {
-            'SYSTEM': {
-                'ecutwfc': self.inputs.ecutwfc,
-                'ecutrho': self.inputs.ecutrho,
+            "SYSTEM": {
+                "ecutwfc": self.inputs.ecutwfc,
+                "ecutrho": self.inputs.ecutrho,
             },
         }
         pw_parameters = update_dict(pw_parameters, parameters)
@@ -101,47 +102,44 @@ class PhononFrequenciesWorkChain(WorkChain):
         setup resource options and parallelization for `PwCalculation` and
         `PhCalculation` from inputs
         """
-        if 'options' in self.inputs:
+        if "options" in self.inputs:
             self.ctx.options = self.inputs.options.get_dict()
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
             self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
-                with_mpi=True)
+                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS, with_mpi=True
+            )
 
-        if 'parallelization' in self.inputs:
+        if "parallelization" in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
 
-        self.report(f'resource options set to {self.ctx.options}')
-        self.report(
-            f'parallelization options set to {self.ctx.parallelization}')
+        self.report(f"resource options set to {self.ctx.options}")
+        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def run_scf(self):
         """
         set the inputs and submit scf
         """
         inputs = {
-            'metadata': {
-                'call_link_label': 'SCF'
-            },
-            'pw': {
-                'structure': self.inputs.structure,
-                'code': self.inputs.pw_code,
-                'pseudos': self.ctx.pseudos,
-                'parameters': orm.Dict(dict=self.ctx.pw_parameters),
-                'metadata': {
-                    'options': self.ctx.options,
+            "metadata": {"call_link_label": "SCF"},
+            "pw": {
+                "structure": self.inputs.structure,
+                "code": self.inputs.pw_code,
+                "pseudos": self.ctx.pseudos,
+                "parameters": orm.Dict(dict=self.ctx.pw_parameters),
+                "metadata": {
+                    "options": self.ctx.options,
                 },
-                'parallelization': orm.Dict(dict=self.ctx.parallelization),
+                "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
-            'kpoints_distance': self.ctx.kpoints_distance,
+            "kpoints_distance": self.ctx.kpoints_distance,
         }
 
         running = self.submit(PwBaseWorkflow, **inputs)
-        self.report(f'Running pw calculation pk={running.pk}')
+        self.report(f"Running pw calculation pk={running.pk}")
         return ToContext(workchain_scf=running)
 
     def inspect_scf(self):
@@ -150,7 +148,7 @@ class PhononFrequenciesWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PwBaseWorkChain failed with exit status {workchain.exit_status}'
+                f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
@@ -159,8 +157,7 @@ class PhononFrequenciesWorkChain(WorkChain):
         except NotExistentAttributeError:
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER
 
-        self.ctx.calc_time = workchain.outputs.output_parameters[
-            'wall_time_seconds']
+        self.ctx.calc_time = workchain.outputs.output_parameters["wall_time_seconds"]
 
     def run_ph(self):
         """
@@ -170,27 +167,25 @@ class PhononFrequenciesWorkChain(WorkChain):
         # since ph calculation now doesn't support parallelization
         cmdline_list = []
         for key, value in self.ctx.parallelization.items():
-            cmdline_list.append(f'-{str(key)}')
+            cmdline_list.append(f"-{str(key)}")
             cmdline_list.append(str(value))
 
         inputs = {
-            'metadata': {
-                'call_link_label': 'PH'
-            },
-            'ph': {
-                'code': self.inputs.ph_code,
-                'qpoints': self.ctx.qpoints,
-                'parameters': orm.Dict(dict=self.ctx.ph_parameters),
-                'parent_folder': self.ctx.scf_remote_folder,
-                'metadata': {
-                    'options': self.ctx.options,
+            "metadata": {"call_link_label": "PH"},
+            "ph": {
+                "code": self.inputs.ph_code,
+                "qpoints": self.ctx.qpoints,
+                "parameters": orm.Dict(dict=self.ctx.ph_parameters),
+                "parent_folder": self.ctx.scf_remote_folder,
+                "metadata": {
+                    "options": self.ctx.options,
                 },
-                'settings': orm.Dict(dict={'CMDLINE': cmdline_list}),
+                "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
             },
         }
 
         running = self.submit(PhBaseWorkflow, **inputs)
-        self.report(f'Running ph calculation pk={running.pk}')
+        self.report(f"Running ph calculation pk={running.pk}")
         return ToContext(workchain_ph=running)
 
     def inspect_ph(self):
@@ -199,18 +194,19 @@ class PhononFrequenciesWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'PhBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}'
+                f"PhBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_PH
 
-        self.ctx.calc_time += workchain.outputs.output_parameters[
-            'wall_time_seconds']
+        self.ctx.calc_time += workchain.outputs.output_parameters["wall_time_seconds"]
         output_parameters = workchain.outputs.output_parameters.get_dict()
-        output_parameters.update({
-            'total_calc_time': self.ctx.calc_time,
-            'time_unit': 's',
-        })
-        self.out('output_parameters', orm.Dict(dict=output_parameters).store())
+        output_parameters.update(
+            {
+                "total_calc_time": self.ctx.calc_time,
+                "time_unit": "s",
+            }
+        )
+        self.out("output_parameters", orm.Dict(dict=output_parameters).store())
 
     def results(self):
         """
