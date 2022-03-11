@@ -2,38 +2,88 @@
 """
 The base convergence WorkChain
 """
-from abc import ABCMeta, abstractmethod
-import typing as ty
 import pathlib
-import yaml
+import typing as ty
+from abc import ABCMeta, abstractmethod
 
+import yaml
+from aiida import orm
+from aiida.engine import ToContext, WorkChain
+from aiida.plugins import DataFactory, WorkflowFactory
 from aiida_tools.process_inputs import get_fullname
 
-from aiida.engine import WorkChain, ToContext
-from aiida import orm
-from aiida.plugins import WorkflowFactory, DataFactory
-
-from aiida_sssp_workflow.workflows.convergence.engine import TwoInputsTwoFactorsConvergence
-from aiida_sssp_workflow.utils import helper_parse_upf
 from aiida_sssp_workflow.helpers import get_pw_inputs_from_pseudo
+from aiida_sssp_workflow.utils import helper_parse_upf
+from aiida_sssp_workflow.workflows.convergence.engine import (
+    TwoInputsTwoFactorsConvergence,
+)
 
-CreateEvaluateWorkChain = WorkflowFactory('optimize.wrappers.create_evaluate')
-OptimizationWorkChain = WorkflowFactory('optimize.optimize')
-UpfData = DataFactory('pseudo.upf')
+CreateEvaluateWorkChain = WorkflowFactory("optimize.wrappers.create_evaluate")
+OptimizationWorkChain = WorkflowFactory("optimize.optimize")
+UpfData = DataFactory("pseudo.upf")
 
-PARA_ECUTWFC_LIST = lambda: orm.List(list=[
-    20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110,
-    120, 130, 140, 160, 180, 200
-])
+PARA_ECUTWFC_LIST = lambda: orm.List(
+    list=[
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        110,
+        120,
+        130,
+        140,
+        160,
+        180,
+        200,
+    ]
+)
 
-PARA_ECUTRHO_LIST = lambda: orm.List(list=[
-    160, 200, 240, 280, 320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720,
-    760, 800, 880, 960, 1040, 1120, 1280, 1440, 1600
-])
+PARA_ECUTRHO_LIST = lambda: orm.List(
+    list=[
+        160,
+        200,
+        240,
+        280,
+        320,
+        360,
+        400,
+        440,
+        480,
+        520,
+        560,
+        600,
+        640,
+        680,
+        720,
+        760,
+        800,
+        880,
+        960,
+        1040,
+        1120,
+        1280,
+        1440,
+        1600,
+    ]
+)
 
 
 class BaseConvergenceWorkChain(WorkChain):
     """Meta WorkChain to run convergence test"""
+
     __metaclass__ = ABCMeta
 
     # hard code parameters of convergence workflow
@@ -92,10 +142,11 @@ class BaseConvergenceWorkChain(WorkChain):
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
         with open(
-                str(
-                    pathlib.Path(__file__).resolve().parents[1] /
-                    'protocol.yml')) as handle:
-            self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
+            str(pathlib.Path(__file__).resolve().parents[1] / "protocol.yml")
+        ) as handle:
+            self._protocol = yaml.safe_load(
+                handle
+            )  # pylint: disable=attribute-defined-outside-init
 
             return self._protocol
 
@@ -157,15 +208,15 @@ class BaseConvergenceWorkChain(WorkChain):
         upf_info = helper_parse_upf(self.inputs.pseudo)
         self.ctx.element = self.inputs.pseudo.element
 
-        self.out('output_pseudo_header', orm.Dict(dict=upf_info).store())
+        self.out("output_pseudo_header", orm.Dict(dict=upf_info).store())
 
     def validate_structure(self):
         """validate structure"""
         res = get_pw_inputs_from_pseudo(pseudo=self.inputs.pseudo)
 
-        self.ctx.structure = res['structure']
-        self.ctx.pseudos = res['pseudos']
-        self.ctx.base_pw_parameters = res['base_pw_parameters']
+        self.ctx.structure = res["structure"]
+        self.ctx.pseudos = res["pseudos"]
+        self.ctx.base_pw_parameters = res["base_pw_parameters"]
 
     def run_ref(self):
         """
@@ -177,13 +228,12 @@ class BaseConvergenceWorkChain(WorkChain):
         ecutrho = cutoff_pair[1]
         inputs = self.get_create_process_inputs()
 
-        inputs['parameters']['ecutwfc'] = orm.Float(ecutwfc)
-        inputs['parameters']['ecutrho'] = orm.Float(ecutrho)
+        inputs["parameters"]["ecutwfc"] = orm.Float(ecutwfc)
+        inputs["parameters"]["ecutrho"] = orm.Float(ecutrho)
 
         running = self.submit(self.get_create_process(), **inputs)
 
-        self.report(
-            f'launching reference CohesiveEnergyWorkChain<{running.pk}>.')
+        self.report(f"launching reference CohesiveEnergyWorkChain<{running.pk}>.")
 
         return ToContext(ref_workchain=running)
 
@@ -217,48 +267,40 @@ class BaseConvergenceWorkChain(WorkChain):
 
         if not ref_workchain.is_finished_ok:
             self.report(
-                f'Reference run of CohesiveEnergyWorkChain failed with exit status {ref_workchain.exit_status}'
+                f"Reference run of CohesiveEnergyWorkChain failed with exit status {ref_workchain.exit_status}"
             )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                pk=ref_workchain.pk)
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(pk=ref_workchain.pk)
 
         create_evaluate_inputs = {
-            'create_process': get_fullname(self.get_create_process()),
-            'evaluate_process': get_fullname(self.get_evaluate_process()),
-            'create': self.get_create_process_inputs(),
-            'evaluate': self.get_evaluate_process_inputs(),
-            'output_input_mapping': self.get_output_input_mapping(),
+            "create_process": get_fullname(self.get_create_process()),
+            "evaluate_process": get_fullname(self.get_evaluate_process()),
+            "create": self.get_create_process_inputs(),
+            "evaluate": self.get_evaluate_process_inputs(),
+            "output_input_mapping": self.get_output_input_mapping(),
         }
 
         input_values = list(zip(self.ctx.ecutwfc_list, self.ctx.ecutrho_list))
 
-        self.ctx.converge_y_name, self.ctx.converge_y_unit = self.get_converge_y(
-        )
+        self.ctx.converge_y_name, self.ctx.converge_y_unit = self.get_converge_y()
         inputs = {
-            'engine':
-            TwoInputsTwoFactorsConvergence,
-            'engine_kwargs':
-            orm.Dict(
+            "engine": TwoInputsTwoFactorsConvergence,
+            "engine_kwargs": orm.Dict(
                 dict={
-                    'input_values': input_values,
-                    'tol': self._TOLERANCE,
-                    'conv_thr': self._CONV_THR_CONV,
-                    'input_key': 'create.parameters.ecutwfc',
-                    'extra_input_key': 'create.parameters.ecutrho',
-                    'result_key':
-                    f'evaluate.result:{self.ctx.converge_y_name}',
-                    'convergence_window': self._CONV_WINDOW
-                }),
-            'evaluate_process':
-            CreateEvaluateWorkChain,
-            'evaluate':
-            create_evaluate_inputs,
+                    "input_values": input_values,
+                    "tol": self._TOLERANCE,
+                    "conv_thr": self._CONV_THR_CONV,
+                    "input_key": "create.parameters.ecutwfc",
+                    "extra_input_key": "create.parameters.ecutrho",
+                    "result_key": f"evaluate.result:{self.ctx.converge_y_name}",
+                    "convergence_window": self._CONV_WINDOW,
+                }
+            ),
+            "evaluate_process": CreateEvaluateWorkChain,
+            "evaluate": create_evaluate_inputs,
         }
 
         running = self.submit(OptimizationWorkChain, **inputs)
-        self.report(
-            f'submitting cohesive energy convergence workflow pk={running.pk}.'
-        )
+        self.report(f"submitting cohesive energy convergence workflow pk={running.pk}.")
         return ToContext(convergence_workchain=running)
 
     def results(self):
@@ -268,52 +310,46 @@ class BaseConvergenceWorkChain(WorkChain):
         workchain = self.ctx.convergence_workchain
 
         if workchain.is_finished_ok:
-            self.report(f'Convergence workflow pk={workchain.pk} finish ok.')
+            self.report(f"Convergence workflow pk={workchain.pk} finish ok.")
             optimal_process_uuid = workchain.outputs.optimal_process_uuid.value
             optimal_process = orm.load_node(optimal_process_uuid)
             res = {
-                'converge_ecutwfc':
-                optimal_process.inputs.create__parameters__ecutwfc,
-                'converge_ecutrho':
-                optimal_process.inputs.create__parameters__ecutrho,
-                'converge_value':
-                workchain.outputs.optimal_process_output.value,
-                'converge_process_uuid':
-                workchain.outputs.optimal_process_uuid.value,
+                "converge_ecutwfc": optimal_process.inputs.create__parameters__ecutwfc,
+                "converge_ecutrho": optimal_process.inputs.create__parameters__ecutrho,
+                "converge_value": workchain.outputs.optimal_process_output.value,
+                "converge_process_uuid": workchain.outputs.optimal_process_uuid.value,
             }
-            self.out('output_convergence_parameters',
-                     orm.Dict(dict=res).store())
+            self.out("output_convergence_parameters", orm.Dict(dict=res).store())
 
         if not workchain.is_finished:
             self.report(
-                f'Reference run of Convergence optimize workchain pk={workchain.pk} '
-                f'failed with exit status {workchain.exit_status}')
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                pk=workchain.pk)
+                f"Reference run of Convergence optimize workchain pk={workchain.pk} "
+                f"failed with exit status {workchain.exit_status}"
+            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(pk=workchain.pk)
 
         if workchain.is_finished and workchain.exit_status == 202:
             self.report(
-                f'Convergence workflow pk={workchain.pk} is finished but not converge.'
+                f"Convergence workflow pk={workchain.pk} is finished but not converge."
             )
 
         import numpy as np
 
         self.ctx.children = [
-            child for child in workchain.get_outgoing().all_nodes()
+            child
+            for child in workchain.get_outgoing().all_nodes()
             if isinstance(child, orm.WorkChainNode)
         ]
         pks = [child.pk for child in self.ctx.children if child.is_finished_ok]
         if len(pks) / len(self.ctx.children) < 0.8:
             self.report(
-                f'Not enough finish ok evaluate workflow, '
-                f'expect 80% only get number of {len(pks)} workflow, '
-                f'that is {len(pks) / len(self.ctx.children)} of total.')
-            return self.exit_codes.ERROR_NOT_ENOUGH_EVALUATE_WORKFLOW.format(
-                n=len(pks))
+                f"Not enough finish ok evaluate workflow, "
+                f"expect 80% only get number of {len(pks)} workflow, "
+                f"that is {len(pks) / len(self.ctx.children)} of total."
+            )
+            return self.exit_codes.ERROR_NOT_ENOUGH_EVALUATE_WORKFLOW.format(n=len(pks))
 
-        success_child = [
-            child for child in self.ctx.children if child.is_finished_ok
-        ]
+        success_child = [child for child in self.ctx.children if child.is_finished_ok]
         ecutwfc_list = []
         ecutrho_list = []
 
@@ -336,19 +372,18 @@ class BaseConvergenceWorkChain(WorkChain):
                 output_parameters_dict[key].append(res)
 
         for key in list(output_parameters_dict):
-            output_parameters_dict[f'{key}_description'] = results_parser_dict[
-                key]
+            output_parameters_dict[f"{key}_description"] = results_parser_dict[key]
 
-        output_parameters_dict['ecutwfc_list'] = ecutwfc_list
-        output_parameters_dict['ecutrho_list'] = ecutrho_list
+        output_parameters_dict["ecutwfc_list"] = ecutwfc_list
+        output_parameters_dict["ecutrho_list"] = ecutrho_list
 
         xy_data_ecutwfc = orm.XyData()
-        xy_data_ecutwfc.set_x(np.array(ecutwfc_list), 'wavefunction cutoff',
-                              'Rydberg')
+        xy_data_ecutwfc.set_x(np.array(ecutwfc_list), "wavefunction cutoff", "Rydberg")
 
         xy_data_ecutrho = orm.XyData()
-        xy_data_ecutrho.set_x(np.array(ecutrho_list), 'charge density cutoff',
-                              'Rydberg')
+        xy_data_ecutrho.set_x(
+            np.array(ecutrho_list), "charge density cutoff", "Rydberg"
+        )
 
         ys_list = []
         ys_description = []
@@ -358,9 +393,9 @@ class BaseConvergenceWorkChain(WorkChain):
             ys_description.append(y_value[0])
             ys_unit.append(y_value[1])
         xy_data_ecutwfc.set_y(ys_list, ys_description, ys_unit)
-        self.out('xy_data_ecutwfc', xy_data_ecutwfc.store())
+        self.out("xy_data_ecutwfc", xy_data_ecutwfc.store())
         xy_data_ecutrho.set_y(ys_list, ys_description, ys_unit)
-        self.out('xy_data_ecutrho', xy_data_ecutrho.store())
+        self.out("xy_data_ecutrho", xy_data_ecutrho.store())
 
         output_parameters = orm.Dict(dict=output_parameters_dict)
-        self.out('output_parameters', output_parameters.store())
+        self.out("output_parameters", output_parameters.store())

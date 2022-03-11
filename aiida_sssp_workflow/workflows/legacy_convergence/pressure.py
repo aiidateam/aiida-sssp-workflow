@@ -3,16 +3,17 @@
 Convergence test on pressure of a given pseudopotential
 """
 import importlib_resources
-
-from aiida.engine import calcfunction
 from aiida import orm
-from aiida.engine import append_
+from aiida.engine import append_, calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element, convergence_analysis
-from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
+from aiida_sssp_workflow.utils import (
+    convergence_analysis,
+    get_standard_cif_filename_from_element,
+    update_dict,
+)
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
+from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
@@ -73,7 +74,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
     # parameters control inner EOS reference workflow
     _EOS_SCALE_COUNT = 7
     _EOS_SCALE_INCREMENT = 0.02
-    
+
     _EVALUATE_WORKCHAIN = PressureWorkChain
     _MEASURE_OUT_PROPERTY = 'relative_diff'
 
@@ -103,7 +104,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
 
         # Read from protocol if parameters not set from inputs
         super().setup_code_parameters_from_protocol()
-        
+
         protocol = self.ctx.protocol_calculation['convergence']['pressure']
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
@@ -142,7 +143,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         self.report(
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
-        
+
     def setup_criteria_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
@@ -157,7 +158,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
-        # yapf: disable
         inputs = {
             'code': self.inputs.code,
             'pseudos': self.ctx.pseudos,
@@ -170,7 +170,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
             'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
-        # yapf: enable
 
         return inputs
 
@@ -224,10 +223,10 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         self.report(f'launching _EquationOfStateWorkChain<{running.pk}>')
 
         self.to_context(extra_reference=running)
-        
+
     def inspect_reference(self):
         super().inspect_reference()
-            
+
         workchain = self.ctx.extra_reference
         if not workchain.is_finished_ok:
             self.report(
@@ -235,7 +234,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
                 label='extra_reference')
-            
+
         extra_reference = self.ctx.extra_reference
         extra_reference_parameters = extra_reference.outputs.output_birch_murnaghan_fit
 
@@ -243,12 +242,12 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         B0 = extra_reference_parameters['bulk_modulus0']
         B1 = extra_reference_parameters['bulk_deriv0']
 
-        self.ctx.extra_parameters={
+        self.ctx.extra_parameters = {
             'V0': orm.Float(V0),
             'B0': orm.Float(B0),
             'B1': orm.Float(B1)
         }
-            
+
     def get_result_metadata(self):
         return {
             'absolute_unit': 'GPascal',

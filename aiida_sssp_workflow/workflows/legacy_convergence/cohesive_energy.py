@@ -3,15 +3,19 @@
 Convergence test on cohesive energy of a given pseudopotential
 """
 import importlib_resources
-
-from aiida.engine import append_, calcfunction, ToContext
 from aiida import orm
+from aiida.engine import ToContext, append_, calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import update_dict, \
-    get_standard_cif_filename_from_element, convergence_analysis
+from aiida_sssp_workflow.utils import (
+    convergence_analysis,
+    get_standard_cif_filename_from_element,
+    update_dict,
+)
+from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
+    CohesiveEnergyWorkChain,
+)
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
-from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import CohesiveEnergyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -39,7 +43,7 @@ def helper_cohesive_energy_difference(input_parameters: orm.Dict,
 class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
-    
+
     _EVALUATE_WORKCHAIN = CohesiveEnergyWorkChain
     _MEASURE_OUT_PROPERTY = 'absolute_diff'
 
@@ -69,7 +73,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
         # setting pseudos
         import_path = importlib_resources.path(
-            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
+            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_silicon = UpfData(stream)
             self.ctx.pseudos['Si'] = upf_silicon
@@ -147,7 +151,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
-        # yapf: disable
         inputs = {
             'code': self.inputs.code,
             'pseudos': self.ctx.pseudos,
@@ -162,7 +165,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
             'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
-        # yapf: enable
 
         return inputs
 

@@ -5,54 +5,49 @@ Running EquationOfStateWorkChain example
 You can import the necessary nodes of examples-node-archive
 (and config pw-6.6 code) to run this example.
 """
-from aiida.common import AttributeDict
 from aiida import orm
+from aiida.common import AttributeDict
 from aiida.engine import submit
+from aiida.plugins import CalculationFactory, WorkflowFactory
 
-from aiida.plugins import WorkflowFactory, CalculationFactory
-
-PwRelaxWorkChain = WorkflowFactory('quantumespresso.pw.relax')
-EOSWorkChain = WorkflowFactory('sssp_workflow.eos')
-birch_murnaghan_fit = CalculationFactory('sssp_workflow.birch_murnaghan_fit')
+PwRelaxWorkChain = WorkflowFactory("quantumespresso.pw.relax")
+EOSWorkChain = WorkflowFactory("sssp_workflow.eos")
+birch_murnaghan_fit = CalculationFactory("sssp_workflow.birch_murnaghan_fit")
 
 
 def run_eos(code, structure, pseudos):
     """eos run for silicon"""
     inputs = {
-        'structure': structure,
-        'scale_count': orm.Int(7),
-        'kpoints_distance': orm.Float(0.1),
-        'scf': {
-            'pw': {
-                'code':
-                code,
-                'pseudos':
-                pseudos,
-                'parameters':
-                orm.Dict(
+        "structure": structure,
+        "scale_count": orm.Int(7),
+        "kpoints_distance": orm.Float(0.1),
+        "scf": {
+            "pw": {
+                "code": code,
+                "pseudos": pseudos,
+                "parameters": orm.Dict(
                     dict={
-                        'SYSTEM': {
-                            'degauss': 0.00735,
-                            'ecutrho': 1600,
-                            'ecutwfc': 200,
-                            'occupations': 'smearing',
-                            'smearing': 'marzari-vanderbilt',
+                        "SYSTEM": {
+                            "degauss": 0.00735,
+                            "ecutrho": 1600,
+                            "ecutwfc": 200,
+                            "occupations": "smearing",
+                            "smearing": "marzari-vanderbilt",
                         },
-                        'ELECTRONS': {
-                            'conv_thr': 1e-10,
+                        "ELECTRONS": {
+                            "conv_thr": 1e-10,
                         },
-                    }),
-                'metadata': {
-                    'options': {
-                        'resources': {
-                            'num_machines': 1
-                        },
-                        'max_wallclock_seconds': 1800 * 2,
-                        'withmpi': True,
+                    }
+                ),
+                "metadata": {
+                    "options": {
+                        "resources": {"num_machines": 1},
+                        "max_wallclock_seconds": 1800 * 2,
+                        "withmpi": True,
                     },
                 },
             },
-        }
+        },
     }
     node = submit(EOSWorkChain, **inputs)
 
@@ -61,56 +56,50 @@ def run_eos(code, structure, pseudos):
 
 def run_relax(code, structure, pseudos):
     _BASE_PARA = {
-        'pw': {
-            'code':
-            code,
-            'pseudos':
-            pseudos,
-            'parameters':
-            orm.Dict(
+        "pw": {
+            "code": code,
+            "pseudos": pseudos,
+            "parameters": orm.Dict(
                 dict={
-                    'SYSTEM': {
-                        'degauss': 0.00735,
-                        'ecutrho': 1600,
-                        'ecutwfc': 200,
-                        'occupations': 'smearing',
-                        'smearing': 'marzari-vanderbilt',
+                    "SYSTEM": {
+                        "degauss": 0.00735,
+                        "ecutrho": 1600,
+                        "ecutwfc": 200,
+                        "occupations": "smearing",
+                        "smearing": "marzari-vanderbilt",
                     },
-                    'ELECTRONS': {
-                        'conv_thr': 1e-10,
+                    "ELECTRONS": {
+                        "conv_thr": 1e-10,
                     },
-                }),
-            'settings':
-            orm.Dict(dict={'CMDLINE': ['-ndiag', '1']}),
-            'metadata': {
-                'options': {
-                    'resources': {
-                        'num_machines': 1
-                    },
-                    'max_wallclock_seconds': 1800 * 2,
-                    'withmpi': True,
+                }
+            ),
+            "settings": orm.Dict(dict={"CMDLINE": ["-ndiag", "1"]}),
+            "metadata": {
+                "options": {
+                    "resources": {"num_machines": 1},
+                    "max_wallclock_seconds": 1800 * 2,
+                    "withmpi": True,
                 },
             },
         },
-        'kpoints_distance': orm.Float(0.1),
+        "kpoints_distance": orm.Float(0.1),
     }
     inputs = {
-        'structure': structure,
-        'base': _BASE_PARA,
-        'base_final_scf': _BASE_PARA,
+        "structure": structure,
+        "base": _BASE_PARA,
+        "base_final_scf": _BASE_PARA,
     }
     node = submit(PwRelaxWorkChain, **inputs)
 
     return node
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import importlib_resources
     from aiida.orm import load_code, load_node
-    from aiida.plugins import DbImporterFactory
-    from aiida.plugins import WorkflowFactory
+    from aiida.plugins import DbImporterFactory, WorkflowFactory
 
-    code = load_code('qe-6.6-pw@daint-mc')
+    code = load_code("qe-6.6-pw@daint-mc")
 
     # Retrieve and convert to primitive cell
     # cod = DbImporterFactory('cod')()
@@ -122,23 +111,23 @@ if __name__ == '__main__':
     structure = load_node(14903)
 
     # pseudos are from SSSP-v1.1 precision
-    fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                     'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
+    fpath = importlib_resources.path(
+        "aiida_sssp_workflow.REF.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.UPF"
+    )
     with fpath as path:
         filename = str(path)
         upf_silicon = orm.UpfData.get_or_create(filename)[0]
         si_pseudo = upf_silicon
 
-    fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                     'F.oncvpsp.upf')
+    fpath = importlib_resources.path("aiida_sssp_workflow.REF.UPFs", "F.oncvpsp.upf")
     with fpath as path:
         filename = str(path)
         upf_silicon = orm.UpfData.get_or_create(filename)[0]
         f_pseudo = upf_silicon
 
     pseudos = {
-        'Si': si_pseudo,
-        'F': f_pseudo,
+        "Si": si_pseudo,
+        "F": f_pseudo,
     }
 
     node = run_relax(code, structure, pseudos)

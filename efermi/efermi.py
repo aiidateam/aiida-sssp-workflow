@@ -13,14 +13,16 @@ HMCUT = 10.0  # Hermite cutoff
 POSHMA = -0.5634  # Positive Hermite (cold I) `a`
 
 
-def pyefermi(bands,
-             weights,
-             nelec: int,
-             swidth: float,
-             stype: int,
-             xacc: float = 1.0e-6,
-             jmax: int = 10000,
-             nmax: int = 100000) -> float:
+def pyefermi(
+    bands,
+    weights,
+    nelec: int,
+    swidth: float,
+    stype: int,
+    xacc: float = 1.0e-6,
+    jmax: int = 10000,
+    nmax: int = 100000,
+) -> float:
     """Find the Fermi energy using bisection."""
     # Get min, max eigenvalue and set as initial bounds
     x1 = np.min(bands)
@@ -41,7 +43,7 @@ def pyefermi(bands,
         else:
             break
     if f * fmid >= 0:
-        raise Exception('Could not bracket Fermi energy. Smearing too small?')
+        raise Exception("Could not bracket Fermi energy. Smearing too small?")
 
     # Set initial fermi energy guess
     if f < 0.0:
@@ -59,11 +61,10 @@ def pyefermi(bands,
         fmid = smear(bands, weights, xmid, nelec, swidth, stype)
         if fmid <= 0:
             rtb = xmid
-    raise Exception('Reached maximum number of bisections.')
+    raise Exception("Reached maximum number of bisections.")
 
 
-def smear(bands, weights, xe: float, nelec: int, swidth: float,
-          stype: int) -> float:
+def smear(bands, weights, xe: float, nelec: int, swidth: float, stype: int) -> float:
     """Calculate smeared value used for bisection."""
     sfuncs = [gaussian, fermid, delthm, spline, poshm, poshm2]
 
@@ -100,16 +101,16 @@ def delthm(x: float) -> float:
     elif x < -HMCUT:
         return 0.0
     else:
-        return (2.0 - erfc(x)) + x * np.exp(-x**2) / np.sqrt(np.pi)
+        return (2.0 - erfc(x)) + x * np.exp(-(x**2)) / np.sqrt(np.pi)
 
 
 def spline(x: float) -> float:
     """Gaussian spline."""
     x = -x
     if x > 0.0:
-        fx = np.sqrt(np.e) / 2 * np.exp(-(x + np.sqrt(2.0) / 2.0)**2)
+        fx = np.sqrt(np.e) / 2 * np.exp(-((x + np.sqrt(2.0) / 2.0) ** 2))
     else:
-        fx = 1.0 - np.sqrt(np.e) / 2 * np.exp(-(x - np.sqrt(2.0 / 2.0))**2)
+        fx = 1.0 - np.sqrt(np.e) / 2 * np.exp(-((x - np.sqrt(2.0 / 2.0)) ** 2))
     return 2.0 * fx
 
 
@@ -120,9 +121,9 @@ def poshm(x: float) -> float:
     elif x < -HMCUT:
         return 0.0
     else:
-        return (2.0 -
-                erfc(x)) + (-2.0 * POSHMA * x * x + 2.0 * x + POSHMA) * np.exp(
-                    -x * x) / np.sqrt(np.pi) / 2.0
+        return (2.0 - erfc(x)) + (-2.0 * POSHMA * x * x + 2.0 * x + POSHMA) * np.exp(
+            -x * x
+        ) / np.sqrt(np.pi) / 2.0
 
 
 def poshm2(x: float) -> float:
@@ -133,4 +134,5 @@ def poshm2(x: float) -> float:
         return 0.0
     else:
         return (2.0 - erfc(x - 1.0 / np.sqrt(2.0))) + np.sqrt(2.0) * np.exp(
-            -x**2 + np.sqrt(2.0) * x - 0.5) / np.sqrt(np.pi)
+            -(x**2) + np.sqrt(2.0) * x - 0.5
+        ) / np.sqrt(np.pi)

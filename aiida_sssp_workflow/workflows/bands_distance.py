@@ -2,18 +2,22 @@
 """
 Bands distance of many input pseudos
 """
-import yaml
 import importlib_resources
-
+import yaml
 from aiida import orm
-from aiida.engine import WorkChain, if_, append_
+from aiida.engine import WorkChain, append_, if_
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, update_dict, \
-    RARE_EARTH_ELEMENTS, \
-    get_standard_cif_filename_from_element
+from aiida_sssp_workflow.calculations.calculate_bands_distance import (
+    calculate_bands_distance,
+)
+from aiida_sssp_workflow.utils import (
+    NONMETAL_ELEMENTS,
+    RARE_EARTH_ELEMENTS,
+    get_standard_cif_filename_from_element,
+    update_dict,
+)
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
-from aiida_sssp_workflow.calculations.calculate_bands_distance import calculate_bands_distance
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -110,7 +114,7 @@ class BandsDistanceWorkChain(WorkChain):
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
         import_path = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                               'N.pbe-n-radius_5.UPF')
+                                               'N.pbe-n-radius_5.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_nitrogen = UpfData(stream)
             self.ctx.pseudo_N = upf_nitrogen

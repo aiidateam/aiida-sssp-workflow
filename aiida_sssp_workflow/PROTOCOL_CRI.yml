@@ -1,6 +1,7 @@
+---
 precision:
-    name: 'new SSSP precision'
-    description: 'Protocol to pick the precision pseudopotestials.'
+    name: new SSSP precision
+    description: Protocol to pick the precision pseudopotestials.
 
     convergence:
 
@@ -43,7 +44,7 @@ precision:
         bands_distance:
             occupations: smearing
             degauss: 0.00735
-            smearing: 'marzari-vanderbilt'
+            smearing: marzari-vanderbilt
             electron_conv_thr: 1.0e-8
             kpoints_distance: 0.5
 
@@ -52,8 +53,8 @@ precision:
 
 
 test:
-    name: 'test-only will be the precision and efficiency respectively'
-    description: 'Protocol to run test of workflow.'
+    name: test-only will be the precision and efficiency respectively
+    description: Protocol to run test of workflow.
 
     convergence:
 
@@ -96,7 +97,7 @@ test:
         bands_distance:
             occupations: smearing
             degauss: 0.00735
-            smearing: 'marzari-vanderbilt'
+            smearing: marzari-vanderbilt
             electron_conv_thr: 1.0e-8
             kpoints_distance: 0.5
 

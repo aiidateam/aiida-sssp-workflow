@@ -37,7 +37,7 @@
  &amp;inputp
    lpaw=.false.,
    pseudotype=3,
-   file_pseudopw='Si.pbe-n-rrkjus_psl.1.0.0.UPF',
+   file_pseudopw='Si.pbe-n-rrkjus_psl.1.0.0.upf',
    author='ADC',
    lloc=-1,
    rcloc=1.9,

@@ -1,8 +1,3 @@
-[![Build Status](https://github.com/aiidateam/aiida-sssp-workflow/workflows/ci/badge.svg?branch=master)](https://github.com/aiidateam/aiida-sssp-workflow/actions)
-[![Coverage Status](https://coveralls.io/repos/github/aiidateam/aiida-sssp-workflow/badge.svg?branch=master)](https://coveralls.io/github/aiidateam/aiida-sssp-workflow?branch=master)
-[![Docs status](https://readthedocs.org/projects/aiida-sssp-workflow/badge)](http://aiida-sssp-workflow.readthedocs.io/)
-[![PyPI version](https://badge.fury.io/py/aiida-sssp-workflow.svg)](https://badge.fury.io/py/aiida-sssp-workflow)
-
 # aiida-sssp-workflow
 
 The `aiida-sssp-workflow` is an aiida plugin to run the verification for a given pseudopotential. The plugin contains
@@ -87,7 +82,7 @@ It can:
 Re-generate the SiF4 structure start from the cif file from [COD database](http://www.crystallography.net/cod/index.php). Detail inputs parameters are list below.
 
 #### Pseudopotentials(SSSP-v1.1 precision)
-- Si: Si.pbe-n-rrkjus_psl.1.0.0.UPF
+- Si: Si.pbe-n-rrkjus_psl.1.0.0.upf
 - F: F.oncvpsp.upf
 
 #### Pw relax and eos
@@ -111,14 +106,19 @@ Re-generate the SiF4 structure start from the cif file from [COD database](http:
 - seven points
 - 0.02 interval
 
-## Publishing Releases
+## For maintainers
 
-1. Create a release PR/commit to the `develop` branch, updating version number of `aiida_sssp_workflow/__init__.py`, `setup.json` and update `CHANGELOG.md`.
-2. Fast-forward merge `develop` into the `master` branch
-3. Create a release on GitHub (<https://github.com/aiidateam/aiida-sssp-workflow/releases/new>), pointing to the release commit on `master`, named `v.X.Y.Z` (identical to version in `setup.json`)
-4. This will trigger the `continuous-deployment` GitHub workflow which, if all tests pass, will publish the package to PyPi. Check this has successfully completed in the GitHub Actions tab (<https://github.com/aiidateam/aiida-sssp-workflow/actions>).
+To create a new release, clone the repository, install development dependencies with `pip install '.[dev]'`, and then execute `bumpver update`.
+This will:
 
-(if the release fails, delete the release and tag)
+  1. Create a tagged release with bumped version and push it to the repository.
+  2. Trigger a GitHub actions workflow that creates a GitHub release.
+
+Additional notes:
+
+  - Use the `--dry` option to preview the release change.
+  - The release tag (e.g. a/b/rc) is determined from the last release.
+    Use the `--tag` option to switch the release tag.
 
 ## License
 
@@ -127,4 +127,4 @@ MIT
 
 ## Contact
 
-morty.yeu@gmail.com
+📧 email: jusong.yu@epfl.ch

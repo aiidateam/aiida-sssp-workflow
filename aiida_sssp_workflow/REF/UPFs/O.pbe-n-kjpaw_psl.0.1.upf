@@ -37,7 +37,7 @@
  &amp;inputp
    lpaw=.true.,
    pseudotype=3,
-   file_pseudopw='O.pbe-n-kjpaw_psl.0.1.UPF',
+   file_pseudopw='O.pbe-n-kjpaw_psl.0.1.upf',
    author='Lorenzo Paulatto, modified by ADC',
    lloc=2,
    which_augfun='BESSEL',

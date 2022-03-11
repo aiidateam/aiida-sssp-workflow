@@ -12,10 +12,10 @@ def validate_smearing(parameters, smearing=None):
         return
 
     valid_smearing_types = {
-        'gaussian': ['gaussian', 'gauss'],
-        'methfessel-paxton': ['methfessel-paxton', 'm-p', 'mp'],
-        'marzari-vanderbilt': ['marzari-vanderbilt', 'cold', 'm-v', 'mv'],
-        'fermi-dirac': ['fermi-dirac', 'f-d', 'fd'],
+        "gaussian": ["gaussian", "gauss"],
+        "methfessel-paxton": ["methfessel-paxton", "m-p", "mp"],
+        "marzari-vanderbilt": ["marzari-vanderbilt", "cold", "m-v", "mv"],
+        "fermi-dirac": ["fermi-dirac", "f-d", "fd"],
     }
 
     for _, options in valid_smearing_types.items():
@@ -27,8 +27,8 @@ def validate_smearing(parameters, smearing=None):
         )
 
     if not isinstance(smearing[1], float):
-        raise ValueError('the smearing value should be a float')
+        raise ValueError("the smearing value should be a float")
 
-    parameters['SYSTEM']['occupations'] = 'smearing'
-    parameters['SYSTEM']['smearing'] = smearing[0]
-    parameters['SYSTEM']['degauss'] = smearing[1]
+    parameters["SYSTEM"]["occupations"] = "smearing"
+    parameters["SYSTEM"]["smearing"] = smearing[0]
+    parameters["SYSTEM"]["degauss"] = smearing[1]

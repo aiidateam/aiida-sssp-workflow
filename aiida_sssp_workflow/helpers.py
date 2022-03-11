@@ -3,22 +3,25 @@
 Module comtain helper functions for workflows
 """
 import importlib_resources
-
+import seekpath
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
-from aiida.tools.data.structure import spglib_tuple_to_structure, structure_to_spglib_tuple
-import seekpath
+from aiida.tools.data.structure import (
+    spglib_tuple_to_structure,
+    structure_to_spglib_tuple,
+)
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, \
-    get_standard_cif_filename_from_element
+from aiida_sssp_workflow.utils import (
+    RARE_EARTH_ELEMENTS,
+    get_standard_cif_filename_from_element,
+)
 
-UpfData = DataFactory('pseudo.upf')
+UpfData = DataFactory("pseudo.upf")
 
 
 @calcfunction
-def helper_get_primitive_structure(structure,
-                                   **parameters) -> orm.StructureData:
+def helper_get_primitive_structure(structure, **parameters) -> orm.StructureData:
     """
     :param structure: The AiiDA StructureData for which we want to obtain
         the primitive structure.
@@ -29,16 +32,14 @@ def helper_get_primitive_structure(structure,
     """
     structure_tuple, kind_info, kinds = structure_to_spglib_tuple(structure)
 
-    rawdict = seekpath.get_explicit_k_path(structure=structure_tuple,
-                                           **parameters)
+    rawdict = seekpath.get_explicit_k_path(structure=structure_tuple, **parameters)
 
     # Replace primitive structure with AiiDA StructureData
-    primitive_lattice = rawdict.pop('primitive_lattice')
-    primitive_positions = rawdict.pop('primitive_positions')
-    primitive_types = rawdict.pop('primitive_types')
+    primitive_lattice = rawdict.pop("primitive_lattice")
+    primitive_positions = rawdict.pop("primitive_positions")
+    primitive_types = rawdict.pop("primitive_types")
     primitive_tuple = (primitive_lattice, primitive_positions, primitive_types)
-    primitive_structure = spglib_tuple_to_structure(primitive_tuple, kind_info,
-                                                    kinds)
+    primitive_structure = spglib_tuple_to_structure(primitive_tuple, kind_info, kinds)
 
     return primitive_structure
 
@@ -52,25 +53,24 @@ def helper_get_base_inputs(pseudo: UpfData, primitive_cell=True):
 
     pseudos = {element: pseudo}
 
-    if element == 'F':
+    if element == "F":
         # set element to 'SiF4' to use SiF4 structure for fluorine
-        element = orm.Str('SiF4')
+        element = orm.Str("SiF4")
 
-        fpath = importlib_resources.path('aiida_sssp_workflow.REF.UPFs',
-                                         'Si.pbe-n-rrkjus_psl.1.0.0.UPF')
+        fpath = importlib_resources.path(
+            "aiida_sssp_workflow.REF.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.upf"
+        )
         with fpath as path:
             filename = str(path)
             upf_silicon = UpfData.get_or_create(filename)[0]
-            pseudos['Si'] = upf_silicon
+            pseudos["Si"] = upf_silicon
 
     cif_file = get_standard_cif_filename_from_element(element)
 
     cif_data = orm.CifData.get_or_create(cif_file)[0]
 
     return {
-        'structure': cif_data.get_structure(primitive_cell=primitive_cell),
-        'pseudos': pseudos,
-        'base_pw_parameters': pw_parameters,
+        "structure": cif_data.get_structure(primitive_cell=primitive_cell),
+        "pseudos": pseudos,
+        "base_pw_parameters": pw_parameters,
     }
-
-

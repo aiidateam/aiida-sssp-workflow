@@ -4,12 +4,12 @@
 from .. import cmd_root
 
 
-@cmd_root.group('workflow')
+@cmd_root.group("workflow")
 def cmd_workflow():
     """Commands to launch and interact with workflows."""
 
 
-@cmd_workflow.group('launch')
+@cmd_workflow.group("launch")
 def cmd_launch():
     """Launch workflows."""
 
