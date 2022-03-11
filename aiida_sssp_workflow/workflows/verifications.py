@@ -37,14 +37,12 @@ def parse_pseudo_info(pseudo: UpfData):
     return orm.Dict(dict=info)
 
 
-DEFAULT_PROPERTIES_LIST = lambda: orm.List(
-    list=[
-        "delta_factor",
-        "convergence:cohesive_energy",
-        "convergence:phonon_frequencies",
-        "convergence:pressure",
-    ]
-)
+DEFAULT_PROPERTIES_LIST = [
+    "delta_factor",
+    "convergence:cohesive_energy",
+    "convergence:phonon_frequencies",
+    "convergence:pressure",
+]
 
 
 class VerificationWorkChain(WorkChain):
@@ -73,7 +71,7 @@ class VerificationWorkChain(WorkChain):
         spec.input('label', valid_type=orm.Str, required=False,
                     help='label store for display as extra attribut.')
         spec.input('properties_list', valid_type=orm.List,
-                    default=DEFAULT_PROPERTIES_LIST,
+                    default=lambda: orm.List(list=DEFAULT_PROPERTIES_LIST),
                     help='The preperties will be calculated, passed as a list.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
