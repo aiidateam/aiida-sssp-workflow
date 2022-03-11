@@ -110,7 +110,7 @@ class DeltaFactorWorkChain(WorkChain):
 
         # Import oxygen pseudopotential file and set the pseudos
         import_path = importlib.resources.path(
-            "aiida_sssp_workflow.REF.UPFs", "O.pbe-n-kjpaw_psl.0.1.upf"
+            "aiida_sssp_workflow.statics.UPFs", "O.pbe-n-kjpaw_psl.0.1.upf"
         )
         with import_path as pp_path, open(pp_path, "rb") as stream:
             pseudo_O = UpfData(stream)
@@ -145,7 +145,7 @@ class DeltaFactorWorkChain(WorkChain):
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
         import_path = importlib.resources.path(
-            "aiida_sssp_workflow.REF.UPFs", "N.pbe-n-radius_5.upf"
+            "aiida_sssp_workflow.statics.UPFs", "N.pbe-n-radius_5.upf"
         )
         with import_path as pp_path, open(pp_path, "rb") as stream:
             upf_nitrogen = UpfData(stream)

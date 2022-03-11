@@ -74,7 +74,7 @@ def delta_analyze(element, structure, V0, B0, B1) -> orm.Dict:
     if "O" in structure.value:
         # oxides
         import_path = importlib.resources.path(
-            "aiida_sssp_workflow.REF.AE_EOS", "WIEN2K_OXIDES.json"
+            "aiida_sssp_workflow.statics.AE_EOS", "WIEN2K_OXIDES.json"
         )
         with import_path as path, open(path, "rb") as handle:
             data = json.load(handle)

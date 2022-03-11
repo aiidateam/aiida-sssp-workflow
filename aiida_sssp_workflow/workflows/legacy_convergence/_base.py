@@ -189,7 +189,7 @@ class BaseLegacyWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib.resources.path('aiida_sssp_workflow.REF.UPFs',
+        import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
                                                'N.pbe-n-radius_5.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_nitrogen = UpfData(stream)
@@ -229,7 +229,7 @@ class BaseLegacyWorkChain(WorkChain):
 
         # setting pseudos
         import_path = importlib.resources.path(
-            'aiida_sssp_workflow.REF.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
+            'aiida_sssp_workflow.statics.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
         with import_path as pp_path, open(pp_path, 'rb') as stream:
             upf_silicon = UpfData(stream)
             self.ctx.pseudos['Si'] = upf_silicon

@@ -76,11 +76,11 @@ def get_standard_cif_filename_from_element(element: str) -> str:
     """
     if element in RARE_EARTH_ELEMENTS:
         fpath = importlib.resources.path(
-            "aiida_sssp_workflow.REF.CIFs_REN", f"{element}N.cif"
+            "aiida_sssp_workflow.statics.CIFs_REN", f"{element}N.cif"
         )
     else:
         fpath = importlib.resources.path(
-            "aiida_sssp_workflow.REF.CIFs", f"{element}.cif"
+            "aiida_sssp_workflow.statics.CIFs", f"{element}.cif"
         )
     with fpath as path:
         filename = str(path)
@@ -101,14 +101,14 @@ def get_standard_cif_filename_dict_from_element(element: str) -> dict:
         raise ValueError(f"Not supported yet for element={element}.")
     else:
         fpath = importlib.resources.path(
-            "aiida_sssp_workflow.REF.CIFs", f"{element}.cif"
+            "aiida_sssp_workflow.statics.CIFs", f"{element}.cif"
         )
         with fpath as path:
             cif_dict["X"] = str(path)
 
         for s in ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]:
             fpath = importlib.resources.path(
-                "aiida_sssp_workflow.REF.CIFs_OXIDES", f"{element}_{s}.cif"
+                "aiida_sssp_workflow.statics.CIFs_OXIDES", f"{element}_{s}.cif"
             )
             with fpath as path:
                 cif_dict[s] = str(path)

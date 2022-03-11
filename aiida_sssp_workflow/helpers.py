@@ -59,7 +59,7 @@ def helper_get_base_inputs(pseudo: UpfData, primitive_cell=True):
         element = orm.Str("SiF4")
 
         fpath = importlib.resources.path(
-            "aiida_sssp_workflow.REF.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.upf"
+            "aiida_sssp_workflow.statics.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.upf"
         )
         with fpath as path:
             filename = str(path)

@@ -113,14 +113,16 @@ if __name__ == "__main__":
 
     # pseudos are from SSSP-v1.1 precision
     fpath = importlib.resources.path(
-        "aiida_sssp_workflow.REF.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.UPF"
+        "aiida_sssp_workflow.statics.UPFs", "Si.pbe-n-rrkjus_psl.1.0.0.UPF"
     )
     with fpath as path:
         filename = str(path)
         upf_silicon = orm.UpfData.get_or_create(filename)[0]
         si_pseudo = upf_silicon
 
-    fpath = importlib.resources.path("aiida_sssp_workflow.REF.UPFs", "F.oncvpsp.upf")
+    fpath = importlib.resources.path(
+        "aiida_sssp_workflow.statics.UPFs", "F.oncvpsp.upf"
+    )
     with fpath as path:
         filename = str(path)
         upf_silicon = orm.UpfData.get_or_create(filename)[0]
