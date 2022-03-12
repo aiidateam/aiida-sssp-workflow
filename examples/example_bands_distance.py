@@ -37,7 +37,6 @@ def run_bands_chessboard(code, d_input_upfs):
 
 
 if __name__ == "__main__":
-    from os.path import basename, splitext
 
     from aiida.orm import load_code
 

@@ -2,17 +2,12 @@
 """
 Convergence test on phonon frequencies of a given pseudopotential
 """
-import importlib
 
 from aiida import orm
-from aiida.engine import ToContext, append_, calcfunction
+from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import (
-    convergence_analysis,
-    get_standard_cif_filename_from_element,
-    update_dict,
-)
+from aiida_sssp_workflow.utils import update_dict
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import (
     PhononFrequenciesWorkChain,
 )
@@ -58,18 +53,15 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
 
+    _PROPERTY_NAME = 'phonon_frequencies'
     _EVALUATE_WORKCHAIN = PhononFrequenciesWorkChain
     _MEASURE_OUT_PROPERTY = 'relative_diff'
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,
                     help='The `ph.x` code use for the `PhCalculation`.')
-        # yapy: enable
 
     def init_setup(self):
         super().init_setup()
@@ -98,25 +90,22 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
 
         # Read from protocol if parameters not set from inputs
         super().setup_code_parameters_from_protocol()
-        protocol = self.ctx.protocol_calculation['convergence']['phonon_frequencies']
+
+        protocol = self.ctx.protocol
+        # PW
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
         self._CONV_THR = protocol['electron_conv_thr']
         self._KDISTANCE = protocol['kpoints_distance']
+
+        # PH
         self._QPOINTS_LIST = protocol['qpoints_list']
+        self._PH_EPSILON = protocol['epsilon']
+        self._PH_TR2_PH = protocol['tr2_ph']
 
-        self._PH_EPSILON = protocol['ph']['epsilon']
-        self._PH_TR2_PH = protocol['ph']['tr2_ph']
-
-        self._MAX_EVALUATE = protocol['max_evaluate']
-        self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
-        self._NUM_OF_RHO_TEST = protocol['num_of_rho_test']
 
         self.ctx.qpoints_list = self._QPOINTS_LIST
-
-        self.ctx.max_evaluate = self._MAX_EVALUATE
-        self.ctx.reference_ecutwfc = self._REFERENCE_ECUTWFC
 
         self.ctx.pw_parameters = {
             'SYSTEM': {
@@ -154,15 +143,6 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         self.report(
             f'The ph parameters for convergence is: {self.ctx.ph_parameters}'
         )
-
-    def setup_criteria_parameters_from_protocol(self):
-        """Input validation"""
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-
-        # Read from protocol if parameters not set from inputs
-        super().setup_criteria_parameters_from_protocol()
-
-        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['phonon_frequencies']
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """

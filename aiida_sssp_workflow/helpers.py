@@ -13,10 +13,7 @@ from aiida.tools.data.structure import (
     structure_to_spglib_tuple,
 )
 
-from aiida_sssp_workflow.utils import (
-    RARE_EARTH_ELEMENTS,
-    get_standard_cif_filename_from_element,
-)
+from aiida_sssp_workflow.utils import get_standard_cif_filename_from_element
 
 UpfData = DataFactory("pseudo.upf")
 

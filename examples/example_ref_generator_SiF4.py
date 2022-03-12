@@ -6,7 +6,6 @@ You can import the necessary nodes of examples-node-archive
 (and config pw-6.6 code) to run this example.
 """
 from aiida import orm
-from aiida.common import AttributeDict
 from aiida.engine import submit
 from aiida.plugins import CalculationFactory, WorkflowFactory
 
@@ -98,7 +97,7 @@ if __name__ == "__main__":
     import importlib
 
     from aiida.orm import load_code, load_node
-    from aiida.plugins import DbImporterFactory, WorkflowFactory
+    from aiida.plugins import WorkflowFactory
 
     code = load_code("qe-6.6-pw@daint-mc")
 

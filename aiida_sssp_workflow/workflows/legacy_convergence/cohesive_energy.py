@@ -5,11 +5,10 @@ Convergence test on cohesive energy of a given pseudopotential
 import importlib
 
 from aiida import orm
-from aiida.engine import ToContext, append_, calcfunction
+from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
-    convergence_analysis,
     get_standard_cif_filename_from_element,
     update_dict,
 )
@@ -45,19 +44,13 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
     # pylint: disable=too-many-instance-attributes
 
+    _PROPERTY_NAME = 'cohesive_energy'
     _EVALUATE_WORKCHAIN = CohesiveEnergyWorkChain
     _MEASURE_OUT_PROPERTY = 'absolute_diff'
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        # yapf: disable
-        spec.input('code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        # yapy: enable
-
     def init_setup(self):
         super().init_setup()
+        self.ctx.extra_pw_parameters = {}
 
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
@@ -86,24 +79,19 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         # Read from protocol if parameters not set from inputs
         super().setup_code_parameters_from_protocol()
 
-        protocol = self.ctx.protocol_calculation['convergence']['cohesive_energy']
+        # parse protocol
+        protocol = self.ctx.protocol
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
-        self._BULK_SMEARING = protocol['bulk_smearing']
+        self._BULK_SMEARING = protocol['smearing']
         self._ATOM_SMEARING = protocol['atom_smearing']
         self._CONV_THR = protocol['electron_conv_thr']
         self._KDISTANCE = protocol['kpoints_distance']
         self._VACUUM_LENGTH = protocol['vacuum_length']
 
-        self._MAX_EVALUATE = protocol['max_evaluate']
-        self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
-        self._NUM_OF_RHO_TEST = protocol['num_of_rho_test']
-
+        # Set context parameters
         self.ctx.vacuum_length = self._VACUUM_LENGTH
-
-        self.ctx.max_evaluate = self._MAX_EVALUATE
-        self.ctx.reference_ecutwfc = self._REFERENCE_ECUTWFC
-
+        self.ctx.kpoints_distance = self._KDISTANCE
         self.ctx.bulk_parameters = {
             'SYSTEM': {
                 'degauss': self._DEGAUSS,
@@ -129,8 +117,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             },
         }
 
-        self.ctx.kpoints_distance = self._KDISTANCE
-
         self.report(
             f'The bulk parameters for convergence is: {self.ctx.bulk_parameters}'
         )
@@ -138,22 +124,13 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             f'The atom parameters for convergence is: {self.ctx.atom_parameters}'
         )
 
-    def setup_criteria_parameters_from_protocol(self):
-        """Input validation"""
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-
-        # Read from protocol if parameters not set from inputs
-        super().setup_criteria_parameters_from_protocol()
-
-        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['cohesive_energy']
-
     def _get_inputs(self, ecutwfc, ecutrho):
         """
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
         inputs = {
-            'code': self.inputs.code,
+            'code': self.inputs.pw_code,
             'pseudos': self.ctx.pseudos,
             'structure': self.ctx.structure,
             'bulk_parameters': orm.Dict(dict=self.ctx.bulk_parameters),

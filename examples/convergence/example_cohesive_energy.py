@@ -5,7 +5,6 @@ Running cohesive energy convergence workflow
 """
 import os
 
-import numpy as np
 from aiida import orm
 from aiida.engine import run_get_node
 from aiida.plugins import DataFactory, WorkflowFactory

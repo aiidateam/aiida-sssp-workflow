@@ -76,7 +76,7 @@ class BandsDistanceWorkChain(WorkChain):
     def _get_protocol(self):
         """Load and read protocol from faml file to a verbose dict"""
         import_path = importlib.resources.path('aiida_sssp_workflow',
-                                               'PROTOCOL_CALC.yml')
+                                               'protocol_calc.yml')
         with import_path as pp_path, open(pp_path, 'rb') as handle:
             self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 

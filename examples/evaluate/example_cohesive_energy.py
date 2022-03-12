@@ -5,7 +5,6 @@ Running cohesive energy convergence workflow
 """
 import os
 
-import numpy as np
 from aiida import orm
 from aiida.engine import run_get_node
 from aiida.plugins import DataFactory
@@ -78,7 +77,6 @@ def run_cohesive_eva(code, pseudos, ecutwfc=30.0, ecutrho=120.0):
 
 
 if __name__ == "__main__":
-    from aiida import load_profile
     from aiida.orm import load_code
 
     code = load_code("pw-6.7@localhost")

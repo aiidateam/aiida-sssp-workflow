@@ -50,10 +50,6 @@ class VerificationWorkChain(WorkChain):
 
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
 
-    # ecutwfc evaluate list, the normal reference 200Ry not included
-    # since reference will anyway included at final inspect step
-    _ECUTWFC_LIST = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150]
-
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -64,9 +60,11 @@ class VerificationWorkChain(WorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+        spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The calculation protocol to use for the workchain.')
-        spec.input('protocol_criteria', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+        spec.input('criteria', valid_type=orm.Str, required=True,
+                    help='Criteria for convergence measurement to give recommend cutoff pair.')
+        spec.input('cutoff_control', valid_type=orm.Str, required=True,
                     help='The criteria protocol to use for the workchain.')
         spec.input('label', valid_type=orm.Str, required=False,
                     help='label store for display as extra attribut.')
@@ -74,9 +72,9 @@ class VerificationWorkChain(WorkChain):
                     default=lambda: orm.List(list=DEFAULT_PROPERTIES_LIST),
                     help='The preperties will be calculated, passed as a list.')
         spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
+                    help='Optional `options`')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
+                    help='Parallelization options')
         spec.input('clean_workdir_level', valid_type=orm.Int, default=lambda: orm.Int(1),
                     help='0 for not clean; 1 for clean finished ok workchain; 9 for clean all.')
 
@@ -149,8 +147,10 @@ class VerificationWorkChain(WorkChain):
         self.node.set_extra("label", label)
 
         base_inputs = {
+            "pw_code": self.inputs.pw_code,
             "pseudo": self.inputs.pseudo,
-            "protocol_calculation": self.inputs.protocol_calculation,
+            "protocol": self.inputs.protocol,
+            "cutoff_control": self.inputs.cutoff_control,
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
             "clean_workdir": orm.Bool(
@@ -158,31 +158,26 @@ class VerificationWorkChain(WorkChain):
             ),  # not clean for sub-workflow clean at final
         }
 
-        self.ctx.delta_measure_inputs = base_inputs.copy()
-        self.ctx.delta_measure_inputs["code"] = self.inputs.pw_code
+        base_conv_inputs = base_inputs.copy()
+        base_conv_inputs["criteria"] = self.inputs.criteria
 
-        self.ctx.cohesive_energy_inputs = base_inputs.copy()
-        self.ctx.cohesive_energy_inputs["code"] = self.inputs.pw_code
-        self.ctx.cohesive_energy_inputs[
-            "protocol_criteria"
-        ] = self.inputs.protocol_criteria
+        # Delta measure inputs setting
+        inputs = base_inputs.copy()
+        self.ctx.delta_measure_inputs = inputs
 
-        self.ctx.phonon_frequencies_inputs = base_inputs.copy()
-        self.ctx.phonon_frequencies_inputs["pw_code"] = self.inputs.pw_code
-        self.ctx.phonon_frequencies_inputs["ph_code"] = self.inputs.ph_code
-        self.ctx.phonon_frequencies_inputs[
-            "protocol_criteria"
-        ] = self.inputs.protocol_criteria
+        # Convergence inputs setting
+        inputs = base_conv_inputs.copy()
+        self.ctx.cohesive_energy_inputs = inputs
 
-        self.ctx.pressure_inputs = base_inputs.copy()
-        self.ctx.pressure_inputs["code"] = self.inputs.pw_code
-        self.ctx.pressure_inputs["protocol_criteria"] = self.inputs.protocol_criteria
+        inputs = base_conv_inputs.copy()
+        inputs["ph_code"] = self.inputs.ph_code
+        self.ctx.phonon_frequencies_inputs = inputs
 
-        self.ctx.bands_distance_inputs = base_inputs.copy()
-        self.ctx.bands_distance_inputs["code"] = self.inputs.pw_code
-        self.ctx.bands_distance_inputs[
-            "protocol_criteria"
-        ] = self.inputs.protocol_criteria
+        inputs = base_conv_inputs.copy()
+        self.ctx.pressure_inputs = inputs
+
+        inputs = base_conv_inputs.copy()
+        self.ctx.bands_distance_inputs = inputs
 
         # to collect workchains in a dict
         self.ctx.workchains = {}

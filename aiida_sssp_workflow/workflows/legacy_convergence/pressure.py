@@ -2,17 +2,11 @@
 """
 Convergence test on pressure of a given pseudopotential
 """
-import importlib
-
 from aiida import orm
-from aiida.engine import append_, calcfunction
+from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import (
-    convergence_analysis,
-    get_standard_cif_filename_from_element,
-    update_dict,
-)
+from aiida_sssp_workflow.utils import update_dict
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
@@ -72,20 +66,9 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on pressure of input structure"""
     # pylint: disable=too-many-instance-attributes
 
-    # parameters control inner EOS reference workflow
-    _EOS_SCALE_COUNT = 7
-    _EOS_SCALE_INCREMENT = 0.02
-
+    _PROPERTY_NAME = 'pressure'
     _EVALUATE_WORKCHAIN = PressureWorkChain
     _MEASURE_OUT_PROPERTY = 'relative_diff'
-
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        # yapf: disable
-        spec.input('code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        # yapy: enable
 
     def init_setup(self):
         super().init_setup()
@@ -106,19 +89,15 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         # Read from protocol if parameters not set from inputs
         super().setup_code_parameters_from_protocol()
 
-        protocol = self.ctx.protocol_calculation['convergence']['pressure']
+        protocol = self.ctx.protocol
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
         self._CONV_THR = protocol['electron_conv_thr']
         self._KDISTANCE = protocol['kpoints_distance']
 
-        self._MAX_EVALUATE = protocol['max_evaluate']
-        self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
-        self._NUM_OF_RHO_TEST = protocol['num_of_rho_test']
-
-        self.ctx.max_evaluate = self._MAX_EVALUATE
-        self.ctx.reference_ecutwfc = self._REFERENCE_ECUTWFC
+        self._EOS_SCALE_COUNT = protocol['scale_count']
+        self._EOS_SCALE_INCREMENT = protocol['scale_increment']
 
         self.ctx.pw_parameters = {
             'SYSTEM': {
@@ -145,22 +124,13 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
 
-    def setup_criteria_parameters_from_protocol(self):
-        """Input validation"""
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-
-        # Read from protocol if parameters not set from inputs
-        super().setup_criteria_parameters_from_protocol()
-
-        self.ctx.criteria = self.ctx.protocol_criteria['convergence']['pressure']
-
     def _get_inputs(self, ecutwfc, ecutrho):
         """
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
         inputs = {
-            'code': self.inputs.code,
+            'code': self.inputs.pw_code,
             'pseudos': self.ctx.pseudos,
             'structure': self.ctx.structure,
             'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
@@ -185,8 +155,8 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         # for it which need to be run before the following step.
 
         # This workflow is shared with delta factor workchain for birch murnagan fitting.
-        ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.init_dual
+        ecutwfc = self._REFERENCE_ECUTWFC
+        ecutrho = ecutwfc * self.ctx.dual
         parameters = {
             'SYSTEM': {
                 'ecutwfc': ecutwfc,
@@ -197,7 +167,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
                                              parameters)
 
         self.report(f'{self.ctx.pw_parameters}')
-        # yapf: disable
         inputs = {
             'structure': self.ctx.structure,
             'kpoints_distance': orm.Float(self._KDISTANCE),
@@ -208,7 +177,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
             },
             'scf': {
                 'pw': {
-                    'code': self.inputs.code,
+                    'code': self.inputs.pw_code,
                     'pseudos': self.ctx.pseudos,
                     'parameters': orm.Dict(dict=self.ctx.pw_parameters),
                     'metadata': {
@@ -218,7 +187,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
                 },
             }
         }
-        # yapf: enable
 
         running = self.submit(_EquationOfStateWorkChain, **inputs)
         self.report(f'launching _EquationOfStateWorkChain<{running.pk}>')

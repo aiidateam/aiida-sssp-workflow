@@ -14,6 +14,11 @@ repos:
       hooks:
           - id: yamlfmt
 
+    - repo: https://github.com/ikamensh/flynt/
+      rev: '0.76'
+      hooks:
+          - id: flynt
+
     - repo: https://github.com/psf/black
       rev: 22.1.0
       hooks:
@@ -41,8 +46,13 @@ repos:
                     ^tests/ |
                     ^examples/ |
                     ^docs/ |
-                    ^aiida_sssp_workflow/
                 )
+
+    - repo: https://github.com/hadialqattan/pycln
+      rev: v1.2.5
+      hooks:
+          - id: pycln
+            args: [--config=pyproject.toml]
 
     - repo: https://github.com/pycqa/isort
       rev: 5.10.1

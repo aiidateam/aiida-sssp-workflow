@@ -5,7 +5,6 @@ Running cohesive energy convergence workflow
 """
 import os
 
-import numpy as np
 from aiida import orm
 from aiida.engine import run_get_node
 from aiida.plugins import DataFactory
@@ -84,7 +83,6 @@ def run_phonon_frequencies_eva(pw_code, ph_code, pseudos, ecutwfc=30.0, ecutrho=
 
 
 if __name__ == "__main__":
-    from aiida import load_profile
     from aiida.orm import load_code
 
     pw_code = load_code("pw-6.7@localhost")
