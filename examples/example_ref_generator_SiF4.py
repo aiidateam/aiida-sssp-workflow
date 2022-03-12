@@ -28,11 +28,11 @@ def run_eos(code, structure, pseudos):
                 "parameters": orm.Dict(
                     dict={
                         "SYSTEM": {
-                            "degauss": 0.00735,
+                            "degauss": 0.0045,
                             "ecutrho": 1600,
                             "ecutwfc": 200,
                             "occupations": "smearing",
-                            "smearing": "marzari-vanderbilt",
+                            "smearing": "cold",
                         },
                         "ELECTRONS": {
                             "conv_thr": 1e-10,
@@ -62,11 +62,11 @@ def run_relax(code, structure, pseudos):
             "parameters": orm.Dict(
                 dict={
                     "SYSTEM": {
-                        "degauss": 0.00735,
+                        "degauss": 0.0045,
                         "ecutrho": 1600,
                         "ecutwfc": 200,
                         "occupations": "smearing",
-                        "smearing": "marzari-vanderbilt",
+                        "smearing": "cold",
                     },
                     "ELECTRONS": {
                         "conv_thr": 1e-10,

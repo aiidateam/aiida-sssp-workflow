@@ -12,7 +12,7 @@ def test_update_dict():
         "SYSTEM": {
             "degauss": 0.02,
             "occupations": "smearing",
-            "smearing": "marzari-vanderbilt",
+            "smearing": "cold",
         },
         "ELECTRONS": {
             "conv_thr": 1e-10,

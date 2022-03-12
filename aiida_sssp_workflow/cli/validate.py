@@ -14,7 +14,7 @@ def validate_smearing(parameters, smearing=None):
     valid_smearing_types = {
         "gaussian": ["gaussian", "gauss"],
         "methfessel-paxton": ["methfessel-paxton", "m-p", "mp"],
-        "marzari-vanderbilt": ["marzari-vanderbilt", "cold", "m-v", "mv"],
+        "cold": ["marzari-vanderbilt", "cold", "m-v", "mv"],
         "fermi-dirac": ["fermi-dirac", "f-d", "fd"],
     }
 

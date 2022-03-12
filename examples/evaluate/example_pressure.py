@@ -19,9 +19,9 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../", "_s
 
 pw_base_parameters = {
     "SYSTEM": {
-        "degauss": 0.00735,
+        "degauss": 0.0045,
         "occupations": "smearing",
-        "smearing": "marzari-vanderbilt",
+        "smearing": "cold",
     },
     "ELECTRONS": {
         "conv_thr": 1.0e-8,

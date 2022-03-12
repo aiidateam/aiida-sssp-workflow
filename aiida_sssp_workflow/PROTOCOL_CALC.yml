@@ -6,7 +6,7 @@ theos:
     delta_factor:
         occupations: smearing
         degauss: 0.0045
-        smearing: marzari-vanderbilt
+        smearing: fd
         electron_conv_thr: 1.0e-10
         kpoints_distance: 0.10
         ecutwfc: 200.0
@@ -17,8 +17,8 @@ theos:
 
         cohesive_energy:
             occupations: smearing
-            degauss: 0.00735
-            bulk_smearing: marzari-vanderbilt
+            degauss: 0.0045
+            bulk_smearing: cold
             atom_smearing: gaussian
             electron_conv_thr: 1.0e-10
             kpoints_distance: 0.15
@@ -30,8 +30,8 @@ theos:
 
         phonon_frequencies:
             occupations: smearing
-            degauss: 0.00735
-            smearing: marzari-vanderbilt
+            degauss: 0.0045
+            smearing: cold
             electron_conv_thr: 1.0e-10
             kpoints_distance: 0.15
             qpoints_list:
@@ -46,8 +46,8 @@ theos:
 
         pressure:
             occupations: smearing
-            degauss: 0.00735
-            smearing: marzari-vanderbilt
+            degauss: 0.0045
+            smearing: cold
             electron_conv_thr: 1.0e-10
             kpoints_distance: 0.15
 
@@ -57,8 +57,8 @@ theos:
 
         bands_distance:
             occupations: smearing
-            degauss: 0.00735
-            smearing: marzari-vanderbilt
+            degauss: 0.0045
+            smearing: cold
             electron_conv_thr: 1.0e-10
             kpoints_distance: 0.15
 
@@ -66,25 +66,25 @@ theos:
             reference_ecutwfc: 200.0
             num_of_rho_test: 10 # number of calculation in fix wfc cutoff stage
 
-test:
-    name: test-only
-    description: Protocol to run test of workflow.
+local:
+    name: local
+    description: Resource un-stringent setting allow to run on local workstation
 
     delta_factor:
         occupations: smearing
         degauss: 0.0045
-        smearing: marzari-vanderbilt
-        electron_conv_thr: 1.0e-6
-        kpoints_distance: 0.5
-        ecutwfc: 60.0
-        wall_time_seconds: 3600
+        smearing: fd
+        electron_conv_thr: 1.0e-8
+        kpoints_distance: 0.1
+        ecutwfc: 100.0
+        wall_time_seconds: 43200
         scale_count: 7
         scale_increment: 0.02
 
     bands_distance:
         occupations: smearing
-        degauss: 0.00735
-        smearing: marzari-vanderbilt
+        degauss: 0.0045
+        smearing: cold
         electron_conv_thr: 1.0e-8
         kpoints_distance: 0.5
         ecutwfc: 50.0
@@ -94,8 +94,8 @@ test:
 
         cohesive_energy:
             occupations: smearing
-            degauss: 0.00735
-            bulk_smearing: marzari-vanderbilt
+            degauss: 0.0045
+            bulk_smearing: cold
             atom_smearing: gaussian
             electron_conv_thr: 1.0e-8
             kpoints_distance: 0.5
@@ -107,8 +107,8 @@ test:
 
         phonon_frequencies:
             occupations: smearing
-            degauss: 0.00735
-            smearing: marzari-vanderbilt
+            degauss: 0.0045
+            smearing: cold
             electron_conv_thr: 1.0e-6
             kpoints_distance: 0.5
             qpoints_list:
@@ -123,8 +123,8 @@ test:
 
         pressure:
             occupations: smearing
-            degauss: 0.00735
-            smearing: marzari-vanderbilt
+            degauss: 0.0045
+            smearing: cold
             electron_conv_thr: 1.0e-8
             kpoints_distance: 0.5
 
@@ -134,8 +134,84 @@ test:
 
         bands_distance:
             occupations: smearing
-            degauss: 0.00735
-            smearing: marzari-vanderbilt
+            degauss: 0.0045
+            smearing: cold
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+
+test:
+    name: test-only
+    description: Protocol to run test of workflow.
+
+    delta_factor:
+        occupations: smearing
+        degauss: 0.0045
+        smearing: fd
+        electron_conv_thr: 1.0e-6
+        kpoints_distance: 0.5
+        ecutwfc: 60.0
+        wall_time_seconds: 3600
+        scale_count: 7
+        scale_increment: 0.02
+
+    bands_distance:
+        occupations: smearing
+        degauss: 0.0045
+        smearing: cold
+        electron_conv_thr: 1.0e-8
+        kpoints_distance: 0.5
+        ecutwfc: 50.0
+        ecutrho: 400.0
+
+    convergence:
+
+        cohesive_energy:
+            occupations: smearing
+            degauss: 0.0045
+            bulk_smearing: cold
+            atom_smearing: gaussian
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+            vacuum_length: 12.0
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+            num_of_rho_test: 5 # number of calculation in fix wfc cutoff stage
+
+        phonon_frequencies:
+            occupations: smearing
+            degauss: 0.0045
+            smearing: cold
+            electron_conv_thr: 1.0e-6
+            kpoints_distance: 0.5
+            qpoints_list:
+                - [0.5, 0.5, 0.5]
+            ph:
+                epsilon: false
+                tr2_ph: 1.0e-8
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+            num_of_rho_test: 5 # number of calculation in fix wfc cutoff stage
+
+        pressure:
+            occupations: smearing
+            degauss: 0.0045
+            smearing: cold
+            electron_conv_thr: 1.0e-8
+            kpoints_distance: 0.5
+
+            max_evaluate: 3 # number of evaluation run, not include ref
+            reference_ecutwfc: 60.0
+            num_of_rho_test: 5 # number of calculation in fix wfc cutoff stage
+
+        bands_distance:
+            occupations: smearing
+            degauss: 0.0045
+            smearing: cold
             electron_conv_thr: 1.0e-8
             kpoints_distance: 0.5
 
