@@ -21,13 +21,13 @@ def run_verification(pw_code, ph_code, upf):
         "ph_code": ph_code,
         "pseudo": upf,
         "protocol_calculation": orm.Str("test"),
-        "protocol_criteria": orm.Str("test"),
+        "protocol_criteria": orm.Str("efficiency"),
         "properties_list": orm.List(
             list=[
-                "delta_factor",
+                # "delta_measure",
                 "convergence:cohesive_energy",
-                "convergence:phonon_frequencies",
-                "convergence:pressure",
+                # "convergence:phonon_frequencies",
+                # "convergence:pressure",
             ]
         ),
         "options": orm.Dict(

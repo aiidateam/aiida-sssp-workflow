@@ -42,7 +42,7 @@ fixbug for the workflows and restructure the repository
 ### 0.1.0b0
 The initial (pre) release contain the most workflows
 
-- workflow delta_factor
+- workflow delta_measure
 - the cli tool for delta factor calculation
 - the convergence workflow integrate with aiida-optimize
 - workflow convergence cohesive energy

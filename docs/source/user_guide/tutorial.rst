@@ -65,7 +65,7 @@ are reached within the pre-setting energy cutoff list the outputs would be the f
         xy_data_ecutwfc                28109  XyData
         xy_data_ecutrho                28110  XyData
         output_parameters              28111  Dict
-    delta_factor
+    delta_measure
         output_pseudo_header           26858  Dict
         output_eos_parameters          27143  Dict
         output_birch_murnaghan_fit     27242  Dict

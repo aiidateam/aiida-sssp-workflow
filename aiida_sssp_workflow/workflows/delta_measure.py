@@ -198,7 +198,7 @@ class DeltaFactorWorkChain(WorkChain):
         # Read from protocol if parameters not set from inputs
         protocol_name = self.inputs.protocol_calculation.value
         protocol = self._get_protocol()[protocol_name]
-        protocol = protocol["delta_factor"]
+        protocol = protocol["delta_measure"]
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]

@@ -9,7 +9,7 @@ from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
-DeltaFactorWorkChain = WorkflowFactory("sssp_workflow.delta_factor")
+DeltaFactorWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
 ConvergenceCohesiveEnergy = WorkflowFactory(
     "sssp_workflow.legacy_convergence.cohesive_energy"
 )
@@ -38,7 +38,7 @@ def parse_pseudo_info(pseudo: UpfData):
 
 
 DEFAULT_PROPERTIES_LIST = [
-    "delta_factor",
+    "delta_measure",
     "convergence:cohesive_energy",
     "convergence:phonon_frequencies",
     "convergence:pressure",
@@ -88,7 +88,7 @@ class VerificationWorkChain(WorkChain):
         )
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
-        spec.output_namespace('delta_factor', dynamic=True,
+        spec.output_namespace('delta_measure', dynamic=True,
                             help='results of delta factor calculation.')
         spec.output_namespace('convergence_cohesive_energy', dynamic=True,
                             help='results of convergence cohesive energy calculation.')
@@ -158,8 +158,8 @@ class VerificationWorkChain(WorkChain):
             ),  # not clean for sub-workflow clean at final
         }
 
-        self.ctx.delta_factor_inputs = base_inputs.copy()
-        self.ctx.delta_factor_inputs["code"] = self.inputs.pw_code
+        self.ctx.delta_measure_inputs = base_inputs.copy()
+        self.ctx.delta_measure_inputs["code"] = self.inputs.pw_code
 
         self.ctx.cohesive_energy_inputs = base_inputs.copy()
         self.ctx.cohesive_energy_inputs["code"] = self.inputs.pw_code
@@ -196,12 +196,12 @@ class VerificationWorkChain(WorkChain):
         ##
         # delta factor
         ##
-        if "delta_factor" in properties_list:
-            running = self.submit(DeltaFactorWorkChain, **self.ctx.delta_factor_inputs)
+        if "delta_measure" in properties_list:
+            running = self.submit(DeltaFactorWorkChain, **self.ctx.delta_measure_inputs)
             self.report(f"submit workchain delta factor pk={running}")
 
-            self.to_context(verify_delta_factor=running)
-            self.ctx.workchains["delta_factor"] = running
+            self.to_context(verify_delta_measure=running)
+            self.ctx.workchains["delta_measure"] = running
 
         ##
         # Cohesive energy
