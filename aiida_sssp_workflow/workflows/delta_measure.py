@@ -296,31 +296,27 @@ class DeltaFactorWorkChain(WorkChain):
     def run_delta_analyze(self):
         """calculate the delta factor"""
 
-        for structure_name in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:
+        for configuration in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:
             try:
-                output_bmf = self.outputs[structure_name].get(
+                output_bmf = self.outputs[configuration].get(
                     "output_birch_murnaghan_fit"
                 )
             except KeyError:
-                self.report(f"Can not get the key {structure_name} from outputs.")
+                self.report(f"Can not get the key {configuration} from outputs.")
                 continue
 
-            if "O" in structure_name:
-                # delta analyze of unitary structures, V0 is per atoms, B1 unit is GPa
-                V0 = orm.Float(output_bmf["volume0"])
-            else:
-                # delta analyze of oxide structures, V0 is whole structure, B1 unit is eV A^3
-                V0 = orm.Float(output_bmf["volume0"] / output_bmf["num_of_atoms"])
+            V0 = orm.Float(output_bmf["volume0"])
+
             inputs = {
                 "element": orm.Str(self.ctx.element),
-                "structure": orm.Str(structure_name),
+                "configuration": orm.Str(configuration),
                 "V0": V0,
                 "B0": orm.Float(output_bmf["bulk_modulus0"]),
                 "B1": orm.Float(output_bmf["bulk_deriv0"]),
             }
 
             self.out(
-                f"output_delta_analyze.output_{structure_name}", delta_analyze(**inputs)
+                f"output_delta_analyze.output_{configuration}", delta_analyze(**inputs)
             )
 
     def on_terminated(self):

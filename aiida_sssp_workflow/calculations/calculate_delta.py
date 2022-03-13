@@ -66,28 +66,30 @@ def helper_get_v0_b0_b1(element: str, structure: str):
 
 
 @calcfunction
-def delta_analyze(element, structure, V0, B0, B1) -> orm.Dict:
+def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
     """
-    if "O" in structure.value:
-        # oxides
-        import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.AE_EOS", "WIEN2K_OXIDES.json"
-        )
-        with import_path as path, open(path, "rb") as handle:
-            data = json.load(handle)
-
-        BM_fit = data["BM_fit_data"][f"{element.value}-{structure.value}"]
-        ref_V0, ref_B0, ref_B1 = (
-            BM_fit["min_volume"],
-            BM_fit["bulk_modulus_ev_ang3"],
-            BM_fit["bulk_deriv"],
-        )
+    if "O" in configuration.value:
+        ref_json = "WIEN2K_OXIDES.json"
+        conf_name = configuration.value
     else:
-        # unitary structures
-        ref_V0, ref_B0, ref_B1 = helper_get_v0_b0_b1(element.value, structure.value)
+        ref_json = "WIEN2K_UNARIES.json"
+        conf_name = f"X/{configuration.value}"
+
+    import_path = importlib.resources.path(
+        "aiida_sssp_workflow.statics.AE_EOS", ref_json
+    )
+    with import_path as path, open(path, "rb") as handle:
+        data = json.load(handle)
+
+    BM_fit = data["BM_fit_data"][f"{element.value}-{conf_name}"]
+    ref_V0, ref_B0, ref_B1 = (
+        BM_fit["min_volume"],
+        BM_fit["bulk_modulus_ev_ang3"],
+        BM_fit["bulk_deriv"],
+    )
 
     # Delta computation
     Delta, Deltarel, Delta1 = _calcDelta(
