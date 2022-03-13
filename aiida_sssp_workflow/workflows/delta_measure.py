@@ -11,7 +11,7 @@ from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
 from aiida_sssp_workflow.utils import (
     RARE_EARTH_ELEMENTS,
     get_protocol,
-    get_standard_cif_filename_dict_from_element,
+    get_standard_structure,
     update_dict,
 )
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
@@ -27,6 +27,7 @@ class DeltaFactorWorkChain(WorkChain):
 
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
     _OXIDE_STRUCTURES = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
+    _UNARIE_STRUCTURES = ["BCC", "FCC", "SC", "Diamond"]
 
     @classmethod
     def define(cls, spec):
@@ -62,20 +63,11 @@ class DeltaFactorWorkChain(WorkChain):
             cls.inspect_eos,
             cls.run_delta_analyze,
         )
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X EOS.'})
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='XO',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from XO EOS.'})
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='XO2',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from XO2 EOS.'})
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='XO3',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from XO3 EOS.'})
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X2O',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X2O EOS.'})
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X2O3',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X2O3 EOS.'})
-        spec.expose_outputs(_EquationOfStateWorkChain, namespace='X2O5',
-                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from X2O5 EOS.'})
+        # namespace for storing all detail of run on each configuration
+        for configuration in cls._OXIDE_STRUCTURES + cls._UNARIE_STRUCTURES:
+            spec.expose_outputs(_EquationOfStateWorkChain, namespace=configuration,
+                        namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from {configuration} EOS.'})
+
         spec.output_namespace('output_delta_analyze', dynamic=True,
                     help='The output of delta factor and other measures to describe the accuracy of EOS compare '
                         ' with the AE equation of state.')
@@ -116,15 +108,14 @@ class DeltaFactorWorkChain(WorkChain):
         # https://doi.org/10.1016/j.commatsci.2014.07.030 and from
         # common-workflow set from
         # https://github.com/aiidateam/commonwf-oxides-scripts/tree/main/0-preliminary-do-not-run/cifs-set2
-        cif_dict = get_standard_cif_filename_dict_from_element(element)
 
-        # keys here are: X, (BCC), (FCC), XO, XO2, (XO3), (X2O), (X2O3), (X2O5)
+        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5
         # parentatheses means not supported yet.
         self.ctx.structures = {}
-        for key in cif_dict.keys():
-            self.ctx.structures[key] = orm.CifData.get_or_create(
-                cif_dict[key], use_first=True
-            )[0].get_structure(primitive_cell=False)
+        for configuration in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:
+            self.ctx.structures[configuration] = get_standard_structure(
+                element, configuration
+            )
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
@@ -305,7 +296,7 @@ class DeltaFactorWorkChain(WorkChain):
     def run_delta_analyze(self):
         """calculate the delta factor"""
 
-        for structure_name in ["X"] + self._OXIDE_STRUCTURES:
+        for structure_name in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:
             try:
                 output_bmf = self.outputs[structure_name].get(
                     "output_birch_murnaghan_fit"
