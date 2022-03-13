@@ -4,11 +4,26 @@
 import collections.abc
 import importlib
 
+import yaml
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 UpfData = DataFactory("pseudo.upf")
+
+
+def get_protocol(category, name):
+    """Load and read protocol from faml file to a verbose dict"""
+    import_path = importlib.resources.path(
+        "aiida_sssp_workflow.protocol", f"{category}.yml"
+    )
+    with import_path as pp_path, open(pp_path, "rb") as handle:
+        protocol_dict = yaml.safe_load(
+            handle
+        )  # pylint: disable=attribute-defined-outside-init
+
+    return protocol_dict[name]
+
 
 RARE_EARTH_ELEMENTS = [
     "La",
@@ -238,14 +253,13 @@ def convergence_analysis(xy: orm.List, criteria: orm.Dict):
     """
     # sort xy
     sorted_xy = sorted(xy.get_list(), key=lambda k: k[0], reverse=True)
-    criteria_dict = criteria.get_dict()
-    mode = criteria_dict["mode"]
-    parameters = criteria_dict["parameters"]
+    criteria = criteria.get_dict()
+    mode = criteria["mode"]
 
     cutoff, value = sorted_xy[0]
     if mode == 0:
-        bounds = parameters["bounds"]
-        eps = parameters["eps"]
+        bounds = criteria["bounds"]
+        eps = criteria["eps"]
         # from max cutoff, after some x all y is out of bound
         for x, y in sorted_xy:
             if bounds[0] - eps < y < bounds[1] + eps:

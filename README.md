@@ -90,11 +90,11 @@ Re-generate the SiF4 structure start from the cif file from [COD database](http:
 ##### pwscf parameters
 ```
 'SYSTEM': {
-    'degauss': 0.00735,
+    'degauss': 0.0045,
     'ecutrho': 1600,
     'ecutwfc': 200,
     'occupations': 'smearing',
-    'smearing': 'marzari-vanderbilt',
+    'smearing': 'cold',
 },
 'ELECTRONS': {
     'conv_thr': 1e-10,

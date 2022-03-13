@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
 import importlib
+from unicodedata import name
 
-import yaml
 from aiida import orm
-from aiida.engine import ToContext, WorkChain, append_, if_
+from aiida.engine import WorkChain, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
 from aiida_sssp_workflow.utils import (
-    MAGNETIC_ELEMENTS,
     RARE_EARTH_ELEMENTS,
+    get_protocol,
     get_standard_cif_filename_dict_from_element,
-    get_standard_cif_filename_from_element,
-    helper_get_magnetic_inputs,
     update_dict,
 )
 from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
@@ -35,12 +33,14 @@ class DeltaFactorWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('code', valid_type=orm.Code,
+        spec.input('pw_code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
-                    help='The protocol to use for the workchain.')
+        spec.input('protocol', valid_type=orm.Str, required=True,
+                    help='The protocol which define input calculation parameters.')
+        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('cluster'),
+                    help='The control protocol where define max_wfc.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -82,18 +82,6 @@ class DeltaFactorWorkChain(WorkChain):
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
                     message=f'The {_EquationOfStateWorkChain.__name__} sub process failed.')
         # yapf: enable
-
-    def _get_protocol(self):
-        """Load and read protocol from faml file to a verbose dict"""
-        import_path = importlib.resources.path(
-            "aiida_sssp_workflow", "PROTOCOL_CALC.yml"
-        )
-        with import_path as pp_path, open(pp_path, "rb") as handle:
-            self._protocol = yaml.safe_load(
-                handle
-            )  # pylint: disable=attribute-defined-outside-init
-
-            return self._protocol
 
     def init_setup(self):
         """
@@ -196,18 +184,19 @@ class DeltaFactorWorkChain(WorkChain):
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol_name = self.inputs.protocol_calculation.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol["delta_factor"]
+        protocol = get_protocol(category="delta", name=self.inputs.protocol.value)
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
         self._CONV_THR = protocol["electron_conv_thr"]
-
         self._KDISTANCE = protocol["kpoints_distance"]
-        self._ECUTWFC = protocol["ecutwfc"]
         self._SCALE_COUNT = protocol["scale_count"]
         self._SCALE_INCREMENT = protocol["scale_increment"]
+
+        cutoff_control = get_protocol(
+            category="control", name=self.inputs.cutoff_control.value
+        )
+        self._ECUTWFC = cutoff_control["max_wfc"]
 
         parameters = {
             "SYSTEM": {
@@ -220,13 +209,6 @@ class DeltaFactorWorkChain(WorkChain):
                 "conv_thr": self._CONV_THR,
             },
         }
-
-        # # set the ecutrho according to the type of pseudopotential
-        # # dual 4 for NC and 8 for all other type of PP.
-        # if self.ctx.pseudo_type in ['NC', 'SL']:
-        #     dual = 4.0
-        # else:
-        #     dual = 8.0
 
         # TBD: Always use dual=8 since pseudo_O here is non-NC
         parameters["SYSTEM"]["ecutrho"] = self._ECUTWFC * 8
@@ -271,7 +253,7 @@ class DeltaFactorWorkChain(WorkChain):
             "metadata": {"call_link_label": f"{name}_EOS"},
             "scf": {
                 "pw": {
-                    "code": self.inputs.code,
+                    "code": self.inputs.pw_code,
                     "pseudos": pseudos,
                     "parameters": orm.Dict(dict=self.ctx.pw_parameters),
                     "metadata": {"options": self.ctx.options},

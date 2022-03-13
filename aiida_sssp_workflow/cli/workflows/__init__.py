@@ -14,5 +14,5 @@ def cmd_launch():
     """Launch workflows."""
 
 
-from .delta_factor import launch_workflow
+from .delta_measure import launch_workflow
 from .verification import launch_workflow

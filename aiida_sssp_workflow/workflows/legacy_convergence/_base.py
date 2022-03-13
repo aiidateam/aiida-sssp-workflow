@@ -5,16 +5,15 @@ Base legacy work chain
 import importlib
 from abc import ABCMeta, abstractmethod
 
-import yaml
 from aiida import orm
 from aiida.engine import WorkChain, append_, if_
 from aiida.plugins import DataFactory
-from argon2 import extract_parameters
 
 from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
     RARE_EARTH_ELEMENTS,
     convergence_analysis,
+    get_protocol,
     get_standard_cif_filename_from_element,
     helper_get_magnetic_inputs,
     update_dict,
@@ -45,12 +44,7 @@ class BaseLegacyWorkChain(WorkChain):
 
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
 
-    # ecutwfc evaluate list, the normal reference 200Ry not included
-    # since reference will anyway included at final inspect step
-    _ECUTWFC_LIST = [
-        30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150
-    ]
-
+    _PROPERTY_NAME = abstract_attribute()
     _EVALUATE_WORKCHAIN = abstract_attribute()
     _MEASURE_OUT_PROPERTY = abstract_attribute()
 
@@ -58,16 +52,20 @@ class BaseLegacyWorkChain(WorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
+        spec.input('pw_code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('protocol_calculation', valid_type=orm.Str, default=lambda: orm.Str('theos'),
+        spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The calculation protocol to use for the workchain.')
-        spec.input('protocol_criteria', valid_type=orm.Str, default=lambda: orm.Str('theos'),
-                    help='The criteria protocol to use for the workchain.')
+        spec.input('cutoff_control', valid_type=orm.Str, required=True,
+                    help='The cutoff control list to use for the workchain.')
+        spec.input('criteria', valid_type=orm.Str, required=True,
+                    help='Criteria for convergence measurement to give recommend cutoff pair.')
         spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
+                    help='Optional `options`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
+                    help='Parallelization options')
         spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
                     help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
 
@@ -102,19 +100,6 @@ class BaseLegacyWorkChain(WorkChain):
             message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
 
-    def _get_protocol(self, ptype):
-        """Load and read protocol from faml file to a verbose dict"""
-        if ptype == 'calculation':
-            filename = 'PROTOCOL_CALC.yml'
-        else:
-            filename = 'PROTOCOL_CRI.yml'
-
-        import_path = importlib.resources.path('aiida_sssp_workflow', filename)
-        with import_path as pp_path, open(pp_path, 'rb') as handle:
-            self._protocol = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
-
-            return self._protocol
-
     def init_setup(self):
         """
         This step contains all preparation before actaul setup, e.g. set
@@ -122,6 +107,10 @@ class BaseLegacyWorkChain(WorkChain):
         """
         # parse pseudo and output its header information
         from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
+
+        cutoff_control = get_protocol(category='control', name=self.inputs.cutoff_control.value)
+        self._ECUTWFC_LIST = cutoff_control['wfc_scan']
+        self._REFERENCE_ECUTWFC = self._ECUTWFC_LIST[-1]    # use the last cutoff as reference
 
         self.ctx.extra_pw_parameters = {}
         content = self.inputs.pseudo.get_content()
@@ -133,22 +122,18 @@ class BaseLegacyWorkChain(WorkChain):
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 10 for all other type of PP.
         if self.ctx.pseudo_type in ['NC', 'SL']:
-            self.ctx.init_dual = 4.0
-            self.ctx.min_dual = 2.0
-            self.ctx.max_dual = 4.0
-            self.ctx.dual_scan_list = [2.0, 2.5, 3.0, 3.5, 4.0]
+            self.ctx.dual = 4.0
+            self.ctx.dual_scan_list = cutoff_control['nc_dual_scan']
         else:
             # the initial dual set to 10 to make sure it is enough and converged
             # In the follow up steps will converge on ecutrho
-            self.ctx.init_dual = 8.0
-            self.ctx.min_dual = 6.0
+            self.ctx.dual = 8.0
 
             # For the non-NC pseudos we should be careful that high charge density cutoff
             # is needed.
-            # We set the scan range from dual=8.0 to dual=18.0 to find the best
+            # We recommond to set the scan wide range from to find the best
             # charge density cutoff.
-            self.ctx.max_dual = self.ctx.init_dual + 10
-            self.ctx.dual_scan_list = [6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 12.0, 15.0, 18.0]
+            self.ctx.dual_scan_list = cutoff_control['nonnc_dual_scan']
 
         # TODO: for extrem high dual elements: O Fe Hf etc.
 
@@ -235,14 +220,18 @@ class BaseLegacyWorkChain(WorkChain):
             self.ctx.pseudos['Si'] = upf_silicon
 
     def setup_code_parameters_from_protocol(self):
-        """Input validation"""
-        protocol_name = self.inputs.protocol_calculation.value
-        self.ctx.protocol_calculation = self._get_protocol(ptype='calculation')[protocol_name]
+        """unzip and parse protocol parameters to context"""
+        protocol = get_protocol(category='converge', name=self.inputs.protocol.value)
+        self.ctx.protocol = {
+            **protocol['base'],
+            **protocol[self._PROPERTY_NAME]
+        }
 
     def setup_criteria_parameters_from_protocol(self):
         """Input validation"""
-        protocol_name = self.inputs.protocol_criteria.value
-        self.ctx.protocol_criteria = self._get_protocol(ptype='criteria')[protocol_name]
+        self.ctx.criteria = get_protocol(
+            category='criteria', name=self.inputs.criteria.value
+        )[self._PROPERTY_NAME]
 
     def setup_code_resource_options(self):
         """
@@ -270,8 +259,8 @@ class BaseLegacyWorkChain(WorkChain):
         """
         run on reference calculation
         """
-        ecutwfc = self.ctx.reference_ecutwfc
-        ecutrho = ecutwfc * self.ctx.init_dual
+        ecutwfc = self._REFERENCE_ECUTWFC
+        ecutrho = ecutwfc * self.ctx.dual
         inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
         running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
@@ -282,8 +271,8 @@ class BaseLegacyWorkChain(WorkChain):
     def inspect_reference(self):
         try:
             workchain = self.ctx.reference
-        except AttributeError as exc:
-            raise RuntimeError('Reference evaluation is not triggered') from exc
+        except AttributeError as e:
+            raise RuntimeError('Reference evaluation is not triggered') from e
 
         if not workchain.is_finished_ok:
             self.report(
@@ -296,10 +285,9 @@ class BaseLegacyWorkChain(WorkChain):
         """
         run on all other evaluation sample points
         """
-        ecutrho = self._REFERENCE_ECUTWFC * self.ctx.init_dual
+        ecutrho = self._REFERENCE_ECUTWFC * self.ctx.dual
 
-        for idx in range(self.ctx.max_evaluate):
-            ecutwfc = self._ECUTWFC_LIST[idx]
+        for ecutwfc in self._ECUTWFC_LIST[:-1]: # The last one is reference
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
@@ -310,7 +298,7 @@ class BaseLegacyWorkChain(WorkChain):
 
     def inspect_wfc_convergence_test(self):
         # include reference node in the last
-        sample_nodes = self.ctx.children_wfc + [self.ctx.reference]
+        sample_nodes = self.ctx.children_wfc
 
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
@@ -328,9 +316,8 @@ class BaseLegacyWorkChain(WorkChain):
         # from the fix dual result find the converge wfc cutoff
         x = output_parameters['ecutwfc']
         y = output_parameters[self._MEASURE_OUT_PROPERTY]
-        criteria = self.ctx.criteria['wfc_test']
         res = convergence_analysis(orm.List(list=list(zip(x, y))),
-                                   orm.Dict(dict=criteria))
+                                   orm.Dict(dict=self.ctx.criteria))
 
         self.ctx.wfc_cutoff, y_value = res['cutoff'].value, res['value'].value
 
@@ -340,9 +327,8 @@ class BaseLegacyWorkChain(WorkChain):
 
     def run_rho_convergence_test(self):
         """
-        run on all other evaluation sample points
+        run rho converge test on fix wfc cutoff
         """
-        import numpy as np
 
         ecutwfc = self.ctx.wfc_cutoff
         for dual in self.ctx.dual_scan_list:
@@ -375,9 +361,8 @@ class BaseLegacyWorkChain(WorkChain):
         # from the fix wfc cutoff result find the converge rho cutoff
         x = output_parameters['ecutrho']
         y = output_parameters[self._MEASURE_OUT_PROPERTY]
-        criteria = self.ctx.criteria['rho_test']
         res = convergence_analysis(orm.List(list=list(zip(x, y))),
-                                    orm.Dict(dict=criteria))
+                                    orm.Dict(dict=self.ctx.criteria))
         self.ctx.rho_cutoff, y_value = res['cutoff'].value, res[
             'value'].value
 

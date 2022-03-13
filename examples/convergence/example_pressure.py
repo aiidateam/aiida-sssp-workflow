@@ -3,7 +3,7 @@
 import numpy as np
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.engine import run_get_node, submit
+from aiida.engine import submit
 from aiida.plugins import WorkflowFactory
 
 from aiida_sssp_workflow.workflows.helper import helper_get_v0_b0_b1

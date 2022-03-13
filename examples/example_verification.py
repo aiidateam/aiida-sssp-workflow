@@ -20,11 +20,12 @@ def run_verification(pw_code, ph_code, upf):
         "pw_code": pw_code,
         "ph_code": ph_code,
         "pseudo": upf,
-        "protocol_calculation": orm.Str("test"),
-        "protocol_criteria": orm.Str("test"),
+        "protocol": orm.Str("test"),
+        "criteria": orm.Str("efficiency"),
+        "cutoff_control": orm.Str("test"),
         "properties_list": orm.List(
             list=[
-                "delta_factor",
+                "delta_measure",
                 "convergence:cohesive_energy",
                 "convergence:phonon_frequencies",
                 "convergence:pressure",

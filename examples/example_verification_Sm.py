@@ -22,7 +22,7 @@ def run_verification(pw_code, ph_code, upf, dual=4.0):
         "pseudo": upf,
         "properties_list": orm.List(
             list=[
-                # 'delta_factor',
+                # 'delta_measure',
                 "convergence:cohesive_energy",
                 # 'convergence:phonon_frequencies',
                 # 'convergence:pressure'

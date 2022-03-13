@@ -45,7 +45,7 @@ def launch_workflow(
 
     UpfData = DataFactory("pseudo.upf")
 
-    builder = WorkflowFactory("sssp_workflow.delta_factor").get_builder()
+    builder = WorkflowFactory("sssp_workflow.delta_measure").get_builder()
 
     pseudo_abspath = os.path.abspath(pseudo)
     with open(pseudo_abspath, "rb") as stream:

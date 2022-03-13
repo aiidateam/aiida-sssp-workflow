@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from aiida import orm
-from aiida.common import AttributeDict
 from aiida.engine import submit
 from aiida.plugins import WorkflowFactory
 
