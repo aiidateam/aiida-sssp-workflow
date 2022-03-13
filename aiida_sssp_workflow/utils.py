@@ -131,6 +131,31 @@ def get_standard_cif_filename_dict_from_element(element: str) -> dict:
     return cif_dict
 
 
+def get_standard_structure(element: str, configuration: str) -> orm.StructureData:
+    """get the cif data node from element and configuration
+
+    Args:
+        element (str): element
+        configuration (str): BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5
+
+    Returns:
+        orm.StructureData: return a orm.StructureData
+    """
+    if "O" in configuration:
+        data_module = "aiida_sssp_workflow.statics.CIFs_OXIDES"
+    else:
+        data_module = "aiida_sssp_workflow.statics.CIFs_UNARIES"
+
+    with importlib.resources.path(
+        data_module, f"{element}_{configuration}.cif"
+    ) as path:
+        structure = orm.CifData.get_or_create(str(path), use_first=True)[
+            0
+        ].get_structure(primitive_cell=False)
+
+    return structure
+
+
 def parse_upf(upf_content: str) -> dict:
     """
 
