@@ -227,6 +227,28 @@ class BaseLegacyWorkChain(WorkChain):
             **protocol[self._PROPERTY_NAME]
         }
 
+    @staticmethod
+    def _get_pw_base_parameters(degauss, occupations, smearing, conv_thr):
+        """Return base pw parameters dict for all convengence bulk workflow
+        Unchanged dict for caching purpose"""
+        parameters = {
+            'SYSTEM': {
+                'degauss': degauss,
+                'occupations': occupations,
+                'smearing': smearing,
+            },
+            'ELECTRONS': {
+                'conv_thr': conv_thr,
+            },
+            'CONTROL': {
+                'calculation': 'scf',
+                'wf_collect': True,
+                'tstress': True,
+            },
+        }
+
+        return parameters
+
     def setup_criteria_parameters_from_protocol(self):
         """Input validation"""
         self.ctx.criteria = get_protocol(

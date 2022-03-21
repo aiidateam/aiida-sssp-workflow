@@ -4,7 +4,7 @@ All in one verification workchain
 """
 # pylint: disable=cyclic-import
 from aiida import orm
-from aiida.engine import WorkChain
+from aiida.engine import WorkChain, if_
 from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
@@ -80,9 +80,19 @@ class VerificationWorkChain(WorkChain):
 
         spec.outline(
             cls.setup_code_resource_options,
+            cls.parse_pseudo,
             cls.init_setup,
-            cls.run_verifications,
-            cls.report_and_results,
+            if_(cls.is_verify_delta_measure)(
+                cls.run_delta_measure,
+                cls.inspect_delta_measure,
+            ),
+            if_(cls.is_verify_convergence)(
+                if_(cls.is_caching)(
+                    cls.run_caching,
+                ),
+                cls.run_convergence,
+                cls.inspect_convergence,
+            ),
         )
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
@@ -131,18 +141,23 @@ class VerificationWorkChain(WorkChain):
 
         return f"{element}/z={z_valence}/{pp_type}"
 
+    def parse_pseudo(self):
+        """parse pseudo"""
+        pseudo_info = parse_pseudo_info(self.inputs.pseudo)
+        self.ctx.pseudo_info = pseudo_info.get_dict()
+        self.node.set_extra_many(
+            self.ctx.pseudo_info
+        )  # set the extra attributes for the node
+
+        self.out("pseudo_info", pseudo_info)
+
     def init_setup(self):
         """prepare inputs for all verification process"""
-
-        # set the extra attributes for the node
-        self.ctx.pseudo_info = parse_pseudo_info(self.inputs.pseudo)
-        pseudo_info = self.ctx.pseudo_info.get_dict()
-        self.node.set_extra_many(pseudo_info)
 
         if "label" in self.inputs:
             label = self.inputs.label.value
         else:
-            label = self._label_from_pseudo_info(pseudo_info)
+            label = self._label_from_pseudo_info(self.ctx.pseudo_info)
 
         self.node.set_extra("label", label)
 
@@ -160,6 +175,9 @@ class VerificationWorkChain(WorkChain):
 
         base_conv_inputs = base_inputs.copy()
         base_conv_inputs["criteria"] = self.inputs.criteria
+
+        # Properties list
+        self.ctx.properties_list = self.inputs.properties_list.get_list()
 
         # Delta measure inputs setting
         inputs = base_inputs.copy()
@@ -182,26 +200,60 @@ class VerificationWorkChain(WorkChain):
         # to collect workchains in a dict
         self.ctx.workchains = {}
 
-    def run_verifications(self):
+    def is_verify_delta_measure(self):
         """
-        running all verification workflows
+        Whether to run delta measure workflow.
+        If properties_list contain `delta_measure` return True.
         """
-        properties_list = self.inputs.properties_list.get_list()
+        return "delta_measure" in self.ctx.properties_list
 
+    def run_delta_measure(self):
+        """Run delta measure sub-workflow"""
         ##
         # delta factor
         ##
-        if "delta_measure" in properties_list:
-            running = self.submit(DeltaFactorWorkChain, **self.ctx.delta_measure_inputs)
-            self.report(f"submit workchain delta factor pk={running}")
+        running = self.submit(DeltaFactorWorkChain, **self.ctx.delta_measure_inputs)
+        self.report(f"submit workchain delta factor pk={running}")
 
-            self.to_context(verify_delta_measure=running)
-            self.ctx.workchains["delta_measure"] = running
+        self.to_context(verify_delta_measure=running)
+        self.ctx.workchains["delta_measure"] = running
 
+    def inspect_delta_measure(self):
+        """Inspect delta measure results"""
+        self._report_and_results(wname_list=["delta_measure"])
+
+    def is_verify_convergence(self):
+        """Whether to run convergence test workflows"""
+        for p in self.ctx.properties_list:
+            if "convergence" in p:
+                return True
+
+        return False
+
+    def is_caching(self):
+        """run caching when more than one convergence test"""
+        count = 0
+        for p in self.ctx.properties_list:
+            if "convergrence" in p:
+                count += 1
+
+        if count > 1:
+            return True
+        else:
+            return False
+
+    def run_caching(self):
+        """run pressure verification for caching"""
+        pass
+
+    def run_convergence(self):
+        """
+        running all verification workflows
+        """
         ##
         # Cohesive energy
         ##
-        if "convergence:cohesive_energy" in properties_list:
+        if "convergence:cohesive_energy" in self.ctx.properties_list:
             running = self.submit(
                 ConvergenceCohesiveEnergy, **self.ctx.cohesive_energy_inputs
             )
@@ -213,7 +265,7 @@ class VerificationWorkChain(WorkChain):
         ##
         # phonon frequencies convergence test
         ##
-        if "convergence:phonon_frequencies" in properties_list:
+        if "convergence:phonon_frequencies" in self.ctx.properties_list:
             running = self.submit(
                 ConvergencePhononFrequencies, **self.ctx.phonon_frequencies_inputs
             )
@@ -227,7 +279,7 @@ class VerificationWorkChain(WorkChain):
         ##
         # Pressure
         ##
-        if "convergence:pressure" in properties_list:
+        if "convergence:pressure" in self.ctx.properties_list:
             running = self.submit(
                 ConvergencePressureWorkChain, **self.ctx.pressure_inputs
             )
@@ -247,24 +299,33 @@ class VerificationWorkChain(WorkChain):
         # self.to_context(verify_bands=running)
         # self.ctx.workchains['convergence_bands_distance'] = running
 
-    def report_and_results(self):
-        """result"""
-        # parse the info of the input pseudo
-        self.out("pseudo_info", self.ctx.pseudo_info)
+    def inspect_convergence(self):
+        """inspect the convergence result"""
+        self._report_and_results(
+            wname_list=[
+                "convergence_cohesive_energy",
+                "convergence_phonon_frequencies",
+                "convergence_pressure",
+            ]
+        )
+
+    def _report_and_results(self, wname_list):
+        """result to respective output namespace"""
 
         not_finished_ok_wf = {}
         self.ctx.finished_ok_wf = {}
         for wname, workchain in self.ctx.workchains.items():
-            # dump all output as it is to verification workflow output
-            self.ctx.finished_ok_wf[wname] = workchain.pk
-            for label in workchain.outputs:
-                self.out(f"{wname}.{label}", workchain.outputs[label])
+            if wname in wname_list:
+                # dump all output as it is to verification workflow output
+                self.ctx.finished_ok_wf[wname] = workchain.pk
+                for label in workchain.outputs:
+                    self.out(f"{wname}.{label}", workchain.outputs[label])
 
-            if not workchain.is_finished_ok:
-                self.report(
-                    f"The sub-workflow {wname} pk={workchain.pk} not finished ok."
-                )
-                not_finished_ok_wf[wname] = workchain.pk
+                if not workchain.is_finished_ok:
+                    self.report(
+                        f"The sub-workflow {wname} pk={workchain.pk} not finished ok."
+                    )
+                    not_finished_ok_wf[wname] = workchain.pk
 
         if not_finished_ok_wf:
             return self.exit_codes.WARNING_NOT_ALL_SUB_WORKFLOW_OK.format(
