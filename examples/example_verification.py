@@ -25,10 +25,10 @@ def run_verification(pw_code, ph_code, upf):
         "cutoff_control": orm.Str("test"),
         "properties_list": orm.List(
             list=[
-                # "delta_measure",
+                "delta_measure",
                 "convergence:cohesive_energy",
                 "convergence:phonon_frequencies",
-                # "convergence:pressure",
+                "convergence:pressure",
             ]
         ),
         "options": orm.Dict(

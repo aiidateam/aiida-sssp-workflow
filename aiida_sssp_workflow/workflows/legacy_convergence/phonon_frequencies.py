@@ -107,24 +107,13 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
 
         self.ctx.qpoints_list = self._QPOINTS_LIST
 
-        self.ctx.pw_parameters = {
-            'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._SMEARING,
-            },
-            'ELECTRONS': {
-                'conv_thr': self._CONV_THR,
-            },
-            'CONTROL': {
-                'calculation': 'scf',
-                'wf_collect': True,
-                'tstress': True,
-            },
-        }
+        self.ctx.pw_parameters = super()._get_pw_base_parameters(self._DEGAUSS,
+                                                                   self._OCCUPATIONS,
+                                                                   self._SMEARING,
+                                                                   self._CONV_THR)
 
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-                                        self.ctx.extra_pw_parameters)
+        # self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+        #                                 self.ctx.extra_pw_parameters)
 
         self.ctx.ph_parameters = {
             'INPUTPH': {
