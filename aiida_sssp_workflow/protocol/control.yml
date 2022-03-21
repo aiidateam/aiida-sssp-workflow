@@ -1,19 +1,19 @@
 ---
-cluster:
+standard:
     description: high wavefunction cutoff set and cutoffs dense interval therefore time consuming
 
     max_wfc: 200 # The max wfc cut for delta measure
     wfc_scan: [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150, 200] # at fix rho
     nc_dual_scan: [2.0, 2.5, 3.0, 3.5, 4.0] # at fix wfc
-    nonnc_dual_scan: [6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 12.0, 15.0, 18.0]
+    nonnc_dual_scan: [6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 12.0, 16.0, 18.0]
 
-local:
+quick:
     description: low wavefunction cutoff set and cutoffs sparse interval therefore can run on local
 
     max_wfc: 100 # The max wfc cut for delta measure
-    wfc_scan: [30, 35, 40, 45, 50, 60, 70, 85, 100] # at fix rho
-    nc_dual_scan: [2.0, 2.5, 3.0, 3.5, 4.0] # at fix wfc
-    nonnc_dual_scan: [6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 12.0, 15.0, 18.0]
+    wfc_scan: [30, 40, 50, 60, 75, 100, 150, 200] # at fix rho
+    nc_dual_scan: [3.0, 3.5, 4.0] # at fix wfc
+    nonnc_dual_scan: [6.0, 7.0, 8.0, 10.0, 12.0, 16.0]
 
 test:
     description: test only
@@ -21,4 +21,4 @@ test:
     max_wfc: 50 # The max wfc cut for delta measure
     wfc_scan: [30, 35, 40, 45, 50] # at fix rho
     nc_dual_scan: [2.0, 3.0, 4.0] # at fix wfc
-    nonnc_dual_scan: [6.0, 7.0, 8.0, 11, 12.0]
+    nonnc_dual_scan: [6.0, 7.0, 8.0, 12.0]

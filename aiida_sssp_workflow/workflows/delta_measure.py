@@ -40,7 +40,7 @@ class DeltaFactorWorkChain(WorkChain):
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The protocol which define input calculation parameters.')
-        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('cluster'),
+        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('standard'),
                     help='The control protocol where define max_wfc.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
