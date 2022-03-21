@@ -9,6 +9,10 @@ from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
+from aiida_sssp_workflow.workflows.legacy_convergence.caching import (
+    _CachingConvergenceWorkChain,
+)
+
 DeltaFactorWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
 ConvergenceCohesiveEnergy = WorkflowFactory(
     "sssp_workflow.legacy_convergence.cohesive_energy"
@@ -197,6 +201,9 @@ class VerificationWorkChain(WorkChain):
         inputs = base_conv_inputs.copy()
         self.ctx.bands_distance_inputs = inputs
 
+        inputs = base_conv_inputs.copy()
+        self.ctx.caching_inputs = inputs
+
         # to collect workchains in a dict
         self.ctx.workchains = {}
 
@@ -232,19 +239,33 @@ class VerificationWorkChain(WorkChain):
 
     def is_caching(self):
         """run caching when more than one convergence test"""
+        # If the aiida config set pw caching off, then not caching any
+        from aiida.manage.caching import get_use_cache
+
+        identifier = "aiida.calculations:quantumespresso.pw"
+        if not get_use_cache(identifier=identifier):
+            return False
+
+        # If less than two convergence wf, no caching run.
         count = 0
         for p in self.ctx.properties_list:
-            if "convergrence" in p:
+            if "convergence" in p:
                 count += 1
 
-        if count > 1:
-            return True
-        else:
+        if count < 2:
             return False
+        else:
+            return True
 
     def run_caching(self):
         """run pressure verification for caching"""
-        pass
+        ##
+        # Pressure as caching
+        ##
+        running = self.submit(_CachingConvergenceWorkChain, **self.ctx.caching_inputs)
+        self.report(f"submit workchain pressure as caching convergence pk={running.pk}")
+
+        self.to_context(verify_caching=running)
 
     def run_convergence(self):
         """
