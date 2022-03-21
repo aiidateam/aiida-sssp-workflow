@@ -1,0 +1,20 @@
+---
+theos:
+    name: theos
+    description: Bands measure parameters
+
+    occupations: smearing
+    degauss: 0.0045
+    smearing: fd
+    electron_conv_thr: 1.0e-10
+    kpoints_distance: 0.10
+
+test:
+    name: test-only
+    description: light loose set for test
+
+    occupations: smearing
+    degauss: 0.0045
+    smearing: fd
+    electron_conv_thr: 1.0e-6
+    kpoints_distance: 0.5

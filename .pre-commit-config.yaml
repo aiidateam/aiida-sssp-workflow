@@ -30,7 +30,7 @@ repos:
                     aiida_sssp_workflow/workflows/legacy_convergence/phonon_frequencies.py |
                     aiida_sssp_workflow/workflows/legacy_convergence/bands.py |
                     aiida_sssp_workflow/workflows/legacy_convergence/pressure.py |
-                    aiida_sssp_workflow/workflows/bands_distance.py |
+                    aiida_sssp_workflow/workflows/bands_measure.py |
                     aiida_sssp_workflow/workflows/legacy_convergence/_base.py
                 )$
 
