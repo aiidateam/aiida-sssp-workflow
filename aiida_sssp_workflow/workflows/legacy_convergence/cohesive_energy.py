@@ -8,10 +8,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import (
-    get_standard_cif_filename_from_element,
-    update_dict,
-)
+from aiida_sssp_workflow.utils import get_standard_cif_filename_from_element
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
 )
@@ -92,19 +89,13 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         # Set context parameters
         self.ctx.vacuum_length = self._VACUUM_LENGTH
         self.ctx.kpoints_distance = self._KDISTANCE
-        self.ctx.bulk_parameters = {
-            'SYSTEM': {
-                'degauss': self._DEGAUSS,
-                'occupations': self._OCCUPATIONS,
-                'smearing': self._BULK_SMEARING,
-            },
-            'ELECTRONS': {
-                'conv_thr': self._CONV_THR,
-            },
-        }
+        self.ctx.bulk_parameters = super()._get_pw_base_parameters(self._DEGAUSS,
+                                                                   self._OCCUPATIONS,
+                                                                   self._BULK_SMEARING,
+                                                                   self._CONV_THR)
 
-        self.ctx.bulk_parameters = update_dict(self.ctx.bulk_parameters,
-                                        self.ctx.extra_pw_parameters)
+        # self.ctx.bulk_parameters = update_dict(self.ctx.bulk_parameters,
+        #                                 self.ctx.extra_pw_parameters)
 
         self.ctx.atom_parameters = {
             'SYSTEM': {
