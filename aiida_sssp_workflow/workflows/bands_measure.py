@@ -33,12 +33,9 @@ class BandsMeasureWorkChain(WorkChain):
     WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
     """
-
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
 
     _LARGE_DUAL_ELEMENTS = ['Fe', 'Hf']
-
-    _INIT_NBANDS_FACTOR = 3.0
     _RY_TO_EV = 13.6056980659
 
     @classmethod
@@ -133,6 +130,9 @@ class BandsMeasureWorkChain(WorkChain):
         self._CONV_THR = protocol['electron_conv_thr']
         self._KDISTANCE = protocol['kpoints_distance']
 
+        self._INIT_NBANDS_FACTOR = protocol['init_nbands_factor']
+        self._BANDS_SHIFT = protocol['bands_shift']
+
         cutoff_control = get_protocol(
             category="control", name=self.inputs.cutoff_control.value
         )
@@ -140,6 +140,8 @@ class BandsMeasureWorkChain(WorkChain):
 
         self.ctx.ecutwfc = self._ECUTWFC
         self.ctx.kpoints_distance = self._KDISTANCE
+        self.ctx.init_nbands_factor = self._INIT_NBANDS_FACTOR
+        self.ctx.bands_shift = self._BANDS_SHIFT
 
         parameters = {
             "SYSTEM": {
@@ -198,7 +200,8 @@ class BandsMeasureWorkChain(WorkChain):
             'ecutwfc': orm.Float(self.ctx.ecutwfc),
             'ecutrho': orm.Float(self.ctx.ecutrho),
             'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
-            'init_nbands_factor': orm.Float(self._INIT_NBANDS_FACTOR),
+            'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
+            'bands_shift': orm.Float(self.ctx.bands_shift),
             'should_run_bands_structure': orm.Bool(True),
             'options': orm.Dict(dict=self.ctx.options),
             'parallelization': orm.Dict(dict=self.ctx.parallelization),

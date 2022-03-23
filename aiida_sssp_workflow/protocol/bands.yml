@@ -9,6 +9,9 @@ theos:
     electron_conv_thr: 1.0e-10
     kpoints_distance: 0.10
 
+    init_nbands_factor: 3
+    bands_shift: 10.0
+
 test:
     name: test-only
     description: light loose set for test
@@ -18,3 +21,6 @@ test:
     smearing: fd
     electron_conv_thr: 1.0e-6
     kpoints_distance: 0.5
+
+    init_nbands_factor: 3
+    bands_shift: 10.0
