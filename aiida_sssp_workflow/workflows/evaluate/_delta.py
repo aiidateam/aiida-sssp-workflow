@@ -2,22 +2,21 @@
 """
 WorkChain calculate the delta for certain pseudopotential
 """
-import numpy as np
 from aiida import orm
-from aiida.engine import ToContext, WorkChain, if_, while_
-from aiida.plugins import DataFactory, WorkflowFactory
+from aiida.engine import WorkChain
+from aiida.plugins import DataFactory
 
+from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
 from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
 
-PwBandsWorkChain = WorkflowFactory("quantumespresso.pw.bands")
 UpfData = DataFactory("pseudo.upf")
 
 
 class DeltaWorkChain(WorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
 
-    _BANDS_SHIFT = 10.05
-    _SEEKPATH_DISTANCE = 0.1
+    _MAX_WALLCLOCK_SECONDS = 3600
 
     @classmethod
     def define(cls, spec):
@@ -30,6 +29,8 @@ class DeltaWorkChain(WorkChain):
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData,
                     help='Ground state structure which the verification perform')
+        spec.input('configuration', valid_type=orm.Str,
+                    help='Configuration name of structure, BCC, FCC, SC and Diamond and name for oxides')
         spec.input('pw_base_parameters', valid_type=orm.Dict,
                     help='parameters for pwscf of calculation.')
         spec.input('ecutwfc', valid_type=orm.Float,
@@ -38,10 +39,10 @@ class DeltaWorkChain(WorkChain):
                     help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
         spec.input('kpoints_distance', valid_type=orm.Float,
                     help='Kpoints distance setting for bulk energy calculation.')
-        spec.input('init_nbands_factor', valid_type=orm.Float,
-                    help='initial nbands factor.')
-        spec.input('should_run_bands_structure', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='if True, run final bands structure calculation on seekpath kpath.')
+        spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7),
+                    help='The number of points to compute for the equation of state.')
+        spec.input('scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
+                    help='The relative difference between consecutive scaling factors.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -52,30 +53,16 @@ class DeltaWorkChain(WorkChain):
             cls.setup_base_parameters,
             cls.validate_structure,
             cls.setup_code_resource_options,
-
-            cls.run_bands,
-            while_(cls.not_enough_bands)(
-                cls.increase_nbands,
-                cls.run_bands,
-            ),
-
-            if_(cls.should_run_bands_structure)(
-                cls.run_band_structure,
-                cls.inspect_band_structure,
-            ),
-
+            cls.run_eos,
+            cls.inspect_eos,
             cls.results,
         )
-        spec.output_namespace('seekpath_band_structure', dynamic=True,
-                                help='output of band structure along seekpath.')
-        spec.output('output_scf_parameters', valid_type=orm.Dict,
-                    help='The output parameters of the SCF `PwBaseWorkChain`.')
-        spec.output('output_bands_parameters', valid_type=orm.Dict,
-                    help='The output parameters of the BANDS `PwBaseWorkChain`.')
-        spec.output('output_bands_structure', valid_type=orm.BandsData,
-                    help='The computed band structure.')
-        spec.output('output_nbands_factor', valid_type=orm.Float,
-                    help='The nbands factor of final bands run.')
+        spec.expose_outputs(_EquationOfStateWorkChain, namespace='eos',
+                    namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from {configuration} EOS.'})
+
+        spec.output('output_delta', required=True,
+                    help='The output of delta factor and other measures to describe the accuracy of EOS compare '
+                        ' with the AE equation of state.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
         # yapf: enable
@@ -90,32 +77,11 @@ class DeltaWorkChain(WorkChain):
                 "ecutrho": self.inputs.ecutrho,
             },
         }
+        pw_parameters = update_dict(pw_parameters, parameters)
 
-        pw_scf_parameters = update_dict(pw_parameters, parameters)
-
-        parameters = {
-            "SYSTEM": {
-                "ecutwfc": self.inputs.ecutwfc,
-                "ecutrho": self.inputs.ecutrho,
-                "noinv": True,
-                "nosym": True,
-            },
-        }
-
-        pw_bands_parameters = update_dict(pw_parameters, parameters)
-
-        self.ctx.pw_scf_parameters = pw_scf_parameters
-        self.ctx.pw_bands_parameters = pw_bands_parameters
+        self.ctx.pw_parameters = pw_parameters
 
         self.ctx.kpoints_distance = self.inputs.kpoints_distance
-
-        # set initial lowest highest bands eigenvalue - fermi_energy equals to 0.0
-        self.ctx.nbands_factor = self.inputs.init_nbands_factor
-        self.ctx.lowest_highest_eigenvalue = 0.0
-
-        self.ctx.bands_kpoints = create_kpoints_from_distance(
-            self.inputs.structure, self.ctx.kpoints_distance, orm.Bool(False)
-        )
 
     def validate_structure(self):
         """doc"""
@@ -142,32 +108,19 @@ class DeltaWorkChain(WorkChain):
         self.report(f"resource options set to {self.ctx.options}")
         self.report(f"parallelization options set to {self.ctx.parallelization}")
 
-    def _get_base_bands_inputs(self):
-        """
-        get the inputs for raw band workflow
-        """
+    def _get_inputs(self):
         inputs = {
             "structure": self.inputs.structure,
+            "kpoints_distance": self.inputs.kpoints_distance,
+            "scale_count": self.inputs.scale_count,
+            "scale_increment": self.inputs.scale_increment,
+            "metadata": {"call_link_label": f"EOS"},
             "scf": {
                 "pw": {
                     "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=self.ctx.pw_scf_parameters),
-                    "metadata": {
-                        "options": self.ctx.options,
-                    },
-                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
-                },
-                "kpoints_distance": self.ctx.kpoints_distance,
-            },
-            "bands": {
-                "pw": {
-                    "code": self.inputs.code,
-                    "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=self.ctx.pw_bands_parameters),
-                    "metadata": {
-                        "options": self.ctx.options,
-                    },
+                    "parameters": orm.Dict(dict=self.ctx.pw_parameters),
+                    "metadata": {"options": self.ctx.options},
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
             },
@@ -175,84 +128,46 @@ class DeltaWorkChain(WorkChain):
 
         return inputs
 
-    def run_bands(self):
-        """run bands calculation"""
-        inputs = self._get_base_bands_inputs()
-        inputs["nbands_factor"] = self.ctx.nbands_factor
-        inputs["bands_kpoints"] = self.ctx.bands_kpoints
+    def run_eos(self):
+        """run eos workchain"""
+        self.report(f"{self.ctx.pw_parameters}")
 
-        running = self.submit(PwBandsWorkChain, **inputs)
-        self.report(f"Running pw bands calculation pk={running.pk}")
-        return ToContext(workchain_bands=running)
+        inputs = self._get_inputs()
 
-    def not_enough_bands(self):
-        """inspect and check if the number of bands enough for shift 10eV (_BANDS_SHIFT)"""
-        workchain = self.ctx.workchain_bands
+        future = self.submit(_EquationOfStateWorkChain, **inputs)
+        self.report(f"launching _EquationOfStateWorkChain<{future.pk}>")
 
-        if not workchain.is_finished_ok:
-            self.report(
-                f"PwBandsWorkChain for bands evaluation failed with exit status {workchain.exit_status}"
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
+        self.to_context(**{f"eos": future})
 
-        fermi_energy = workchain.outputs.band_parameters["fermi_energy"]
-        bands = workchain.outputs.band_structure.get_array("bands")
-        self.ctx.highest_band = float(np.amin(bands[:, -1]))
-
-        return self.ctx.highest_band - fermi_energy < self._BANDS_SHIFT
-
-    def increase_nbands(self):
-        """inspect the result of bands calculation."""
-        self.ctx.nbands_factor += 1.0
-
-    def should_run_bands_structure(self):
-        """whether run band structure"""
-        return self.inputs.should_run_bands_structure.value
-
-    def run_band_structure(self):
-        """run band structure calculation"""
-        inputs = self._get_base_bands_inputs()
-        inputs["nbands_factor"] = self.ctx.nbands_factor
-        inputs["bands_kpoints_distance"] = orm.Float(self._SEEKPATH_DISTANCE)
-
-        running = self.submit(PwBandsWorkChain, **inputs)
-        self.report(f"Running pw band structure calculation pk={running.pk}")
-        return ToContext(workchain_band_structure=running)
-
-    def inspect_band_structure(self):
-        """inspect band structure"""
-        workchain = self.ctx.workchain_band_structure
+    def inspect_eos(self):
+        """Inspect the results of _EquationOfStateWorkChain"""
+        workchain = self.ctx.eos
 
         if not workchain.is_finished_ok:
             self.report(
-                f"PwBandsWorkChain for bands structure failed with exit status {workchain.exit_status}"
+                f"_EquationOfStateWorkChain failed with exit status {workchain.exit_status}"
             )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
-        self.report("pw band structure workchain successfully completed")
-        self.out(
-            "seekpath_band_structure.output_scf_parameters",
-            workchain.outputs.scf_parameters,
-        )
-        self.out(
-            "seekpath_band_structure.output_bands_parameters",
-            workchain.outputs.band_parameters,
-        )
-        self.out(
-            "seekpath_band_structure.output_bands_structure",
-            workchain.outputs.band_structure,
+        self.out_many(
+            self.exposed_outputs(
+                workchain,
+                _EquationOfStateWorkChain,
+                namespace="eos",
+            )
         )
 
-    def results(self):
+    def finalize(self):
         """result"""
-        self.report("pw bands workchain successfully completed")
-        self.out(
-            "output_scf_parameters", self.ctx.workchain_bands.outputs.scf_parameters
-        )
-        self.out(
-            "output_bands_parameters", self.ctx.workchain_bands.outputs.band_parameters
-        )
-        self.out(
-            "output_bands_structure", self.ctx.workchain_bands.outputs.band_structure
-        )
-        self.out("output_nbands_factor", orm.Float(self.ctx.nbands_factor).store())
+        output_bmf = self.outputs.eos.get("output_birch_murnaghan_fit")
+
+        V0 = orm.Float(output_bmf["volume0"])
+
+        inputs = {
+            "element": orm.Str(self.ctx.element),
+            "configuration": orm.Str(self.inputs.configuration),
+            "V0": V0,
+            "B0": orm.Float(output_bmf["bulk_modulus0"]),
+            "B1": orm.Float(output_bmf["bulk_deriv0"]),
+        }
+
+        self.out(f"output_delta", delta_analyze(**inputs))
