@@ -13,7 +13,7 @@ from aiida_sssp_workflow.workflows.legacy_convergence.caching import (
     _CachingConvergenceWorkChain,
 )
 
-DeltaFactorWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
+DeltaMeasureWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
 ConvergenceCohesiveEnergy = WorkflowFactory(
     "sssp_workflow.legacy_convergence.cohesive_energy"
 )
@@ -101,7 +101,7 @@ class VerificationWorkChain(WorkChain):
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
         spec.output_namespace('delta_measure', dynamic=True,
-                            help='results of delta factor calculation.')
+                            help='results of delta measure calculation.')
         spec.output_namespace('convergence_cohesive_energy', dynamic=True,
                             help='results of convergence cohesive energy calculation.')
         spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
@@ -217,10 +217,10 @@ class VerificationWorkChain(WorkChain):
     def run_delta_measure(self):
         """Run delta measure sub-workflow"""
         ##
-        # delta factor
+        # delta measure
         ##
-        running = self.submit(DeltaFactorWorkChain, **self.ctx.delta_measure_inputs)
-        self.report(f"submit workchain delta factor pk={running}")
+        running = self.submit(DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs)
+        self.report(f"submit workchain delta measure pk={running}")
 
         self.to_context(verify_delta_measure=running)
         self.ctx.workchains["delta_measure"] = running

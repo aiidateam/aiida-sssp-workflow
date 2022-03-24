@@ -20,7 +20,7 @@ from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaFactorWorkChain(WorkChain):
+class DeltaMeasureWorkChain(WorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
     # pylint: disable=too-many-instance-attributes
