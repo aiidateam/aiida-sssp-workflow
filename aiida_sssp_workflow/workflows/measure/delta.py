@@ -14,7 +14,7 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     update_dict,
 )
-from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
+from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
 UpfData = DataFactory("pseudo.upf")

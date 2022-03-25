@@ -8,7 +8,7 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows._eos import _EquationOfStateWorkChain
+from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 
 UpfData = DataFactory("pseudo.upf")
 

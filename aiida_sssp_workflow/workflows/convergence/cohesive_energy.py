@@ -9,10 +9,10 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import get_cif_abspath
+from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
 )
-from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 

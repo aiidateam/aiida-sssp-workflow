@@ -9,22 +9,18 @@ from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
-from aiida_sssp_workflow.workflows.legacy_convergence.caching import (
+from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
 )
 
 DeltaMeasureWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
-ConvergenceCohesiveEnergy = WorkflowFactory(
-    "sssp_workflow.legacy_convergence.cohesive_energy"
-)
+ConvergenceCohesiveEnergy = WorkflowFactory("sssp_workflow.convergence.cohesive_energy")
 ConvergencePhononFrequencies = WorkflowFactory(
-    "sssp_workflow.legacy_convergence.phonon_frequencies"
+    "sssp_workflow.convergence.phonon_frequencies"
 )
-ConvergencePressureWorkChain = WorkflowFactory(
-    "sssp_workflow.legacy_convergence.pressure"
-)
-ConvergenceBandsWorkChain = WorkflowFactory("sssp_workflow.legacy_convergence.bands")
-ConvergenceDeltaWorkChain = WorkflowFactory("sssp_workflow.legacy_convergence.delta")
+ConvergencePressureWorkChain = WorkflowFactory("sssp_workflow.convergence.pressure")
+ConvergenceBandsWorkChain = WorkflowFactory("sssp_workflow.convergence.bands")
+ConvergenceDeltaWorkChain = WorkflowFactory("sssp_workflow.convergence.delta")
 
 UpfData = DataFactory("pseudo.upf")
 

@@ -10,8 +10,8 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations import calculate_bands_distance
 from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, get_cif_abspath, update_dict
+from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
-from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
