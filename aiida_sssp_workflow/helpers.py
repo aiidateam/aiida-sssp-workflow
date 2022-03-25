@@ -13,7 +13,7 @@ from aiida.tools.data.structure import (
     structure_to_spglib_tuple,
 )
 
-from aiida_sssp_workflow.utils import get_standard_cif_filename_from_element
+from aiida_sssp_workflow.utils import get_cif_abspath
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -63,7 +63,7 @@ def helper_get_base_inputs(pseudo: UpfData, primitive_cell=True):
             upf_silicon = UpfData.get_or_create(filename)[0]
             pseudos["Si"] = upf_silicon
 
-    cif_file = get_standard_cif_filename_from_element(element)
+    cif_file = get_cif_abspath(element)
 
     cif_data = orm.CifData.get_or_create(cif_file)[0]
 

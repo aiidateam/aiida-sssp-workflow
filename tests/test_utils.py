@@ -41,15 +41,15 @@ def test_update_dict():
 
 def test_cif_from_element():
     """test cif_from_element"""
-    from aiida_sssp_workflow.utils import get_standard_cif_filename_from_element
+    from aiida_sssp_workflow.utils import get_cif_abspath
 
-    fname = get_standard_cif_filename_from_element("Si")
+    fname = get_cif_abspath("Si")
     assert "Si.cif" in fname
 
-    fname = get_standard_cif_filename_from_element("SiF4")
+    fname = get_cif_abspath("SiF4")
     assert "SiF4.cif" in fname
 
-    fname = get_standard_cif_filename_from_element("La")
+    fname = get_cif_abspath("La")
     assert "LaN.cif" in fname
 
 

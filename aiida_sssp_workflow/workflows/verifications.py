@@ -24,6 +24,7 @@ ConvergencePressureWorkChain = WorkflowFactory(
     "sssp_workflow.legacy_convergence.pressure"
 )
 ConvergenceBandsWorkChain = WorkflowFactory("sssp_workflow.legacy_convergence.bands")
+ConvergenceDeltaWorkChain = WorkflowFactory("sssp_workflow.legacy_convergence.delta")
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -46,6 +47,7 @@ DEFAULT_PROPERTIES_LIST = [
     "convergence:cohesive_energy",
     "convergence:phonon_frequencies",
     "convergence:pressure",
+    "convergence:delta",
 ]
 
 
@@ -108,6 +110,8 @@ class VerificationWorkChain(WorkChain):
                             help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
                             help='results of convergence pressure calculation.')
+        spec.output_namespace('convergence_delta', dynamic=True,
+                              help='results of convergence delta calculation.')
         spec.output_namespace('convergence_bands', dynamic=True,
                               help='results of convergence bands calculation.')
 
@@ -197,6 +201,9 @@ class VerificationWorkChain(WorkChain):
 
         inputs = base_conv_inputs.copy()
         self.ctx.pressure_inputs = inputs
+
+        inputs = base_conv_inputs.copy()
+        self.ctx.delta_inputs = inputs
 
         inputs = base_conv_inputs.copy()
         self.ctx.bands_distance_inputs = inputs
@@ -309,6 +316,16 @@ class VerificationWorkChain(WorkChain):
             self.to_context(verify_pressure=running)
             self.ctx.workchains["convergence_pressure"] = running
 
+        ##
+        # Pressure
+        ##
+        if "convergence:delta" in self.ctx.properties_list:
+            running = self.submit(ConvergenceDeltaWorkChain, **self.ctx.delta_inputs)
+            self.report(f"submit workchain delta convergence pk={running.pk}")
+
+            self.to_context(verify_delta=running)
+            self.ctx.workchains["convergence_delta"] = running
+
         # ##
         # # bands
         # ##
@@ -327,6 +344,7 @@ class VerificationWorkChain(WorkChain):
                 "convergence_cohesive_energy",
                 "convergence_phonon_frequencies",
                 "convergence_pressure",
+                "convergence_delta",
             ]
         )
 

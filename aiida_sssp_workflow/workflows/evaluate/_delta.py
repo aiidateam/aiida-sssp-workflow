@@ -29,6 +29,8 @@ class DeltaWorkChain(WorkChain):
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData,
                     help='Ground state structure which the verification perform')
+        spec.input('element', valid_type=orm.Str,
+                    help='element')
         spec.input('configuration', valid_type=orm.Str,
                     help='Configuration name of structure, BCC, FCC, SC and Diamond and name for oxides')
         spec.input('pw_base_parameters', valid_type=orm.Dict,
@@ -55,12 +57,12 @@ class DeltaWorkChain(WorkChain):
             cls.setup_code_resource_options,
             cls.run_eos,
             cls.inspect_eos,
-            cls.results,
+            cls.finalize,
         )
         spec.expose_outputs(_EquationOfStateWorkChain, namespace='eos',
-                    namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from {configuration} EOS.'})
+                    namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from EOS.'})
 
-        spec.output('output_delta', required=True,
+        spec.output('output_parameters', required=True,
                     help='The output of delta factor and other measures to describe the accuracy of EOS compare '
                         ' with the AE equation of state.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
@@ -158,16 +160,16 @@ class DeltaWorkChain(WorkChain):
 
     def finalize(self):
         """result"""
-        output_bmf = self.outputs.eos.get("output_birch_murnaghan_fit")
+        output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
 
         V0 = orm.Float(output_bmf["volume0"])
 
         inputs = {
-            "element": orm.Str(self.ctx.element),
-            "configuration": orm.Str(self.inputs.configuration),
+            "element": self.inputs.element,
+            "configuration": self.inputs.configuration,
             "V0": V0,
             "B0": orm.Float(output_bmf["bulk_modulus0"]),
             "B1": orm.Float(output_bmf["bulk_deriv0"]),
         }
 
-        self.out(f"output_delta", delta_analyze(**inputs))
+        self.out(f"output_parameters", delta_analyze(**inputs))

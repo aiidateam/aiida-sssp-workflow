@@ -8,7 +8,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import get_standard_cif_filename_from_element
+from aiida_sssp_workflow.utils import get_cif_abspath
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
 )
@@ -58,7 +58,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
     def extra_setup_for_fluorine_element(self):
         """Extra setup for fluorine element"""
-        cif_file = get_standard_cif_filename_from_element('SiF4')
+        cif_file = get_cif_abspath('SiF4')
         self.ctx.structure = orm.CifData.get_or_create(
             cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 

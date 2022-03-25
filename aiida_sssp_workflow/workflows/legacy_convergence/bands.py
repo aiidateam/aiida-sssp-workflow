@@ -9,11 +9,7 @@ from aiida.engine import ToContext, append_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations import calculate_bands_distance
-from aiida_sssp_workflow.utils import (
-    NONMETAL_ELEMENTS,
-    get_standard_cif_filename_from_element,
-    update_dict,
-)
+from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, get_cif_abspath, update_dict
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 from aiida_sssp_workflow.workflows.legacy_convergence._base import BaseLegacyWorkChain
 
@@ -69,7 +65,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
 
     def extra_setup_for_fluorine_element(self):
         """Extra setup for fluorine element"""
-        cif_file = get_standard_cif_filename_from_element('SiF4')
+        cif_file = get_cif_abspath('SiF4')
         self.ctx.structure = orm.CifData.get_or_create(
             cif_file, use_first=True)[0].get_structure(primitive_cell=True)
 
