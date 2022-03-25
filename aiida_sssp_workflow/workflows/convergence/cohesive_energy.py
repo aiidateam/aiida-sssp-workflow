@@ -2,13 +2,11 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
-import importlib
 
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import get_cif_abspath
 from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
@@ -52,22 +50,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
         super().extra_setup_for_magnetic_element()
-
-    def extra_setup_for_rare_earth_element(self):
-        super().extra_setup_for_rare_earth_element()
-
-    def extra_setup_for_fluorine_element(self):
-        """Extra setup for fluorine element"""
-        cif_file = get_cif_abspath('SiF4')
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
-
-        # setting pseudos
-        import_path = importlib.resources.path(
-            'aiida_sssp_workflow.statics.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_silicon = UpfData(stream)
-            self.ctx.pseudos['Si'] = upf_silicon
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""

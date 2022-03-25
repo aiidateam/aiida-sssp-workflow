@@ -2,14 +2,13 @@
 """
 Convergence test on bands of a given pseudopotential
 """
-import importlib
 
 from aiida import orm
 from aiida.engine import ToContext, append_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations import calculate_bands_distance
-from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, get_cif_abspath, update_dict
+from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
@@ -42,39 +41,6 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
 
         # extra setting for bands convergence
         self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
-
-    def extra_setup_for_rare_earth_element(self):
-        """Extra setup for rare earth element"""
-        import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
-                                               'N.pbe-n-radius_5.upf')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_nitrogen = UpfData(stream)
-            self.ctx.pseudos['N'] = upf_nitrogen
-
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
-
-        self.ctx.extra_parameters = {
-            'SYSTEM': {
-                'nbnd': int(nbands * nbands_factor),
-            },
-        }
-
-    def extra_setup_for_fluorine_element(self):
-        """Extra setup for fluorine element"""
-        cif_file = get_cif_abspath('SiF4')
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
-
-        # setting pseudos
-        import_path = importlib.resources.path(
-            'aiida_sssp_workflow.statics.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_silicon = UpfData(stream)
-            self.ctx.pseudos['Si'] = upf_silicon
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""

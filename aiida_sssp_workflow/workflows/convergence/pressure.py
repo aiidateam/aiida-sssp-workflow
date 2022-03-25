@@ -78,10 +78,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         """Extra setup for magnetic element"""
         super().extra_setup_for_magnetic_element()
 
-    def extra_setup_for_rare_earth_element(self):
-        super().extra_setup_for_rare_earth_element()
-
-
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init

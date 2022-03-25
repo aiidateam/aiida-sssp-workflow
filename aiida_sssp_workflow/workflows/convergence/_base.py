@@ -11,8 +11,8 @@ from aiida.plugins import DataFactory
 from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
     convergence_analysis,
-    get_cif_abspath,
     get_protocol,
+    get_standard_structure,
     helper_get_magnetic_inputs,
     update_dict,
 )
@@ -71,8 +71,6 @@ class BaseLegacyWorkChain(WorkChain):
             cls.init_setup,
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element, ),
-            # if_(cls.is_rare_earth_element)(
-            #     cls.extra_setup_for_rare_earth_element, ),
             cls.setup_code_parameters_from_protocol,
             cls.setup_criteria_parameters_from_protocol,
             cls.setup_code_resource_options,
@@ -141,9 +139,7 @@ class BaseLegacyWorkChain(WorkChain):
         # EXCEPT that for the element fluorine the `SiF4.cif` used for convergence
         # reason. But we do the structure setup for SiF4 in the following step:
         # `cls.extra_setup_for_fluorine_element`
-        cif_file = get_cif_abspath(element, prop='convergence')
-        self.ctx.cif = orm.CifData.get_or_create(cif_file, use_first=True)[0]
-        self.ctx.structure = self.ctx.cif.get_structure(primitive_cell=True)
+        self.ctx.structure = get_standard_structure(element, prop='convergence')
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""

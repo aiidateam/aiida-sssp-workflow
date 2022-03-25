@@ -39,7 +39,7 @@ def parse_pseudo_info(pseudo: UpfData):
 
 
 DEFAULT_PROPERTIES_LIST = [
-    "delta_measure",
+    "accuracy:delta",
     "convergence:cohesive_energy",
     "convergence:phonon_frequencies",
     "convergence:pressure",
@@ -215,7 +215,7 @@ class VerificationWorkChain(WorkChain):
         Whether to run delta measure workflow.
         If properties_list contain `delta_measure` return True.
         """
-        return "delta_measure" in self.ctx.properties_list
+        return "accuracy:delta" in self.ctx.properties_list
 
     def run_delta_measure(self):
         """Run delta measure sub-workflow"""

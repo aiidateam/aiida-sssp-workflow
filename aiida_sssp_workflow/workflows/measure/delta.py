@@ -14,7 +14,7 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     update_dict,
 )
-from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
+from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
 UpfData = DataFactory("pseudo.upf")
@@ -53,26 +53,22 @@ class DeltaMeasureWorkChain(WorkChain):
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element,
             ),
-            # To compatible with common-wf, the magnism is not on.
-            # if_(cls.is_magnetic_element)(
-            #     cls.extra_setup_for_magnetic_element,
-            # ),
             cls.setup_pw_parameters_from_protocol,
             cls.setup_pw_resource_options,
-            cls.run_eos,
-            cls.inspect_eos,
-            cls.run_delta_analyze,
+            cls.run,
+            cls.inspect,
+            cls.finalize,
         )
         # namespace for storing all detail of run on each configuration
         for configuration in cls._OXIDE_STRUCTURES + cls._UNARIE_STRUCTURES:
-            spec.expose_outputs(_EquationOfStateWorkChain, namespace=configuration,
-                        namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from {configuration} EOS.'})
+            spec.expose_outputs(DeltaWorkChain, namespace=configuration,
+                        namespace_options={'help': f'Delta calculation result of {configuration} EOS.'})
 
-        spec.output_namespace('output_delta_analyze', dynamic=True,
-                    help='The output of delta factor and other measures to describe the accuracy of EOS compare '
+        spec.output_namespace('output_parameters', dynamic=True,
+                    help='The summary output parameters of all delta measures to describe the accuracy of EOS compare '
                         ' with the AE equation of state.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
-                    message=f'The {_EquationOfStateWorkChain.__name__} sub process failed.')
+                    message=f'The {DeltaWorkChain.__name__} sub process failed.')
         # yapf: enable
 
     def init_setup(self):
@@ -90,7 +86,7 @@ class DeltaMeasureWorkChain(WorkChain):
 
         # Import oxygen pseudopotential file and set the pseudos
         import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.UPFs", "O.pbe-n-kjpaw_psl.0.1.upf"
+            "aiida_sssp_workflow.statics.upf", "O.pbe-n-kjpaw_psl.0.1.upf"
         )
         with import_path as pp_path, open(pp_path, "rb") as stream:
             pseudo_O = UpfData(stream)
@@ -150,25 +146,6 @@ class DeltaMeasureWorkChain(WorkChain):
             },
         }
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, extra_parameters)
-
-    # def is_magnetic_element(self):
-    #     """Check if the element is magnetic"""
-    #     return self.ctx.element in MAGNETIC_ELEMENTS
-
-    # def extra_setup_for_magnetic_element(self):
-    #     """Extra setup for magnetic element"""
-    #     # Mn (antiferrimagnetic), O and Cr (antiferromagnetic), Fe, Co, and Ni (ferromagnetic).
-    #     self.ctx.structure, extra_parameters = helper_get_magnetic_inputs(
-    #         self.ctx.structure)
-    #     self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-    #                                          extra_parameters)
-
-    #     # setting pseudos
-    #     pseudos = {}
-    #     pseudo = self.inputs.pseudo
-    #     for kind_name in self.ctx.structure.get_kind_names():
-    #         pseudos[kind_name] = pseudo
-    #     self.ctx.pseudos = pseudos
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -255,7 +232,7 @@ class DeltaMeasureWorkChain(WorkChain):
 
         return inputs
 
-    def run_eos(self):
+    def run(self):
         """run eos workchain"""
         self.report(f"{self.ctx.pw_parameters}")
 
@@ -269,7 +246,7 @@ class DeltaMeasureWorkChain(WorkChain):
 
             self.to_context(**{f"{name}_eos": future})
 
-    def inspect_eos(self):
+    def inspect(self):
         """Inspect the results of _EquationOfStateWorkChain"""
         failed = []
         for key in self.ctx.structures.keys():
@@ -293,7 +270,7 @@ class DeltaMeasureWorkChain(WorkChain):
             pass
             # TODO ERROR
 
-    def run_delta_analyze(self):
+    def finalize(self):
         """calculate the delta factor"""
 
         for configuration in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:

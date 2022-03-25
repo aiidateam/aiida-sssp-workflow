@@ -83,10 +83,12 @@ def update_dict(d, u):
     return ret
 
 
-def get_cif_abspath(element: str, prop: str) -> str:
+def get_standard_structure(
+    element: str, prop: str, configuration=None
+) -> orm.StructureData:
     """
     get cif abspath from element for bands measure and convergence
-    property can be `bands` or `convergence`
+    property can be `delta`, `bands` or `convergence`
 
     The principles are for bands measure, using the configurations from Cottiner's paper since they are the groud state structures exist in real wolrd.
     And for lanthanides using the Nitrides from Wenzowech paper.
@@ -94,57 +96,8 @@ def get_cif_abspath(element: str, prop: str) -> str:
 
     NOTICE!!: that for convergence verification the SiF4 structure is used, the
     name of file is `SiF4.cif` which can be get by `element=SiF4`.
-    """
-    import_path = importlib.resources.path(
-        "aiida_sssp_workflow.statics.cif", f"mapping.json"
-    )
 
-    with import_path as path, open(path, "r") as handle:
-        mapping = json.load(handle)
-
-    try:
-        path = mapping[element][prop]
-    except KeyError as e:
-        raise (f"Can not find cif file for element={element}, prop={prop}") from e
-    else:
-        dir, fn = path.split("/")
-        with importlib.resources.path(
-            f"aiida_sssp_workflow.statics.cif.{dir}", fn
-        ) as abspath:
-
-            return str(abspath)
-
-
-def get_cif_abspath_dict_for_delta_measure(element: str) -> dict:
-    """
-    This function only used in delta factor wf to run on multiple structures
-    include oxides.
-
-    get cif filename from element for different structure return a dict
-    """
-    path_dict = {}
-
-    if element in RARE_EARTH_ELEMENTS:
-        raise ValueError(f"Not supported yet for element={element}.")
-    else:
-        fpath = importlib.resources.path(
-            "aiida_sssp_workflow.statics.CIFs", f"{element}.cif"
-        )
-        with fpath as path:
-            path_dict["X"] = str(path)
-
-        for s in ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]:
-            fpath = importlib.resources.path(
-                "aiida_sssp_workflow.statics.CIFs_OXIDES", f"{element}_{s}.cif"
-            )
-            with fpath as path:
-                path_dict[s] = str(path)
-
-    return path_dict
-
-
-def get_standard_structure(element: str, configuration: str) -> orm.StructureData:
-    """get the cif data node from element and configuration
+    If prop is delta must provide specific configuration name.
 
     Args:
         element (str): element
@@ -153,17 +106,35 @@ def get_standard_structure(element: str, configuration: str) -> orm.StructureDat
     Returns:
         orm.StructureData: return a orm.StructureData
     """
-    if "O" in configuration:
-        data_module = "aiida_sssp_workflow.statics.CIFs_OXIDES"
-    else:
-        data_module = "aiida_sssp_workflow.statics.CIFs_UNARIES"
+    # If for delta measure workflow
+    if prop == "delta":
+        if "O" in configuration:
+            data_module = "aiida_sssp_workflow.statics.cif.oxides"
+        else:
+            data_module = "aiida_sssp_workflow.statics.cif.unaries"
 
-    with importlib.resources.path(
-        data_module, f"{element}_{configuration}.cif"
-    ) as path:
+        res_path = importlib.resources.path(
+            data_module, f"{element}_{configuration}.cif"
+        )
+
+    else:
+        # If for bands measure or convergence workflow
+        import_path = importlib.resources.path(
+            "aiida_sssp_workflow.statics.cif", f"mapping.json"
+        )
+
+        with import_path as path, open(path, "r") as handle:
+            mapping = json.load(handle)
+
+        dir, fn = mapping[element][prop].split("/")
+        res_path = importlib.resources.path(
+            f"aiida_sssp_workflow.statics.cif.{dir}", fn
+        )
+
+    with res_path as path:
         structure = orm.CifData.get_or_create(str(path), use_first=True)[
             0
-        ].get_structure(primitive_cell=False)
+        ].get_structure(primitive_cell=True)
 
     return structure
 
