@@ -26,7 +26,7 @@ theos:
 
     bands:
         init_nbands_factor: 3.0
-        bands_shift: 10.0
+        fermi_shift: 10.0
 
     delta:
         scale_count: 7
@@ -59,7 +59,7 @@ test:
 
     bands:
         init_nbands_factor: 3.0
-        bands_shift: 5.0
+        fermi_shift: 5.0
 
     delta:
         scale_count: 5
@@ -92,7 +92,7 @@ demo:
 
     bands:
         init_nbands_factor: 3.0
-        bands_shift: 5.0
+        fermi_shift: 5.0
 
     delta:
         scale_count: 5

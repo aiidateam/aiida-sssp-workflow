@@ -26,12 +26,12 @@ def run_verification(pw_code, ph_code, upf):
         "cutoff_control": orm.Str("test"),
         "properties_list": orm.List(
             list=[
-                "accuracy:delta",
-                "accuracy:bands",
-                "convergence:cohesive_energy",
-                "convergence:phonon_frequencies",
-                "convergence:pressure",
-                "convergence:delta",
+                # "accuracy:delta",
+                # "accuracy:bands",
+                # "convergence:cohesive_energy",
+                # "convergence:phonon_frequencies",
+                # "convergence:pressure",
+                # "convergence:delta",
                 "convergence:bands",
             ]
         ),

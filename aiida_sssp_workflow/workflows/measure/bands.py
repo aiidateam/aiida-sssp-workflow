@@ -126,7 +126,7 @@ class BandsMeasureWorkChain(WorkChain):
         self._KDISTANCE = protocol['kpoints_distance']
 
         self._INIT_NBANDS_FACTOR = protocol['init_nbands_factor']
-        self._BANDS_SHIFT = protocol['bands_shift']
+        self._FERMI_SHIFT = protocol['fermi_shift']
 
         cutoff_control = get_protocol(
             category="control", name=self.inputs.cutoff_control.value
@@ -136,7 +136,7 @@ class BandsMeasureWorkChain(WorkChain):
         self.ctx.ecutwfc = self._ECUTWFC
         self.ctx.kpoints_distance = self._KDISTANCE
         self.ctx.init_nbands_factor = self._INIT_NBANDS_FACTOR
-        self.ctx.bands_shift = self._BANDS_SHIFT
+        self.ctx.fermi_shift = self._FERMI_SHIFT
 
         parameters = {
             "SYSTEM": {
@@ -196,7 +196,7 @@ class BandsMeasureWorkChain(WorkChain):
             'ecutrho': orm.Float(self.ctx.ecutrho),
             'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
             'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
-            'bands_shift': orm.Float(self.ctx.bands_shift),
+            'fermi_shift': orm.Float(self.ctx.fermi_shift),
             'should_run_bands_structure': orm.Bool(True),
             'options': orm.Dict(dict=self.ctx.options),
             'parallelization': orm.Dict(dict=self.ctx.parallelization),

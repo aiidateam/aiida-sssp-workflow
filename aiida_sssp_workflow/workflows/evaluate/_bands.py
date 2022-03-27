@@ -74,7 +74,7 @@ class BandsWorkChain(WorkChain):
                     help='Kpoints distance setting for bulk energy calculation and for seekpath.')
         spec.input('init_nbands_factor', valid_type=orm.Float,
                     help='initial nbands factor.')
-        spec.input('bands_shift', valid_type=orm.Float, default=lambda: orm.Float(10.0),
+        spec.input('fermi_shift', valid_type=orm.Float, default=lambda: orm.Float(10.0),
                     help='The uplimit of energy to check the bands diff, control the number of bands.')
         spec.input('should_run_bands_structure', valid_type=orm.Bool, default=lambda: orm.Bool(False),
                     help='if True, run bands structure calculation on seekpath kpath.')
@@ -220,7 +220,7 @@ class BandsWorkChain(WorkChain):
         return ToContext(workchain_bands=running)
 
     def not_enough_bands(self):
-        """inspect and check if the number of bands enough for shift 10eV (_BANDS_SHIFT)"""
+        """inspect and check if the number of bands enough for fermi shift (_FERMI_SHIFT)"""
         workchain = self.ctx.workchain_bands
 
         if not workchain.is_finished_ok:
@@ -236,7 +236,7 @@ class BandsWorkChain(WorkChain):
         # not enough until eigenvalues of all kpoints are greater than shift value.
         highest_band = bands[:, -1]
 
-        return np.all(highest_band < fermi_energy + self.inputs.bands_shift.value)
+        return np.all(highest_band < fermi_energy + self.inputs.fermi_shift.value)
 
     def increase_nbands(self):
         """inspect the result of bands calculation."""

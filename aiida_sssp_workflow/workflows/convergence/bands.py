@@ -21,6 +21,7 @@ def helper_bands_distence_difference(
     bands_structure_b: orm.BandsData,
     bands_parameters_b: orm.Dict,
     smearing: orm.Float,
+    fermi_shift: orm.Float,
     is_metal: orm.Bool,
 ):
     """doc"""
@@ -30,17 +31,18 @@ def helper_bands_distence_difference(
         bands_parameters_a,
         bands_parameters_b,
         smearing.value,
+        fermi_shift.value,
         is_metal.value,
     )
-    eta_10 = res.get("eta_10", None)
-    shift_10 = res.get("shift_10", None)
-    max_diff_10 = res.get("max_diff_10", None)
+    eta = res.get("eta_c", None)
+    shift = res.get("shift_c", None)
+    max_diff = res.get("max_diff_c", None)
 
     return orm.Dict(
         dict={
-            "eta_10": eta_10 * 1000,
-            "shift_10": shift_10 * 1000,
-            "max_diff_10": max_diff_10 * 1000,
+            "eta_c": eta * 1000,
+            "shift_c": shift * 1000,
+            "max_diff_c": max_diff * 1000,
             "bands_unit": "meV",    # unit mev with value * 1000
         }
     )
@@ -54,7 +56,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
 
     _PROPERTY_NAME = 'bands'
     _EVALUATE_WORKCHAIN = BandsWorkChain
-    _MEASURE_OUT_PROPERTY = 'eta_10'
+    _MEASURE_OUT_PROPERTY = 'eta_c'
 
     def init_setup(self):
         super().init_setup()
@@ -85,7 +87,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
                                                             self._SMEARING,
                                                             self._CONV_THR)
 
-        self.ctx.bands_shift = protocol['bands_shift']
+        self.ctx.fermi_shift = protocol['fermi_shift']
         self.ctx.init_nbands_factor = protocol['init_nbands_factor']
         self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
 
@@ -107,7 +109,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
             'ecutrho': orm.Float(ecutrho),
             'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
             'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
-            'bands_shift': orm.Float(self.ctx.bands_shift),
+            'fermi_shift': orm.Float(self.ctx.fermi_shift),
             'should_run_bands_structure': orm.Bool(False), # for convergence no band structure evaluate
             'options': orm.Dict(dict=self.ctx.options),
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
@@ -130,6 +132,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
                                                reference_bands_structure,
                                                reference_bands_output,
                                                smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
+                                               fermi_shift=orm.Float(self.ctx.fermi_shift),
                                                is_metal=orm.Bool(self.ctx.is_metal),
                                                ).get_dict()
 
@@ -137,5 +140,6 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
 
     def get_result_metadata(self):
         return {
+            'fermi_shift': self.ctx.fermi_shift,
             'bands_unit': 'meV',
         }

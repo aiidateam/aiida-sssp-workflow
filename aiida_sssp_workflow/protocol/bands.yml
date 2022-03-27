@@ -10,7 +10,7 @@ theos:
     kpoints_distance: 0.10
 
     init_nbands_factor: 3
-    bands_shift: 10.0
+    fermi_shift: 10.0
 
 test:
     name: test-only
@@ -23,7 +23,7 @@ test:
     kpoints_distance: 0.5
 
     init_nbands_factor: 3
-    bands_shift: 10.0
+    fermi_shift: 10.0
 
 demo:
     name: demo-only
@@ -36,4 +36,4 @@ demo:
     kpoints_distance: 0.25
 
     init_nbands_factor: 3
-    bands_shift: 10.0
+    fermi_shift: 10.0

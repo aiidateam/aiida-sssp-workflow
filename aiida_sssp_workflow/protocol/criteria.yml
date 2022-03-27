@@ -25,7 +25,7 @@ efficiency:
 
     bands:
         mode: 0
-        bounds: [0.0, 20]   # when error eta_10 < 20 meV
+        bounds: [0.0, 20]   # when error eta_c < 20 meV
         eps: 1.0e-3
 
 
@@ -55,5 +55,5 @@ precision:
 
     bands:
         mode: 0
-        bounds: [0.0, 15]   # when error eta_10 < 15 meV
+        bounds: [0.0, 15]   # when error eta_c < 15 meV
         eps: 1.0e-3
