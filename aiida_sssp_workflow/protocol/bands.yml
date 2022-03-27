@@ -24,3 +24,16 @@ test:
 
     init_nbands_factor: 3
     bands_shift: 10.0
+
+demo:
+    name: demo-only
+    description: light loose set for demo
+
+    occupations: smearing
+    degauss: 0.0045
+    smearing: fd
+    electron_conv_thr: 1.0e-8
+    kpoints_distance: 0.25
+
+    init_nbands_factor: 3
+    bands_shift: 10.0
