@@ -13,7 +13,7 @@ HMCUT = 10.0  # Hermite cutoff
 POSHMA = -0.5634  # Positive Hermite (cold I) `a`
 
 
-def pyefermi(
+def find_efermi(
     bands,
     weights,
     nelec: int,
@@ -75,6 +75,7 @@ def smear(bands, weights, xe: float, nelec: int, swidth: float, stype: int) -> f
         for j in range(nbnd):
             x = (xe - bands[i, j]) / swidth
             z += weights[i] * sfuncs[stype - 1](x)
+
     return z - nelec
 
 

@@ -1,15 +1,16 @@
 ---
 theos:
     name: theos
-    description: Delta measure parameters compatible with common-workflow
+    description: Bands measure parameters
 
     occupations: smearing
     degauss: 0.0045
     smearing: fd
     electron_conv_thr: 1.0e-10
     kpoints_distance: 0.10
-    scale_count: 7
-    scale_increment: 0.02
+
+    init_nbands_factor: 3
+    fermi_shift: 10.0
 
 test:
     name: test-only
@@ -20,17 +21,19 @@ test:
     smearing: fd
     electron_conv_thr: 1.0e-6
     kpoints_distance: 0.5
-    scale_count: 5
-    scale_increment: 0.02
+
+    init_nbands_factor: 3
+    fermi_shift: 10.0
 
 demo:
     name: demo-only
-    description: light loose set for test
+    description: light loose set for demo
 
     occupations: smearing
     degauss: 0.0045
     smearing: fd
-    electron_conv_thr: 1.0e-6
+    electron_conv_thr: 1.0e-8
     kpoints_distance: 0.25
-    scale_count: 5
-    scale_increment: 0.02
+
+    init_nbands_factor: 3
+    fermi_shift: 10.0

@@ -13,7 +13,8 @@ from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
 )
 
-DeltaMeasureWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
+DeltaMeasureWorkChain = WorkflowFactory("sssp_workflow.accuracy.delta")
+BandsMeasureWorkChain = WorkflowFactory("sssp_workflow.accuracy.bands")
 ConvergenceCohesiveEnergy = WorkflowFactory("sssp_workflow.convergence.cohesive_energy")
 ConvergencePhononFrequencies = WorkflowFactory(
     "sssp_workflow.convergence.phonon_frequencies"
@@ -40,10 +41,11 @@ def parse_pseudo_info(pseudo: UpfData):
 
 DEFAULT_PROPERTIES_LIST = [
     "accuracy:delta",
-    "convergence:cohesive_energy",
+    "accuracy:bands" "convergence:cohesive_energy",
     "convergence:phonon_frequencies",
     "convergence:pressure",
     "convergence:delta",
+    "convergence:bands",
 ]
 
 
@@ -84,9 +86,9 @@ class VerificationWorkChain(WorkChain):
             cls.setup_code_resource_options,
             cls.parse_pseudo,
             cls.init_setup,
-            if_(cls.is_verify_delta_measure)(
-                cls.run_delta_measure,
-                cls.inspect_delta_measure,
+            if_(cls.is_verify_accuracy)(
+                cls.run_accuracy,
+                cls.inspect_accuracy,
             ),
             if_(cls.is_verify_convergence)(
                 if_(cls.is_caching)(
@@ -100,8 +102,10 @@ class VerificationWorkChain(WorkChain):
             help='pseudopotential info')
         spec.output_namespace('delta_measure', dynamic=True,
                             help='results of delta measure calculation.')
+        spec.output_namespace('bands_measure', dynamic=True,
+                            help='results of bands measure calculation.')
         spec.output_namespace('convergence_cohesive_energy', dynamic=True,
-                            help='results of convergence cohesive energy calculation.')
+                            help='results of convergence cohesive_energy calculation.')
         spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
                             help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
@@ -183,9 +187,14 @@ class VerificationWorkChain(WorkChain):
         # Properties list
         self.ctx.properties_list = self.inputs.properties_list.get_list()
 
-        # Delta measure inputs setting
+        # Accuracy inputs setting
+        # Delta measure
         inputs = base_inputs.copy()
         self.ctx.delta_measure_inputs = inputs
+
+        # Bands measure
+        inputs = base_inputs.copy()
+        self.ctx.bands_measure_inputs = inputs
 
         # Convergence inputs setting
         inputs = base_conv_inputs.copy()
@@ -210,27 +219,45 @@ class VerificationWorkChain(WorkChain):
         # to collect workchains in a dict
         self.ctx.workchains = {}
 
-    def is_verify_delta_measure(self):
+    def is_verify_accuracy(self):
         """
-        Whether to run delta measure workflow.
-        If properties_list contain `delta_measure` return True.
+        Whether to run accuracy (delta measure, bands distance} workflow.
         """
-        return "accuracy:delta" in self.ctx.properties_list
+        for p in self.ctx.properties_list:
+            if "accuracy" in p:
+                return True
 
-    def run_delta_measure(self):
+        return False
+
+    def run_accuracy(self):
         """Run delta measure sub-workflow"""
         ##
-        # delta measure
+        # delta factor
         ##
-        running = self.submit(DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs)
-        self.report(f"submit workchain delta measure pk={running}")
+        if "accuracy:delta" in self.ctx.properties_list:
+            running = self.submit(
+                DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs
+            )
+            self.report(f"submit workchain delta measure pk={running}")
 
-        self.to_context(verify_delta_measure=running)
-        self.ctx.workchains["delta_measure"] = running
+            self.to_context(verify_delta_measure=running)
+            self.ctx.workchains["delta_measure"] = running
 
-    def inspect_delta_measure(self):
+        ##
+        # bands distance
+        ##
+        if "accuracy:bands" in self.ctx.properties_list:
+            running = self.submit(
+                BandsMeasureWorkChain, **self.ctx.bands_measure_inputs
+            )
+            self.report(f"submit workchain accuracy bands measure pk={running}")
+
+            self.to_context(verify_bands_measure=running)
+            self.ctx.workchains["bands_measure"] = running
+
+    def inspect_accuracy(self):
         """Inspect delta measure results"""
-        self._report_and_results(wname_list=["delta_measure"])
+        self._report_and_results(wname_list=["delta_measure", "bands_measure"])
 
     def is_verify_convergence(self):
         """Whether to run convergence test workflows"""
@@ -322,16 +349,17 @@ class VerificationWorkChain(WorkChain):
             self.to_context(verify_delta=running)
             self.ctx.workchains["convergence_delta"] = running
 
-        # ##
-        # # bands
-        # ##
-        # running = self.submit(ConvergenceBandsWorkChain,
-        #                       **self.ctx.bands_distance_inputs)
-        # self.report(
-        #     f'submit workchain bands distance convergence pk={running.pk}')
+        ##
+        # bands
+        ##
+        if "convergence:bands" in self.ctx.properties_list:
+            running = self.submit(
+                ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
+            )
+            self.report(f"submit workchain bands distance convergence pk={running.pk}")
 
-        # self.to_context(verify_bands=running)
-        # self.ctx.workchains['convergence_bands_distance'] = running
+            self.to_context(verify_bands=running)
+            self.ctx.workchains["convergence_bands"] = running
 
     def inspect_convergence(self):
         """inspect the convergence result"""
@@ -341,6 +369,7 @@ class VerificationWorkChain(WorkChain):
                 "convergence_phonon_frequencies",
                 "convergence_pressure",
                 "convergence_delta",
+                "convergence_bands",
             ]
         )
 

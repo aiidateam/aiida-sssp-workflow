@@ -4,39 +4,8 @@ calculate bands distance
 """
 import numpy as np
 from aiida import orm
-from aiida.engine import calcfunction
 
-
-@calcfunction
-def calculate_bands_distance(
-    bands_structure_a: orm.BandsData,
-    bands_parameters_a: orm.Dict,
-    bands_structure_b: orm.BandsData,
-    bands_parameters_b: orm.Dict,
-    smearing: orm.Float,
-    is_metal: orm.Bool,
-):
-    """doc"""
-    res = get_bands_distance(
-        bands_structure_a,
-        bands_structure_b,
-        bands_parameters_a,
-        bands_parameters_b,
-        smearing.value,
-        is_metal.value,
-    )
-
-    return orm.Dict(
-        dict={
-            "eta_v": res.get("eta_v", None),
-            "shift_v": res.get("shift_v", None),
-            "max_diff_v": res.get("max_diff_v", None),
-            "eta_10": res.get("eta_10", None),
-            "shift_10": res.get("shift_10", None),
-            "max_diff_10": res.get("max_diff_10", None),
-            "bands_unit": "eV",
-        }
-    )
+from aiida_sssp_workflow.efermi import find_efermi
 
 
 def get_homo(bands, num_electrons: int):
@@ -70,8 +39,6 @@ def retrieve_bands(
     """
     docstring
     """
-    from efermi import pyefermi
-
     bands = bandsdata.get_bands()
     bands = bands - efermi  # shift all bands to fermi energy 0
     bands = bands[:, start_band:]
@@ -86,7 +53,7 @@ def retrieve_bands(
         bands = np.asfortranarray(bands)
         meth = 2  # firmi-dirac smearing
 
-        output_efermi = pyefermi(bands, weights, nelectrons, smearing, nkpoints, meth)
+        output_efermi = find_efermi(bands, weights, nelectrons, smearing, meth)
 
     else:
         homo_energy = get_homo(bands, num_electrons)
@@ -159,8 +126,9 @@ def get_bands_distance(
     bands_b: orm.BandsData,
     band_parameters_a: orm.Dict,
     band_parameters_b: orm.Dict,
-    smearing,
-    is_metal,
+    smearing: float,
+    fermi_shift: float,
+    is_metal: bool,
 ):
     """
     TODO docstring
@@ -197,36 +165,35 @@ def get_bands_distance(
         efermi_b = res["efermi"]
 
     # eta_v
-    fermi_shift = 0.0
+    fermi_shift_v = 0.0
     if is_metal:
         smearing_v = smearing
     else:
         smearing_v = 0
 
     outputs = calculate_eta_and_max_diff(
-        bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_v
+        bands_a, bands_b, efermi_a, efermi_b, fermi_shift_v, smearing_v
     )
     eta_v = outputs.get("eta")
     shift_v = outputs.get("shift")
     max_diff_v = outputs.get("max_diff")
 
-    # eta_10
-    fermi_shift = 10.0
+    # eta_c
     # if not metal
-    smearing_10 = smearing
+    smearing_c = smearing
     outputs = calculate_eta_and_max_diff(
-        bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_10
+        bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_c
     )
 
-    eta_10 = outputs.get("eta")
-    shift_10 = outputs.get("shift")
-    max_diff_10 = outputs.get("max_diff")
+    eta_c = outputs.get("eta")
+    shift_c = outputs.get("shift")
+    max_diff_c = outputs.get("max_diff")
 
     return {
         "eta_v": eta_v,
         "shift_v": shift_v,
         "max_diff_v": max_diff_v,
-        "eta_10": eta_10,
-        "shift_10": shift_10,
-        "max_diff_10": max_diff_10,
+        "eta_c": eta_c,
+        "shift_c": shift_c,
+        "max_diff_c": max_diff_c,
     }

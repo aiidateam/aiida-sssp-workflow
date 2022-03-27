@@ -50,10 +50,8 @@ def create_kpoints_from_distance(structure, distance, force_parity):
 
 
 class BandsWorkChain(WorkChain):
-    """WorkChain calculate the bands for certain pseudopotential"""
-
-    _BANDS_SHIFT = 10.05
-    _SEEKPATH_DISTANCE = 0.1
+    """WorkChain calculate the bands for certain pseudopotential
+    Can choose only run bands or only on bandstructure"""
 
     @classmethod
     def define(cls, spec):
@@ -73,11 +71,13 @@ class BandsWorkChain(WorkChain):
         spec.input('ecutrho', valid_type=orm.Float,
                     help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
         spec.input('kpoints_distance', valid_type=orm.Float,
-                    help='Kpoints distance setting for bulk energy calculation.')
+                    help='Kpoints distance setting for bulk energy calculation and for seekpath.')
         spec.input('init_nbands_factor', valid_type=orm.Float,
                     help='initial nbands factor.')
+        spec.input('fermi_shift', valid_type=orm.Float, default=lambda: orm.Float(10.0),
+                    help='The uplimit of energy to check the bands diff, control the number of bands.')
         spec.input('should_run_bands_structure', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='if True, run final bands structure calculation on seekpath kpath.')
+                    help='if True, run bands structure calculation on seekpath kpath.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -99,19 +99,11 @@ class BandsWorkChain(WorkChain):
                 cls.run_band_structure,
                 cls.inspect_band_structure,
             ),
-
-            cls.results,
+            cls.finalize,
         )
-        spec.output_namespace('seekpath_band_structure', dynamic=True,
-                                help='output of band structure along seekpath.')
-        spec.output('output_scf_parameters', valid_type=orm.Dict,
-                    help='The output parameters of the SCF `PwBaseWorkChain`.')
-        spec.output('output_bands_parameters', valid_type=orm.Dict,
-                    help='The output parameters of the BANDS `PwBaseWorkChain`.')
-        spec.output('output_bands_structure', valid_type=orm.BandsData,
-                    help='The computed band structure.')
-        spec.output('output_nbands_factor', valid_type=orm.Float,
-                    help='The nbands factor of final bands run.')
+        spec.expose_outputs(PwBandsWorkChain, namespace='band_structure',
+                            namespace_options={'dynamic': True, 'required': False})
+        spec.expose_outputs(PwBandsWorkChain, namespace='bands')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
         # yapf: enable
@@ -149,6 +141,12 @@ class BandsWorkChain(WorkChain):
         self.ctx.nbands_factor = self.inputs.init_nbands_factor
         self.ctx.lowest_highest_eigenvalue = 0.0
 
+        # For qe PwBandsWorkChain if `bands_kpoints` not set, the seekpath will run
+        # to give a seekpath along the recommonded path.
+        # There for I need to explicitly set the bands_kpoints and apply it
+        # to the bands workchain.
+        # While for the band_structure sub-workchain, the seekpath will run and
+        # give band structure along the path.
         self.ctx.bands_kpoints = create_kpoints_from_distance(
             self.inputs.structure, self.ctx.kpoints_distance, orm.Bool(False)
         )
@@ -222,7 +220,7 @@ class BandsWorkChain(WorkChain):
         return ToContext(workchain_bands=running)
 
     def not_enough_bands(self):
-        """inspect and check if the number of bands enough for shift 10eV (_BANDS_SHIFT)"""
+        """inspect and check if the number of bands enough for fermi shift (_FERMI_SHIFT)"""
         workchain = self.ctx.workchain_bands
 
         if not workchain.is_finished_ok:
@@ -233,9 +231,12 @@ class BandsWorkChain(WorkChain):
 
         fermi_energy = workchain.outputs.band_parameters["fermi_energy"]
         bands = workchain.outputs.band_structure.get_array("bands")
-        self.ctx.highest_band = float(np.amin(bands[:, -1]))
+        # -1 colume for the highest eigenvalue of every kpoints
+        # which might not be belong to one band if there are degeneracy
+        # not enough until eigenvalues of all kpoints are greater than shift value.
+        highest_band = bands[:, -1]
 
-        return self.ctx.highest_band - fermi_energy < self._BANDS_SHIFT
+        return np.all(highest_band < fermi_energy + self.inputs.fermi_shift.value)
 
     def increase_nbands(self):
         """inspect the result of bands calculation."""
@@ -249,7 +250,7 @@ class BandsWorkChain(WorkChain):
         """run band structure calculation"""
         inputs = self._get_base_bands_inputs()
         inputs["nbands_factor"] = self.ctx.nbands_factor
-        inputs["bands_kpoints_distance"] = orm.Float(self._SEEKPATH_DISTANCE)
+        inputs["bands_kpoints_distance"] = orm.Float(self.inputs.kpoints_distance)
 
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f"Running pw band structure calculation pk={running.pk}")
@@ -257,38 +258,22 @@ class BandsWorkChain(WorkChain):
 
     def inspect_band_structure(self):
         """inspect band structure"""
-        workchain = self.ctx.workchain_band_structure
+        self._inspect_workchain(
+            namespace="band_structure", workchain=self.ctx.workchain_band_structure
+        )
 
+    def finalize(self):
+        """inspect band"""
+        self._inspect_workchain(namespace="bands", workchain=self.ctx.workchain_bands)
+
+    def _inspect_workchain(self, namespace, workchain):
         if not workchain.is_finished_ok:
             self.report(
-                f"PwBandsWorkChain for bands structure failed with exit status {workchain.exit_status}"
+                f"PwBandsWorkChain uuid={workchain.uuid} failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
         self.report("pw band structure workchain successfully completed")
-        self.out(
-            "seekpath_band_structure.output_scf_parameters",
-            workchain.outputs.scf_parameters,
+        self.out_many(
+            self.exposed_outputs(workchain, PwBandsWorkChain, namespace=namespace)
         )
-        self.out(
-            "seekpath_band_structure.output_bands_parameters",
-            workchain.outputs.band_parameters,
-        )
-        self.out(
-            "seekpath_band_structure.output_bands_structure",
-            workchain.outputs.band_structure,
-        )
-
-    def results(self):
-        """result"""
-        self.report("pw bands workchain successfully completed")
-        self.out(
-            "output_scf_parameters", self.ctx.workchain_bands.outputs.scf_parameters
-        )
-        self.out(
-            "output_bands_parameters", self.ctx.workchain_bands.outputs.band_parameters
-        )
-        self.out(
-            "output_bands_structure", self.ctx.workchain_bands.outputs.band_structure
-        )
-        self.out("output_nbands_factor", orm.Float(self.ctx.nbands_factor).store())

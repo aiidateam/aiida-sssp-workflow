@@ -21,17 +21,17 @@ def run_verification(pw_code, ph_code, upf):
         "pw_code": pw_code,
         "ph_code": ph_code,
         "pseudo": upf,
-        "protocol": orm.Str("test"),
+        "protocol": orm.Str("demo"),
         "criteria": orm.Str("efficiency"),
-        "cutoff_control": orm.Str("test"),
+        "cutoff_control": orm.Str("demo"),
         "properties_list": orm.List(
             list=[
-                # "accuracy:delta",
-                # "accuracy:bands",
-                # "convergence:cohesive_energy",
-                # "convergence:phonon_frequencies",
-                # "convergence:pressure",
-                # "convergence:delta",
+                "accuracy:delta",
+                "accuracy:bands",
+                "convergence:cohesive_energy",
+                "convergence:phonon_frequencies",
+                "convergence:pressure",
+                "convergence:delta",
                 "convergence:bands",
             ]
         ),
@@ -59,22 +59,26 @@ if __name__ == "__main__":
     try:
         element = sys.argv[1]
     except:
-        element = "Si"
+        raise
+
+    try:
+        fn = sys.argv[2]
+    except:
+        raise
+
+    try:
+        label = sys.argv[3]
+    except:
+        raise
 
     pw_code = load_code("pw-6.7@localhost")
     ph_code = load_code("ph-6.7@localhost")
 
-    if element == "Si":
-        pp_label = "psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF"
-    elif element == "Mg":
-        pp_label = "psl/Mg.pbe-spn-kjpaw_psl.1.0.0.UPF"
-
-    pp_name = pp_label.split("/")[1]
-    pp_path = os.path.join(STATIC_DIR, pp_name)
+    pp_path = os.path.join(STATIC_DIR, element, fn)
     with open(pp_path, "rb") as stream:
         pseudo = UpfData(stream)
 
     res, node = run_verification(pw_code, ph_code, pseudo)
-    node.description = pp_label
+    node.description = label
     print(node)
     print(res)
