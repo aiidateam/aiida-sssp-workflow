@@ -2,7 +2,6 @@
 """
 Base legacy work chain
 """
-import importlib
 from abc import ABCMeta, abstractmethod
 
 from aiida import orm
@@ -11,10 +10,9 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
-    RARE_EARTH_ELEMENTS,
     convergence_analysis,
     get_protocol,
-    get_standard_cif_filename_from_element,
+    get_standard_structure,
     helper_get_magnetic_inputs,
     update_dict,
 )
@@ -73,10 +71,6 @@ class BaseLegacyWorkChain(WorkChain):
             cls.init_setup,
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element, ),
-            if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element, ),
-            if_(cls.is_fluorine_element)(
-                cls.extra_setup_for_fluorine_element, ),
             cls.setup_code_parameters_from_protocol,
             cls.setup_criteria_parameters_from_protocol,
             cls.setup_code_resource_options,
@@ -145,9 +139,7 @@ class BaseLegacyWorkChain(WorkChain):
         # EXCEPT that for the element fluorine the `SiF4.cif` used for convergence
         # reason. But we do the structure setup for SiF4 in the following step:
         # `cls.extra_setup_for_fluorine_element`
-        cif_file = get_standard_cif_filename_from_element(element)
-        self.ctx.cif = orm.CifData.get_or_create(cif_file, use_first=True)[0]
-        self.ctx.structure = self.ctx.cif.get_structure(primitive_cell=False)
+        self.ctx.structure = get_standard_structure(element, prop='convergence')
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
@@ -168,56 +160,39 @@ class BaseLegacyWorkChain(WorkChain):
             pseudos[kind_name] = pseudo
         self.ctx.pseudos = pseudos
 
-    def is_rare_earth_element(self):
-        """Check if the element is rare earth"""
-        return self.ctx.element in RARE_EARTH_ELEMENTS
+    # def is_rare_earth_element(self):
+    #     """Check if the element is rare earth"""
+    #     return self.ctx.element in RARE_EARTH_ELEMENTS
 
-    def extra_setup_for_rare_earth_element(self):
-        """Extra setup for rare earth element"""
-        import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
-                                               'N.pbe-n-radius_5.upf')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_nitrogen = UpfData(stream)
-            self.ctx.pseudos['N'] = upf_nitrogen
+    # def extra_setup_for_rare_earth_element(self):
+    #     """Extra setup for rare earth element"""
+    #     import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
+    #                                            'N.pbe-n-radius_5.upf')
+    #     with import_path as pp_path, open(pp_path, 'rb') as stream:
+    #         upf_nitrogen = UpfData(stream)
+    #         self.ctx.pseudos['N'] = upf_nitrogen
 
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
+    #     # In rare earth case, increase the initial number of bands,
+    #     # otherwise the occupation will not fill up in the highest band
+    #     # which always trigger the `PwBaseWorkChain` sanity check.
+    #     nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
+    #     nbands_factor = 2
 
-        extra_pw_parameters = {
-            'SYSTEM': {
-                'nbnd': int(nbands * nbands_factor),
-                'nspin': 2,
-                'starting_magnetization': {
-                    self.ctx.element: 0.2,
-                    'N': 0.0,
-                },
-            },
-            'ELECTRONS': {
-                'diagonalization': 'cg',
-            }
-        }
-        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters,
-                                             extra_pw_parameters)
-
-    def is_fluorine_element(self):
-        """Check if the element is magnetic"""
-        return self.ctx.element == 'F'
-
-    def extra_setup_for_fluorine_element(self):
-        """Extra setup for fluorine element"""
-        cif_file = get_standard_cif_filename_from_element('SiF4')
-        self.ctx.structure = orm.CifData.get_or_create(
-            cif_file, use_first=True)[0].get_structure(primitive_cell=True)
-
-        # setting pseudos
-        import_path = importlib.resources.path(
-            'aiida_sssp_workflow.statics.UPFs', 'Si.pbe-n-rrkjus_psl.1.0.0.upf')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_silicon = UpfData(stream)
-            self.ctx.pseudos['Si'] = upf_silicon
+    #     extra_pw_parameters = {
+    #         'SYSTEM': {
+    #             'nbnd': int(nbands * nbands_factor),
+    #             'nspin': 2,
+    #             'starting_magnetization': {
+    #                 self.ctx.element: 0.2,
+    #                 'N': 0.0,
+    #             },
+    #         },
+    #         'ELECTRONS': {
+    #             'diagonalization': 'cg',
+    #         }
+    #     }
+    #     self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters,
+    #                                          extra_pw_parameters)
 
     def setup_code_parameters_from_protocol(self):
         """unzip and parse protocol parameters to context"""

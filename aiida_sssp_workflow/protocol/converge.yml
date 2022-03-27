@@ -26,6 +26,10 @@ theos:
 
     bands_distance:
 
+    delta:
+        scale_count: 7
+        scale_increment: 0.02
+
 test:
     name: test-only
     description: Protocol to run test of workflow.
@@ -52,3 +56,7 @@ test:
         scale_increment: 0.02
 
     bands_distance:
+
+    delta:
+        scale_count: 5
+        scale_increment: 0.02

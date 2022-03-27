@@ -8,6 +8,11 @@ efficiency:
         bounds: [0.0, 2.0]  # when relative error < 2.0%
         eps: 1.0e-3
 
+    delta:
+        mode: 0
+        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        eps: 1.0e-3
+
     phonon_frequencies:
         mode: 0
         bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
@@ -29,6 +34,11 @@ precision:
     description: Protocol to pick the precision pseudopotestials.
 
     cohesive_energy:
+        mode: 0
+        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        eps: 1.0e-3
+
+    delta:
         mode: 0
         bounds: [0.0, 2.0]  # when relative error < 2.0%
         eps: 1.0e-3

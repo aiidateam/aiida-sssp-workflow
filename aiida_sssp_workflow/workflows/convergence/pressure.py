@@ -1,72 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Convergence test on cohesive energy of a given pseudopotential
+Convergence test on pressure of a given pseudopotential
 """
 from aiida import orm
 from aiida.engine import calcfunction
+from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
 
-from .base import BaseConvergenceWorkChain
-
-PARA_ECUTWFC_LIST = lambda: orm.List(
-    list=[
-        20,
-        25,
-        30,
-        35,
-        40,
-        45,
-        50,
-        55,
-        60,
-        65,
-        70,
-        75,
-        80,
-        85,
-        90,
-        95,
-        100,
-        110,
-        120,
-        130,
-        140,
-        160,
-        180,
-        200,
-    ]
-)
-
-PARA_ECUTRHO_LIST = lambda: orm.List(
-    list=[
-        160,
-        200,
-        240,
-        280,
-        320,
-        360,
-        400,
-        440,
-        480,
-        520,
-        560,
-        600,
-        640,
-        680,
-        720,
-        760,
-        800,
-        880,
-        960,
-        1040,
-        1120,
-        1280,
-        1440,
-        1600,
-    ]
-)
+UpfData = DataFactory('pseudo.upf')
 
 
 def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
@@ -82,145 +27,195 @@ def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
     # coefficients of the polynomial in x=(V0/V)^(1/3) (aside from the
     # constant multiplicative factor 3B0/2)
     polynomial = [
-        3.0 / 4.0 * (B1 - 4.0),
-        0,
-        1.0 - 3.0 / 2.0 * (B1 - 4.0),
-        0,
-        3.0 / 4.0 * (B1 - 4.0) - 1.0,
-        0,
-        0,
-        0,
-        0,
-        -2 * P / (3.0 * B0),
+        3. / 4. * (B1 - 4.), 0, 1. - 3. / 2. * (B1 - 4.), 0,
+        3. / 4. * (B1 - 4.) - 1., 0, 0, 0, 0, -2 * P / (3. * B0)
     ]
-    V = min(
-        [
-            V0 / (x.real**3)
-            for x in np.roots(polynomial)
-            if abs(x.imag) < 1e-8 * abs(x.real)
-        ],
-        key=lambda V: abs(V - V0) / float(V0),
-    )
+    V = min([
+        V0 / (x.real**3)
+        for x in np.roots(polynomial) if abs(x.imag) < 1e-8 * abs(x.real)
+    ],
+            key=lambda V: abs(V - V0) / float(V0))
 
     return abs(V - V0) / V0 * 100
 
 
 @calcfunction
-def helper_pressure_difference(
-    input_parameters: orm.Dict,
-    ref_parameters: orm.Dict,
-    V0: orm.Float,
-    B0: orm.Float,
-    B1: orm.Float,
-) -> orm.Dict:
+def helper_pressure_difference(input_parameters: orm.Dict,
+                               ref_parameters: orm.Dict, V0: orm.Float,
+                               B0: orm.Float, B1: orm.Float) -> orm.Dict:
     """
     doc
     """
-    res_pressure = input_parameters["hydrostatic_stress"]
-    ref_pressure = ref_parameters["hydrostatic_stress"]
+    res_pressure = input_parameters['hydrostatic_stress']
+    ref_pressure = ref_parameters['hydrostatic_stress']
     absolute_diff = abs(res_pressure - ref_pressure)
     relative_diff = helper_get_volume_from_pressure_birch_murnaghan(
-        absolute_diff, V0.value, B0.value, B1.value
-    )
+        absolute_diff, V0.value, B0.value, B1.value)
 
     return orm.Dict(
         dict={
-            "relative_diff": relative_diff,
-            "absolute_diff": absolute_diff,
-            "absolute_unit": "GPascal",
-            "relative_unit": "%",
-        }
-    )
+            'pressure': res_pressure,
+            'relative_diff': relative_diff,
+            'absolute_diff': absolute_diff,
+            'absolute_unit': 'GPascal',
+            'relative_unit': '%'
+        })
 
 
-class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
+class ConvergencePressureWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on pressure of input structure"""
-
     # pylint: disable=too-many-instance-attributes
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        spec.input(
-            "code",
-            valid_type=orm.Code,
-            help="The `pw.x` code use for the `PwCalculation`.",
-        )
-        spec.input(
-            "parameters.v0_b0_b1",
-            valid_type=orm.Dict,
-            help="birch murnaghan fit results used in residual volume evaluation.",
-        )
+    _PROPERTY_NAME = 'pressure'
+    _EVALUATE_WORKCHAIN = PressureWorkChain
+    _MEASURE_OUT_PROPERTY = 'relative_diff'
 
-    def setup_protocol(self):
+    def init_setup(self):
+        super().init_setup()
+        self.ctx.pw_parameters = {}
+
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        super().extra_setup_for_magnetic_element()
+
+    def setup_code_parameters_from_protocol(self):
+        """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol["convergence"]["pressure"]
-        self.ctx._DEGAUSS = protocol["degauss"]
-        self.ctx._OCCUPATIONS = protocol["occupations"]
-        self.ctx._SMEARING = protocol["smearing"]
-        self.ctx._CONV_THR_EVA = protocol["electron_conv_thr"]
-        self.ctx._KDISTANCE = protocol["kpoints_distance"]
 
-        self.ctx._TOLERANCE = protocol["tolerance"]
-        self.ctx._CONV_THR_CONV = protocol["convergence_conv_thr"]
-        self.ctx._CONV_WINDOW = protocol["convergence_window"]
+        # Read from protocol if parameters not set from inputs
+        super().setup_code_parameters_from_protocol()
 
-    def get_create_process(self):
-        return PressureWorkChain
+        protocol = self.ctx.protocol
+        self._DEGAUSS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR = protocol['electron_conv_thr']
+        self._KDISTANCE = protocol['kpoints_distance']
 
-    def get_evaluate_process(self):
-        return helper_pressure_difference
+        self._EOS_SCALE_COUNT = protocol['scale_count']
+        self._EOS_SCALE_INCREMENT = protocol['scale_increment']
 
-    def get_parsed_results(self):
-        return {
-            "absolute_diff": ("The absolute residual pressure difference", "GPascal"),
-            "relative_diff": ("The relative residual pressure difference", "%"),
-        }
+        self.ctx.pw_parameters = super()._get_pw_base_parameters(self._DEGAUSS,
+                                                                   self._OCCUPATIONS,
+                                                                   self._SMEARING,
+                                                                   self._CONV_THR)
 
-    def get_converge_y(self):
-        return "relative_diff", "%"
+        # self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+        #                                 self.ctx.extra_pw_parameters)
 
-    def get_create_process_inputs(self):
-        _PW_PARAS = {  # pylint: disable=invalid-name
-            "SYSTEM": {
-                "degauss": self.ctx._DEGAUSS,
-                "occupations": self.ctx._OCCUPATIONS,
-                "smearing": self.ctx._SMEARING,
-            },
-            "ELECTRONS": {
-                "conv_thr": self.ctx._CONV_THR_EVA,
-            },
-        }
+        self.ctx.kpoints_distance = self._KDISTANCE
 
+        self.report(
+            f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
+        )
+
+    def _get_inputs(self, ecutwfc, ecutrho):
+        """
+        get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
+        all other parameters are fixed for the following steps
+        """
         inputs = {
-            "code": self.inputs.code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "parameters": {
-                "pw": orm.Dict(
-                    dict=update_dict(_PW_PARAS, self.ctx.base_pw_parameters)
-                ),
-                "kpoints_distance": orm.Float(self.ctx._KDISTANCE),
-            },
+            'code': self.inputs.pw_code,
+            'pseudos': self.ctx.pseudos,
+            'structure': self.ctx.structure,
+            'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
+            'ecutwfc': orm.Float(ecutwfc),
+            'ecutrho': orm.Float(ecutrho),
+            'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
+            'options': orm.Dict(dict=self.ctx.options),
+            'parallelization': orm.Dict(dict=self.ctx.parallelization),
+            'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
 
         return inputs
 
-    def get_evaluate_process_inputs(self):
-        ref_workchain = self.ctx.ref_workchain
-        V0_B0_B1 = self.inputs.parameters.v0_b0_b1  # pylint: disable=invalid-name
+    def run_reference(self):
+        """
+        run on reference calculation
+        """
+        super().run_reference()
 
-        res = {
-            "ref_parameters": ref_workchain.outputs.output_parameters,
-            "V0": orm.Float(V0_B0_B1["V0"]),
-            "B0": orm.Float(V0_B0_B1["B0"]),
-            "B1": orm.Float(V0_B0_B1["B1"]),
+        # For pressure convergence workflow, the birch murnagen fitting result is used to
+        # calculating the pressure. There is an extra workflow (run at ecutwfc of reference point)
+        # for it which need to be run before the following step.
+
+        # This workflow is shared with delta factor workchain for birch murnagan fitting.
+        ecutwfc = self._REFERENCE_ECUTWFC
+        ecutrho = ecutwfc * self.ctx.dual
+        parameters = {
+            'SYSTEM': {
+                'ecutwfc': ecutwfc,
+                'ecutrho': ecutrho,
+            },
+        }
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+                                             parameters)
+
+        self.report(f'{self.ctx.pw_parameters}')
+        inputs = {
+            'structure': self.ctx.structure,
+            'kpoints_distance': orm.Float(self._KDISTANCE),
+            'scale_count': orm.Int(self._EOS_SCALE_COUNT),
+            'scale_increment': orm.Float(self._EOS_SCALE_INCREMENT),
+            'metadata': {
+                'call_link_label': 'EOS'
+            },
+            'scf': {
+                'pw': {
+                    'code': self.inputs.pw_code,
+                    'pseudos': self.ctx.pseudos,
+                    'parameters': orm.Dict(dict=self.ctx.pw_parameters),
+                    'metadata': {
+                        'options': self.ctx.options
+                    },
+                    'parallelization': orm.Dict(dict=self.ctx.parallelization),
+                },
+            }
         }
 
-        return res
+        running = self.submit(_EquationOfStateWorkChain, **inputs)
+        self.report(f'launching _EquationOfStateWorkChain<{running.pk}>')
 
-    def get_output_input_mapping(self):
-        res = orm.Dict(dict={"output_parameters": "input_parameters"})
+        self.to_context(extra_reference=running)
+
+    def inspect_reference(self):
+        super().inspect_reference()
+
+        workchain = self.ctx.extra_reference
+        if not workchain.is_finished_ok:
+            self.report(
+                f'{workchain.process_label} pk={workchain.pk} for reference run is failed with exit_code={workchain.exit_status}.'
+            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
+                label='extra_reference')
+
+        extra_reference = self.ctx.extra_reference
+        extra_reference_parameters = extra_reference.outputs.output_birch_murnaghan_fit
+
+        V0 = extra_reference_parameters['volume0']
+        B0 = extra_reference_parameters['bulk_modulus0']
+        B1 = extra_reference_parameters['bulk_deriv0']
+
+        self.ctx.extra_parameters = {
+            'V0': orm.Float(V0),
+            'B0': orm.Float(B0),
+            'B1': orm.Float(B1)
+        }
+
+    def get_result_metadata(self):
+        return {
+            'absolute_unit': 'GPascal',
+            'relative_unit': '%',
+        }
+
+    def helper_compare_result_extract_fun(self, sample_node, reference_node,
+                                          **kwargs):
+        """implement"""
+        sample_output = sample_node.outputs.output_parameters
+        reference_output = reference_node.outputs.output_parameters
+
+        extra_parameters = kwargs['extra_parameters']
+        res = helper_pressure_difference(sample_output, reference_output,
+                                         **extra_parameters).get_dict()
+
         return res

@@ -26,12 +26,12 @@ repos:
             language_version: python3 # Should be a command that runs python3.6+
             exclude: |
                 (?x)^(
-                    aiida_sssp_workflow/workflows/legacy_convergence/cohesive_energy.py |
-                    aiida_sssp_workflow/workflows/legacy_convergence/phonon_frequencies.py |
-                    aiida_sssp_workflow/workflows/legacy_convergence/bands.py |
-                    aiida_sssp_workflow/workflows/legacy_convergence/pressure.py |
-                    aiida_sssp_workflow/workflows/bands_distance.py |
-                    aiida_sssp_workflow/workflows/legacy_convergence/_base.py
+                    aiida_sssp_workflow/workflows/convergence/cohesive_energy.py |
+                    aiida_sssp_workflow/workflows/convergence/phonon_frequencies.py |
+                    aiida_sssp_workflow/workflows/convergence/bands.py |
+                    aiida_sssp_workflow/workflows/convergence/pressure.py |
+                    aiida_sssp_workflow/workflows/measure/bands.py |
+                    aiida_sssp_workflow/workflows/convergence/_base.py
                 )$
 
     - repo: https://github.com/PyCQA/flake8

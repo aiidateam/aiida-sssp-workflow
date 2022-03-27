@@ -1,4 +1,4 @@
-from aiida_sssp_workflow.workflows.legacy_convergence.pressure import (
+from aiida_sssp_workflow.workflows.convergence.pressure import (
     ConvergencePressureWorkChain,
 )
 

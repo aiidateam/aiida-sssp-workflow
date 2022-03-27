@@ -15,7 +15,7 @@ from aiida_sssp_workflow.calculations.calculate_bands_distance import (
 from aiida_sssp_workflow.utils import (
     NONMETAL_ELEMENTS,
     RARE_EARTH_ELEMENTS,
-    get_standard_cif_filename_from_element,
+    get_cif_abspath,
     update_dict,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
@@ -101,7 +101,7 @@ class BandsDistanceWorkChain(WorkChain):
         # EXCEPT that for the element fluorine the `SiF4.cif` used for convergence
         # reason. But we do the structure setup for SiF4 in the following step:
         # `cls.extra_setup_for_fluorine_element`
-        cif_file = get_standard_cif_filename_from_element(element)
+        cif_file = get_cif_abspath(element)
         self.ctx.structure = orm.CifData.get_or_create(
             cif_file)[0].get_structure(primitive_cell=True)
 

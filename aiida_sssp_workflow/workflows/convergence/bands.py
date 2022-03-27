@@ -2,206 +2,189 @@
 """
 Convergence test on bands of a given pseudopotential
 """
+
 from aiida import orm
-from aiida.common import AttributeDict
-from aiida.engine import workfunction
+from aiida.engine import ToContext, append_
+from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.calculations.calculate_bands_distance import (
-    calculate_bands_distance,
-)
+from aiida_sssp_workflow.calculations import calculate_bands_distance
 from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, update_dict
-from aiida_sssp_workflow.workflows.bands import BandsWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
-from .base import BaseConvergenceWorkChain
+UpfData = DataFactory('pseudo.upf')
 
-PARA_ECUTWFC_LIST = lambda: orm.List(
-    list=[
-        20,
-        25,
-        30,
-        35,
-        40,
-        45,
-        50,
-        55,
-        60,
-        65,
-        70,
-        75,
-        80,
-        85,
-        90,
-        95,
-        100,
-        110,
-        120,
-        130,
-        140,
-        160,
-        180,
-        200,
-    ]
-)
-
-PARA_ECUTRHO_LIST = lambda: orm.List(
-    list=[
-        160,
-        200,
-        240,
-        280,
-        320,
-        360,
-        400,
-        440,
-        480,
-        520,
-        560,
-        600,
-        640,
-        680,
-        720,
-        760,
-        800,
-        880,
-        960,
-        1040,
-        1120,
-        1280,
-        1440,
-        1600,
-    ]
-)
+helper_bands_distence_difference = calculate_bands_distance.calculate_bands_distance
 
 
-@workfunction
-def helper_bands_distence_difference(
-    input_band_structure: orm.BandsData,
-    ref_band_structure: orm.BandsData,
-    input_band_parameters: orm.Dict,
-    ref_band_parameters: orm.Dict,
-    smearing: orm.Float,
-    is_metal: orm.Bool,
-):
-    """get the bands distence difference between two calculations"""
-    res = calculate_bands_distance(
-        input_band_structure,
-        ref_band_structure,
-        input_band_parameters,
-        ref_band_parameters,
-        smearing=smearing,
-        is_metal=is_metal,
-    )
-
-    return res
-
-
-class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
+class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
-
     # pylint: disable=too-many-instance-attributes
 
+    _INIT_NBANDS_FACTOR = 3.0
     _RY_TO_EV = 13.6056980659
 
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
-        # yapf: disable
         super().define(spec)
+        # yapf: disable
         spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        # yapf: enable
+        # yapy: enable
 
-    def setup_protocol(self):
+    def init_setup(self):
+        super().init_setup()
+
+        self.ctx.pw_parameters = {}
+        self.ctx.extra_parameters = {}
+
+        # extra setting for bands convergence
+        self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
+
+    def setup_code_parameters_from_protocol(self):
+        """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
+
+        # Read from protocol if parameters not set from inputs
         protocol_name = self.inputs.protocol.value
         protocol = self._get_protocol()[protocol_name]
-        protocol = protocol["convergence"]["bands_distance"]
-        self.ctx._DEGAUSS = protocol["degauss"]
-        self.ctx._OCCUPATIONS = protocol["occupations"]
-        self.ctx._SMEARING = protocol["smearing"]
-        self.ctx._CONV_THR_EVA = protocol["electron_conv_thr"]
-        self.ctx._SCF_KDISTANCE = protocol["scf_kpoints_distance"]
-        self.ctx._BAND_KDISTANCE = protocol["band_kpoints_distance"]
-        self.ctx._ININ_NBND_FACTOR = protocol["init_nbnd_factor"]
+        protocol = protocol['convergence']['bands_distance']
+        self._DEGAUSS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR = protocol['electron_conv_thr']
+        self._KDISTANCE = protocol['kpoints_distance']
 
-        self.ctx._TOLERANCE = protocol["tolerance"]
-        self.ctx._CONV_THR_CONV = protocol["convergence_conv_thr"]
-        self.ctx._CONV_WINDOW = protocol["convergence_window"]
+        self._MAX_EVALUATE = protocol['max_evaluate']
+        self._REFERENCE_ECUTWFC = protocol['reference_ecutwfc']
 
-    def init_step(self):
-        element = self.inputs.pseudo.element
-        self.ctx.is_metal = element not in NONMETAL_ELEMENTS
+        self.ctx.max_evaluate = self._MAX_EVALUATE
+        self.ctx.reference_ecutwfc = self._REFERENCE_ECUTWFC
 
-    def get_create_process(self):
-        return BandsWorkChain
+        self.ctx.degauss = self._DEGAUSS    # for band distance calculation
 
-    def get_evaluate_process(self):
-        return helper_bands_distence_difference
-
-    def get_parsed_results(self):
-        return {
-            "eta_v": ("The difference eta of valence bands", "eV"),
-            "eta_10": (
-                "The difference eta of valence bands and conduct bands up to 10.0eV",
-                "eV",
-            ),
-            "max_diff_v": ("The max difference of valence bands", "eV"),
-            "max_diff_10": (
-                "The max difference of valence bands and conduct bands up to 10.0eV",
-                "eV",
-            ),
-        }
-
-    def get_converge_y(self):
-        return "max_diff_10", "eV"
-
-    def get_create_process_inputs(self):
-        _PW_PARAS = {  # pylint: disable=invalid-name
-            "SYSTEM": {
-                "degauss": self.ctx._DEGAUSS,
-                "occupations": self.ctx._OCCUPATIONS,
-                "smearing": self.ctx._SMEARING,
+        self.ctx.pw_parameters = {
+            'SYSTEM': {
+                'degauss': self._DEGAUSS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._SMEARING,
             },
-            "ELECTRONS": {
-                "conv_thr": self.ctx._CONV_THR_EVA,
+            'ELECTRONS': {
+                'conv_thr': self._CONV_THR,
             },
         }
 
-        inputs = AttributeDict(
-            {
-                "code": self.inputs.code,
-                "pseudos": self.ctx.pseudos,
-                "structure": self.ctx.structure,
-                "parameters": {
-                    "pw": orm.Dict(
-                        dict=update_dict(_PW_PARAS, self.ctx.base_pw_parameters)
-                    ),
-                    "scf_kpoints_distance": orm.Float(self.ctx._SCF_KDISTANCE),
-                    "bands_kpoints_distance": orm.Float(self.ctx._BAND_KDISTANCE),
-                    "nbands_factor": orm.Float(self.ctx._ININ_NBND_FACTOR),
-                },
-            }
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+                                        self.ctx.extra_parameters)
+
+        # set the ecutrho according to the type of pseudopotential
+        # dual 4 for NC and 8 for all other type of PP.
+        if self.ctx.pseudo_type in ['NC', 'SL']:
+            dual = 4.0
+        else:
+            dual = 8.0
+
+        if 'dual' in self.inputs:
+            dual = self.inputs.dual
+
+        self.ctx.dual = dual
+
+        self.ctx.kpoints_distance = self._KDISTANCE
+
+        self.report(
+            f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
+
+    def _get_inputs(self, ecutwfc, ecutrho):
+        """
+        get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
+        all other parameters are fixed for the following steps
+        """
+        inputs = {
+            'code': self.inputs.code,
+            'pseudos': self.ctx.pseudos,
+            'structure': self.ctx.structure,
+            'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
+            'ecutwfc': orm.Float(ecutwfc),
+            'ecutrho': orm.Float(ecutrho),
+            'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
+            'init_nbands_factor': orm.Float(self._INIT_NBANDS_FACTOR),
+            'options': orm.Dict(dict=self.ctx.options),
+            'parallelization': orm.Dict(dict=self.ctx.parallelization),
+            'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
+        }
 
         return inputs
 
-    def get_evaluate_process_inputs(self):
-        ref_workchain = self.ctx.ref_workchain
+    def run_reference(self):
+        """
+        run on reference calculation
+        """
+        ecutwfc = self.ctx.reference_ecutwfc
+        ecutrho = ecutwfc * self.ctx.dual
+        inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
-        res = {
-            "ref_band_parameters": ref_workchain.outputs.band_parameters,
-            "ref_band_structure": ref_workchain.outputs.band_structure,
-            "smearing": orm.Float(self.ctx._DEGAUSS * self._RY_TO_EV),
-            "is_metal": orm.Bool(self.ctx.is_metal),
+        running = self.submit(BandsWorkChain, **inputs)
+        self.report(f'launching reference BandsWorkChain<{running.pk}>')
+
+        return ToContext(reference=running)
+
+    def run_samples(self):
+        """
+        run on all other evaluation sample points
+        """
+        workchain = self.ctx.reference
+
+        if not workchain.is_finished_ok:
+            self.report(
+                f'PwBaseWorkChain pk={workchain.pk} for reference run is failed.'
+            )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
+                label='reference')
+
+        for idx in range(self.ctx.max_evaluate):
+            ecutwfc = self._ECUTWFC_LIST[idx]
+            ecutrho = ecutwfc * self.ctx.dual
+            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
+
+            running = self.submit(BandsWorkChain, **inputs)
+            self.report(f'launching [{idx}] BandsWorkChain<{running.pk}>')
+
+            self.to_context(children=append_(running))
+
+    def get_result_metadata(self):
+        return {
+            'band_unit': 'eV',
         }
 
+    def helper_compare_result_extract_fun(self, sample_node, reference_node,
+                                          **kwargs):
+        """implement"""
+        sample_bands_output = sample_node.outputs.output_bands_parameters
+        reference_bands_output = reference_node.outputs.output_bands_parameters
+
+        sample_bands_structure = sample_node.outputs.output_bands_structure
+        reference_bands_structure = reference_node.outputs.output_bands_structure
+
+        extra_parameters = kwargs['extra_parameters']
+        res = helper_bands_distence_difference(sample_bands_structure,
+                                               sample_bands_output,
+                                               reference_bands_structure,
+                                               reference_bands_output,
+                                               **extra_parameters).get_dict()
+
         return res
 
-    def get_output_input_mapping(self):
-        res = orm.Dict(
-            dict={
-                "band_parameters": "input_band_parameters",
-                "band_structure": "input_band_structure",
-            }
-        )
-        return res
+    def results(self):
+        """
+        results
+        """
+        extra_parameters = {
+            'smearing': orm.Float(self.ctx.degauss * self._RY_TO_EV),
+            'is_metal': orm.Bool(self.ctx.is_metal)
+        }
+        output_parameters = self.result_general_process(
+            extra_parameters=extra_parameters)
+
+        self.out('output_parameters', orm.Dict(dict=output_parameters).store())

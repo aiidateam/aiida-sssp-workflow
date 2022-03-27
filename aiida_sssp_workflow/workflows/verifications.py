@@ -9,21 +9,18 @@ from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
-from aiida_sssp_workflow.workflows.legacy_convergence.caching import (
+from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
 )
 
-DeltaFactorWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
-ConvergenceCohesiveEnergy = WorkflowFactory(
-    "sssp_workflow.legacy_convergence.cohesive_energy"
-)
+DeltaMeasureWorkChain = WorkflowFactory("sssp_workflow.delta_measure")
+ConvergenceCohesiveEnergy = WorkflowFactory("sssp_workflow.convergence.cohesive_energy")
 ConvergencePhononFrequencies = WorkflowFactory(
-    "sssp_workflow.legacy_convergence.phonon_frequencies"
+    "sssp_workflow.convergence.phonon_frequencies"
 )
-ConvergencePressureWorkChain = WorkflowFactory(
-    "sssp_workflow.legacy_convergence.pressure"
-)
-ConvergenceBandsWorkChain = WorkflowFactory("sssp_workflow.legacy_convergence.bands")
+ConvergencePressureWorkChain = WorkflowFactory("sssp_workflow.convergence.pressure")
+ConvergenceBandsWorkChain = WorkflowFactory("sssp_workflow.convergence.bands")
+ConvergenceDeltaWorkChain = WorkflowFactory("sssp_workflow.convergence.delta")
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -42,10 +39,11 @@ def parse_pseudo_info(pseudo: UpfData):
 
 
 DEFAULT_PROPERTIES_LIST = [
-    "delta_measure",
+    "accuracy:delta",
     "convergence:cohesive_energy",
     "convergence:phonon_frequencies",
     "convergence:pressure",
+    "convergence:delta",
 ]
 
 
@@ -101,13 +99,15 @@ class VerificationWorkChain(WorkChain):
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
         spec.output_namespace('delta_measure', dynamic=True,
-                            help='results of delta factor calculation.')
+                            help='results of delta measure calculation.')
         spec.output_namespace('convergence_cohesive_energy', dynamic=True,
                             help='results of convergence cohesive energy calculation.')
         spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
                             help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
                             help='results of convergence pressure calculation.')
+        spec.output_namespace('convergence_delta', dynamic=True,
+                              help='results of convergence delta calculation.')
         spec.output_namespace('convergence_bands', dynamic=True,
                               help='results of convergence bands calculation.')
 
@@ -199,6 +199,9 @@ class VerificationWorkChain(WorkChain):
         self.ctx.pressure_inputs = inputs
 
         inputs = base_conv_inputs.copy()
+        self.ctx.delta_inputs = inputs
+
+        inputs = base_conv_inputs.copy()
         self.ctx.bands_distance_inputs = inputs
 
         inputs = base_conv_inputs.copy()
@@ -212,15 +215,15 @@ class VerificationWorkChain(WorkChain):
         Whether to run delta measure workflow.
         If properties_list contain `delta_measure` return True.
         """
-        return "delta_measure" in self.ctx.properties_list
+        return "accuracy:delta" in self.ctx.properties_list
 
     def run_delta_measure(self):
         """Run delta measure sub-workflow"""
         ##
-        # delta factor
+        # delta measure
         ##
-        running = self.submit(DeltaFactorWorkChain, **self.ctx.delta_measure_inputs)
-        self.report(f"submit workchain delta factor pk={running}")
+        running = self.submit(DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs)
+        self.report(f"submit workchain delta measure pk={running}")
 
         self.to_context(verify_delta_measure=running)
         self.ctx.workchains["delta_measure"] = running
@@ -309,6 +312,16 @@ class VerificationWorkChain(WorkChain):
             self.to_context(verify_pressure=running)
             self.ctx.workchains["convergence_pressure"] = running
 
+        ##
+        # Pressure
+        ##
+        if "convergence:delta" in self.ctx.properties_list:
+            running = self.submit(ConvergenceDeltaWorkChain, **self.ctx.delta_inputs)
+            self.report(f"submit workchain delta convergence pk={running.pk}")
+
+            self.to_context(verify_delta=running)
+            self.ctx.workchains["convergence_delta"] = running
+
         # ##
         # # bands
         # ##
@@ -327,6 +340,7 @@ class VerificationWorkChain(WorkChain):
                 "convergence_cohesive_energy",
                 "convergence_phonon_frequencies",
                 "convergence_pressure",
+                "convergence_delta",
             ]
         )
 

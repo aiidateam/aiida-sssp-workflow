@@ -1,209 +1,172 @@
 # -*- coding: utf-8 -*-
 """
-Convergence test on cohesive energy of a given pseudopotential
+Convergence test on phonon frequencies of a given pseudopotential
 """
+
 from aiida import orm
 from aiida.engine import calcfunction
+from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import (
     PhononFrequenciesWorkChain,
 )
 
-from .base import BaseConvergenceWorkChain
+UpfData = DataFactory('pseudo.upf')
 
 
 @calcfunction
-def helper_phonon_frequencies_difference(
-    input_parameters: orm.Dict, ref_parameters: orm.Dict
-) -> orm.Dict:
+def helper_phonon_frequencies_difference(input_parameters: orm.Dict,
+                                         ref_parameters: orm.Dict) -> orm.Dict:
     """
     doc
     """
     import numpy as np
 
-    input_frequencies = input_parameters["dynamical_matrix_0"]["frequencies"]
-    ref_frequencies = ref_parameters["dynamical_matrix_0"]["frequencies"]
+    input_frequencies = input_parameters['dynamical_matrix_0']['frequencies']
+    ref_frequencies = ref_parameters['dynamical_matrix_0']['frequencies']
     diffs = np.array(input_frequencies) - np.array(ref_frequencies)
     weights = np.array(ref_frequencies)
+
+    omega_max = np.amax(input_frequencies)
 
     absolute_diff = np.mean(diffs)
     absolute_max_diff = np.amax(diffs)
 
-    relative_diff = np.sqrt(np.mean((diffs / weights) ** 2)) * 100
+    relative_diff = np.sqrt(np.mean((diffs / weights)**2)) * 100
     relative_max_diff = np.amax(diffs / weights) * 100
 
     return orm.Dict(
         dict={
-            "relative_diff": relative_diff,
-            "relative_max_diff": relative_max_diff,
-            "absolute_diff": absolute_diff,
-            "absolute_max_diff": absolute_max_diff,
-            "absolute_unit": "cm-1",
-            "relative_unit": "%",
-        }
-    )
+            'omega_max': omega_max,
+            'relative_diff': relative_diff,
+            'relative_max_diff': relative_max_diff,
+            'absolute_diff': absolute_diff,
+            'absolute_max_diff': absolute_max_diff,
+            'absolute_unit': 'cm-1',
+            'relative_unit': '%'
+        })
 
 
-PARA_ECUTWFC_LIST = lambda: orm.List(
-    list=[
-        20,
-        25,
-        30,
-        35,
-        40,
-        45,
-        50,
-        55,
-        60,
-        65,
-        70,
-        75,
-        80,
-        85,
-        90,
-        95,
-        100,
-        110,
-        120,
-        130,
-        140,
-        160,
-        180,
-        200,
-    ]
-)
-
-PARA_ECUTRHO_LIST = lambda: orm.List(
-    list=[
-        160,
-        200,
-        240,
-        280,
-        320,
-        360,
-        400,
-        440,
-        480,
-        520,
-        560,
-        600,
-        640,
-        680,
-        720,
-        760,
-        800,
-        880,
-        960,
-        1040,
-        1120,
-        1280,
-        1440,
-        1600,
-    ]
-)
-
-
-class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
+class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
-
     # pylint: disable=too-many-instance-attributes
+
+    _PROPERTY_NAME = 'phonon_frequencies'
+    _EVALUATE_WORKCHAIN = PhononFrequenciesWorkChain
+    _MEASURE_OUT_PROPERTY = 'relative_diff'
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.input(
-            "pw_code",
-            valid_type=orm.Code,
-            help="The `pw.x` code use for the `PwCalculation`.",
-        )
-        spec.input(
-            "ph_code",
-            valid_type=orm.Code,
-            help="The `ph.x` code use for the `PhCalculation`.",
-        )
+        spec.input('ph_code', valid_type=orm.Code,
+                    help='The `ph.x` code use for the `PhCalculation`.')
 
-    def setup_protocol(self):
+    def init_setup(self):
+        super().init_setup()
+        self.ctx.extra_ph_parameters = {}
+        self.ctx.extra_pw_parameters = {}
+
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        super().extra_setup_for_magnetic_element()
+
+    def extra_setup_for_rare_earth_element(self):
+        super().extra_setup_for_rare_earth_element()
+
+        extra_ph_parameters = {
+            'INPUTPH': {
+                'diagonalization': 'cg',
+            }
+        }
+        self.ctx.extra_ph_parameters = update_dict(self.ctx.extra_ph_parameters,
+                                             extra_ph_parameters)
+
+
+    def setup_code_parameters_from_protocol(self):
+        """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol["convergence"]["phonon_frequencies"]
-        self.ctx._DEGAUSS = protocol["degauss"]
-        self.ctx._OCCUPATIONS = protocol["occupations"]
-        self.ctx._SMEARING = protocol["smearing"]
-        self.ctx._CONV_THR_EVA = protocol["electron_conv_thr"]
-        self.ctx._QPOINTS_LIST = protocol["qpoints_list"]
-        self.ctx._KDISTANCE = protocol["kpoints_distance"]
 
-        # PH parameters
-        self.ctx._TR2_PH = protocol["ph"]["tr2_ph"]
-        self.ctx._EPSILON = protocol["ph"]["epsilon"]
+        # Read from protocol if parameters not set from inputs
+        super().setup_code_parameters_from_protocol()
 
-        self.ctx._TOLERANCE = protocol["tolerance"]
-        self.ctx._CONV_THR_CONV = protocol["convergence_conv_thr"]
-        self.ctx._CONV_WINDOW = protocol["convergence_window"]
+        protocol = self.ctx.protocol
+        # PW
+        self._DEGAUSS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._SMEARING = protocol['smearing']
+        self._CONV_THR = protocol['electron_conv_thr']
+        self._KDISTANCE = protocol['kpoints_distance']
 
-    def get_create_process(self):
-        return PhononFrequenciesWorkChain
+        # PH
+        self._QPOINTS_LIST = protocol['qpoints_list']
+        self._PH_EPSILON = protocol['epsilon']
+        self._PH_TR2_PH = protocol['tr2_ph']
 
-    def get_evaluate_process(self):
-        return helper_phonon_frequencies_difference
 
-    def get_parsed_results(self):
-        return {
-            "relative_max_diff": ("The relative max phonon difference", "%"),
-            "absolute_max_diff": ("The absolute max phonon difference", "cm-1"),
-            "relative_diff": ("The relative phonon frequencies difference", "%"),
-            "absolute_diff": ("The absolute phonon frequencies difference", "cm-1"),
-        }
+        self.ctx.qpoints_list = self._QPOINTS_LIST
 
-    def get_converge_y(self):
-        return "relative_diff", "%"
+        self.ctx.pw_parameters = super()._get_pw_base_parameters(self._DEGAUSS,
+                                                                   self._OCCUPATIONS,
+                                                                   self._SMEARING,
+                                                                   self._CONV_THR)
 
-    def get_create_process_inputs(self):
-        _PW_PARAS = {  # pylint: disable=invalid-name
-            "SYSTEM": {
-                "degauss": self.ctx._DEGAUSS,
-                "occupations": self.ctx._OCCUPATIONS,
-                "smearing": self.ctx._SMEARING,
-            },
-            "ELECTRONS": {
-                "conv_thr": self.ctx._CONV_THR_EVA,
-            },
-        }
-        _PH_PARAS = {  # pylint: disable=invalid-name
-            "INPUTPH": {
-                "tr2_ph": self.ctx._TR2_PH,
-                "epsil": self.ctx._EPSILON,
+        # self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
+        #                                 self.ctx.extra_pw_parameters)
+
+        self.ctx.ph_parameters = {
+            'INPUTPH': {
+                'tr2_ph': self._PH_TR2_PH,
+                'epsil': self._PH_EPSILON,
             }
         }
 
+        self.ctx.ph_parameters = update_dict(self.ctx.ph_parameters,
+                                        self.ctx.extra_ph_parameters)
+        self.ctx.kpoints_distance = self._KDISTANCE
+
+        self.report(
+            f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
+        )
+        self.report(
+            f'The ph parameters for convergence is: {self.ctx.ph_parameters}'
+        )
+
+    def _get_inputs(self, ecutwfc, ecutrho):
+        """
+        get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
+        all other parameters are fixed for the following steps
+        """
         inputs = {
-            "pw_code": self.inputs.pw_code,
-            "ph_code": self.inputs.ph_code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "parameters": {
-                "pw": orm.Dict(
-                    dict=update_dict(_PW_PARAS, self.ctx.base_pw_parameters)
-                ),
-                "ph": orm.Dict(dict=_PH_PARAS),
-                "kpoints_distance": orm.Float(self.ctx._KDISTANCE),
-                "qpoints": orm.List(list=self.ctx._QPOINTS_LIST),
-            },
+            'pw_code': self.inputs.pw_code,
+            'ph_code': self.inputs.ph_code,
+            'pseudos': self.ctx.pseudos,
+            'structure': self.ctx.structure,
+            'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
+            'ph_base_parameters': orm.Dict(dict=self.ctx.ph_parameters),
+            'ecutwfc': orm.Float(ecutwfc),
+            'ecutrho': orm.Float(ecutrho),
+            'qpoints': orm.List(list=self.ctx.qpoints_list),
+            'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
+            'options': orm.Dict(dict=self.ctx.options),
+            'parallelization': orm.Dict(dict=self.ctx.parallelization),
+            'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
 
         return inputs
 
-    def get_evaluate_process_inputs(self):
-        ref_workchain = self.ctx.ref_workchain
-
-        res = {
-            "ref_parameters": ref_workchain.outputs.output_parameters,
+    def get_result_metadata(self):
+        return {
+            'absolute_unit': 'cm-1',
+            'relative_unit': '%',
         }
 
-        return res
+    def helper_compare_result_extract_fun(self, sample_node, reference_node,
+                                          **kwargs):
+        """extract"""
+        sample_output = sample_node.outputs.output_parameters
+        reference_output = reference_node.outputs.output_parameters
 
-    def get_output_input_mapping(self):
-        res = orm.Dict(dict={"output_parameters": "input_parameters"})
-        return res
+        return helper_phonon_frequencies_difference(
+            sample_output, reference_output).get_dict()

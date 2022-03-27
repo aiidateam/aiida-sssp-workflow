@@ -2,186 +2,136 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
+
 from aiida import orm
 from aiida.engine import calcfunction
+from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.cohesive_energy import CohesiveEnergyWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
+    CohesiveEnergyWorkChain,
+)
 
-from .base import BaseConvergenceWorkChain
+UpfData = DataFactory('pseudo.upf')
 
 
 @calcfunction
-def helper_cohesive_energy_difference(
-    input_parameters: orm.Dict, ref_parameters: orm.Dict
-) -> orm.Dict:
+def helper_cohesive_energy_difference(input_parameters: orm.Dict,
+                                      ref_parameters: orm.Dict) -> orm.Dict:
     """calculate the cohesive energy difference from parameters"""
-    res_energy = input_parameters["cohesive_energy_per_atom"]
-    ref_energy = ref_parameters["cohesive_energy_per_atom"]
-    absolute_diff = abs(res_energy - ref_energy)
+    res_energy = input_parameters['cohesive_energy_per_atom']
+    ref_energy = ref_parameters['cohesive_energy_per_atom']
+    absolute_diff = abs(res_energy - ref_energy) * 1000.0
     relative_diff = abs((res_energy - ref_energy) / ref_energy) * 100
 
     res = {
-        "absolute_diff": absolute_diff,
-        "relative_diff": relative_diff,
-        "absolute_unit": "eV/atom",
-        "relative_unit": "%",
+        'cohesive_energy_per_atom': res_energy,
+        'absolute_diff': absolute_diff,
+        'relative_diff': relative_diff,
+        'absolute_unit': 'meV/atom',
+        'relative_unit': '%'
     }
 
     return orm.Dict(dict=res)
 
 
-PARA_ECUTWFC_LIST = lambda: orm.List(
-    list=[
-        20,
-        25,
-        30,
-        35,
-        40,
-        45,
-        50,
-        55,
-        60,
-        65,
-        70,
-        75,
-        80,
-        85,
-        90,
-        95,
-        100,
-        110,
-        120,
-        130,
-        140,
-        160,
-        180,
-        200,
-    ]
-)
-
-PARA_ECUTRHO_LIST = lambda: orm.List(
-    list=[
-        160,
-        200,
-        240,
-        280,
-        320,
-        360,
-        400,
-        440,
-        480,
-        520,
-        560,
-        600,
-        640,
-        680,
-        720,
-        760,
-        800,
-        880,
-        960,
-        1040,
-        1120,
-        1280,
-        1440,
-        1600,
-    ]
-)
-
-
-class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
+class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
-
     # pylint: disable=too-many-instance-attributes
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        spec.input(
-            "code",
-            valid_type=orm.Code,
-            help="The `pw.x` code use for the `PwCalculation`.",
+    _PROPERTY_NAME = 'cohesive_energy'
+    _EVALUATE_WORKCHAIN = CohesiveEnergyWorkChain
+    _MEASURE_OUT_PROPERTY = 'absolute_diff'
+
+    def init_setup(self):
+        super().init_setup()
+        self.ctx.extra_pw_parameters = {}
+
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        super().extra_setup_for_magnetic_element()
+
+    def setup_code_parameters_from_protocol(self):
+        """Input validation"""
+        # pylint: disable=invalid-name, attribute-defined-outside-init
+
+        # Read from protocol if parameters not set from inputs
+        super().setup_code_parameters_from_protocol()
+
+        # parse protocol
+        protocol = self.ctx.protocol
+        self._DEGAUSS = protocol['degauss']
+        self._OCCUPATIONS = protocol['occupations']
+        self._BULK_SMEARING = protocol['smearing']
+        self._ATOM_SMEARING = protocol['atom_smearing']
+        self._CONV_THR = protocol['electron_conv_thr']
+        self._KDISTANCE = protocol['kpoints_distance']
+        self._VACUUM_LENGTH = protocol['vacuum_length']
+
+        # Set context parameters
+        self.ctx.vacuum_length = self._VACUUM_LENGTH
+        self.ctx.kpoints_distance = self._KDISTANCE
+        self.ctx.bulk_parameters = super()._get_pw_base_parameters(self._DEGAUSS,
+                                                                   self._OCCUPATIONS,
+                                                                   self._BULK_SMEARING,
+                                                                   self._CONV_THR)
+
+        # self.ctx.bulk_parameters = update_dict(self.ctx.bulk_parameters,
+        #                                 self.ctx.extra_pw_parameters)
+
+        self.ctx.atom_parameters = {
+            'SYSTEM': {
+                'degauss': self._DEGAUSS,
+                'occupations': self._OCCUPATIONS,
+                'smearing': self._ATOM_SMEARING,
+            },
+            'ELECTRONS': {
+                'conv_thr': self._CONV_THR,
+            },
+        }
+
+        self.report(
+            f'The bulk parameters for convergence is: {self.ctx.bulk_parameters}'
+        )
+        self.report(
+            f'The atom parameters for convergence is: {self.ctx.atom_parameters}'
         )
 
-    def setup_protocol(self):
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-        protocol_name = self.inputs.protocol.value
-        protocol = self._get_protocol()[protocol_name]
-        protocol = protocol["convergence"]["cohesive_energy"]
-        self.ctx._DEGAUSS = protocol["degauss"]
-        self.ctx._OCCUPATIONS = protocol["occupations"]
-        self.ctx._BULK_SMEARING = protocol["bulk_smearing"]
-        self.ctx._ATOM_SMEARING = protocol["atom_smearing"]
-        self.ctx._CONV_THR_EVA = protocol["electron_conv_thr"]
-        self.ctx._KDISTANCE = protocol["kpoints_distance"]
-        self.ctx._VACUUM_LENGTH = protocol["vaccum_length"]
-
-        self.ctx._TOLERANCE = protocol["tolerance"]
-        self.ctx._CONV_THR_CONV = protocol["convergence_conv_thr"]
-        self.ctx._CONV_WINDOW = protocol["convergence_window"]
-
-    def get_create_process(self):
-        return CohesiveEnergyWorkChain
-
-    def get_evaluate_process(self):
-        return helper_cohesive_energy_difference
-
-    def get_parsed_results(self):
-        return {
-            "absolute_diff": ("The absolute cohesive difference", "eV/atom"),
-            "relative_diff": ("The relative cohesive difference", "%"),
-        }
-
-    def get_converge_y(self):
-        return "absolute_diff", "eV/atom"
-
-    def get_create_process_inputs(self):
-        _PW_BULK_PARAS = {  # pylint: disable=invalid-name
-            "SYSTEM": {
-                "degauss": self.ctx._DEGAUSS,
-                "occupations": self.ctx._OCCUPATIONS,
-                "smearing": self.ctx._BULK_SMEARING,
-            },
-            "ELECTRONS": {
-                "conv_thr": self.ctx._CONV_THR_EVA,
-            },
-        }
-        _PW_ATOM_PARAS = {  # pylint: disable=invalid-name
-            "SYSTEM": {
-                "degauss": self.ctx._DEGAUSS,
-                "occupations": self.ctx._OCCUPATIONS,
-                "smearing": self.ctx._ATOM_SMEARING,
-            },
-            "ELECTRONS": {
-                "conv_thr": self.ctx._CONV_THR_EVA,
-            },
-        }
+    def _get_inputs(self, ecutwfc, ecutrho):
+        """
+        get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
+        all other parameters are fixed for the following steps
+        """
         inputs = {
-            "code": self.inputs.code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "parameters": {
-                "pw_bulk": orm.Dict(
-                    dict=update_dict(_PW_BULK_PARAS, self.ctx.base_pw_parameters)
-                ),
-                "pw_atom": orm.Dict(dict=_PW_ATOM_PARAS),
-                "kpoints_distance": orm.Float(self.ctx._KDISTANCE),
-                "vacuum_length": orm.Float(self.ctx._VACUUM_LENGTH),
-            },
+            'code': self.inputs.pw_code,
+            'pseudos': self.ctx.pseudos,
+            'structure': self.ctx.structure,
+            'bulk_parameters': orm.Dict(dict=self.ctx.bulk_parameters),
+            'atom_parameters': orm.Dict(dict=self.ctx.atom_parameters),
+            'ecutwfc': orm.Float(ecutwfc),
+            'ecutrho': orm.Float(ecutrho),
+            'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
+            'vacuum_length': orm.Float(self.ctx.vacuum_length),
+            'options': orm.Dict(dict=self.ctx.options),
+            'parallelization': orm.Dict(dict=self.ctx.parallelization),
+            'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
 
         return inputs
 
-    def get_evaluate_process_inputs(self):
-        ref_workchain = self.ctx.ref_workchain
+    def helper_compare_result_extract_fun(self, sample_node, reference_node,
+                                          **kwargs):
+        """extract"""
+        sample_output = sample_node.outputs.output_parameters
+        reference_output = reference_node.outputs.output_parameters
 
-        res = {
-            "ref_parameters": ref_workchain.outputs.output_parameters,
+        res = helper_cohesive_energy_difference(sample_output,
+                                                reference_output).get_dict()
+
+        return res
+
+    def get_result_metadata(self):
+        return {
+            'absolute_unit': 'eV/atom',
+            'relative_unit': '%',
         }
-
-        return res
-
-    def get_output_input_mapping(self):
-        res = orm.Dict(dict={"output_parameters": "input_parameters"})
-        return res
