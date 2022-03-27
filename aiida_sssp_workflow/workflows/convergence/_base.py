@@ -42,7 +42,7 @@ class BaseLegacyWorkChain(WorkChain):
 
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
 
-    _PROPERTY_NAME = abstract_attribute()
+    _PROPERTY_NAME = abstract_attribute()   # used to get convergence protocol
     _EVALUATE_WORKCHAIN = abstract_attribute()
     _MEASURE_OUT_PROPERTY = abstract_attribute()
 

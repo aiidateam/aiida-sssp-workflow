@@ -45,6 +45,7 @@ DEFAULT_PROPERTIES_LIST = [
     "convergence:phonon_frequencies",
     "convergence:pressure",
     "convergence:delta",
+    "convergence:bands",
 ]
 
 
@@ -348,16 +349,16 @@ class VerificationWorkChain(WorkChain):
             self.to_context(verify_delta=running)
             self.ctx.workchains["convergence_delta"] = running
 
-        # ##
-        # # bands
-        # ##
-        # running = self.submit(ConvergenceBandsWorkChain,
-        #                       **self.ctx.bands_distance_inputs)
-        # self.report(
-        #     f'submit workchain bands distance convergence pk={running.pk}')
+        ##
+        # bands
+        ##
+        running = self.submit(
+            ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
+        )
+        self.report(f"submit workchain bands distance convergence pk={running.pk}")
 
-        # self.to_context(verify_bands=running)
-        # self.ctx.workchains['convergence_bands_distance'] = running
+        self.to_context(verify_bands=running)
+        self.ctx.workchains["convergence_bands"] = running
 
     def inspect_convergence(self):
         """inspect the convergence result"""
@@ -367,6 +368,7 @@ class VerificationWorkChain(WorkChain):
                 "convergence_phonon_frequencies",
                 "convergence_pressure",
                 "convergence_delta",
+                "convergence_bands",
             ]
         )
 

@@ -65,12 +65,10 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         self._BULK_SMEARING = protocol['smearing']
         self._ATOM_SMEARING = protocol['atom_smearing']
         self._CONV_THR = protocol['electron_conv_thr']
-        self._KDISTANCE = protocol['kpoints_distance']
-        self._VACUUM_LENGTH = protocol['vacuum_length']
+        self.ctx.kpoints_distance = self._KDISTANCE = protocol['kpoints_distance']
+        self.ctx.vacuum_length = self._VACUUM_LENGTH = protocol['vacuum_length']
 
         # Set context parameters
-        self.ctx.vacuum_length = self._VACUUM_LENGTH
-        self.ctx.kpoints_distance = self._KDISTANCE
         self.ctx.bulk_parameters = super()._get_pw_base_parameters(self._DEGAUSS,
                                                                    self._OCCUPATIONS,
                                                                    self._BULK_SMEARING,

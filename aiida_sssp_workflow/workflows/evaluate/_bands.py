@@ -97,10 +97,12 @@ class BandsWorkChain(WorkChain):
 
             if_(cls.should_run_bands_structure)(
                 cls.run_band_structure,
+                cls.inspect_band_structure,
             ),
             cls.finalize,
         )
-        spec.expose_outputs(PwBandsWorkChain, namespace='band_structure')
+        spec.expose_outputs(PwBandsWorkChain, namespace='band_structure',
+                            namespace_options={'dynamic': True, 'required': False})
         spec.expose_outputs(PwBandsWorkChain, namespace='bands')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
@@ -254,19 +256,24 @@ class BandsWorkChain(WorkChain):
         self.report(f"Running pw band structure calculation pk={running.pk}")
         return ToContext(workchain_band_structure=running)
 
-    def finalize(self):
-        """inspect band and band structure"""
-        for namespace, workchain in {
-            "bands": self.ctx.workchain_bands,
-            "band_structure": self.ctx.workchain_band_structure,
-        }.items():
-            if not workchain.is_finished_ok:
-                self.report(
-                    f"PwBandsWorkChain uuid={workchain.uuid} failed with exit status {workchain.exit_status}"
-                )
-                return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
+    def inspect_band_structure(self):
+        """inspect band structure"""
+        self._inspect_workchain(
+            namespace="band_structure", workchain=self.ctx.workchain_band_structure
+        )
 
-            self.report("pw band structure workchain successfully completed")
-            self.out_many(
-                self.exposed_outputs(workchain, PwBandsWorkChain, namespace=namespace)
+    def finalize(self):
+        """inspect band"""
+        self._inspect_workchain(namespace="bands", workchain=self.ctx.workchain_bands)
+
+    def _inspect_workchain(self, namespace, workchain):
+        if not workchain.is_finished_ok:
+            self.report(
+                f"PwBandsWorkChain uuid={workchain.uuid} failed with exit status {workchain.exit_status}"
             )
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
+
+        self.report("pw band structure workchain successfully completed")
+        self.out_many(
+            self.exposed_outputs(workchain, PwBandsWorkChain, namespace=namespace)
+        )

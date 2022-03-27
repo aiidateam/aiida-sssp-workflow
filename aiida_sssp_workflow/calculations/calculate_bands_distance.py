@@ -4,39 +4,6 @@ calculate bands distance
 """
 import numpy as np
 from aiida import orm
-from aiida.engine import calcfunction
-
-
-@calcfunction
-def calculate_bands_distance(
-    bands_structure_a: orm.BandsData,
-    bands_parameters_a: orm.Dict,
-    bands_structure_b: orm.BandsData,
-    bands_parameters_b: orm.Dict,
-    smearing: orm.Float,
-    is_metal: orm.Bool,
-):
-    """doc"""
-    res = get_bands_distance(
-        bands_structure_a,
-        bands_structure_b,
-        bands_parameters_a,
-        bands_parameters_b,
-        smearing.value,
-        is_metal.value,
-    )
-
-    return orm.Dict(
-        dict={
-            "eta_v": res.get("eta_v", None),
-            "shift_v": res.get("shift_v", None),
-            "max_diff_v": res.get("max_diff_v", None),
-            "eta_10": res.get("eta_10", None),
-            "shift_10": res.get("shift_10", None),
-            "max_diff_10": res.get("max_diff_10", None),
-            "bands_unit": "eV",
-        }
-    )
 
 
 def get_homo(bands, num_electrons: int):

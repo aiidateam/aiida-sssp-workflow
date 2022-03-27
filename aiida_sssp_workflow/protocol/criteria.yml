@@ -23,7 +23,7 @@ efficiency:
         bounds: [0.0, 1.0]  # when relative error < 1.0%
         eps: 1.0e-3
 
-    bands_distance:
+    bands:
         mode: 0
         bounds: [0.0, 20]   # when error eta_10 < 20 meV
         eps: 1.0e-3
@@ -53,7 +53,7 @@ precision:
         bounds: [0.0, 0.5]  # when relative error < 0.5%
         eps: 1.0e-3
 
-    bands_distance:
+    bands:
         mode: 0
         bounds: [0.0, 15]   # when error eta_10 < 15 meV
         eps: 1.0e-3
