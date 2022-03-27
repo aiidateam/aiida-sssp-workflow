@@ -5,7 +5,7 @@ efficiency:
 
     cohesive_energy:
         mode: 0
-        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
         eps: 1.0e-3
 
     delta:
@@ -15,7 +15,7 @@ efficiency:
 
     phonon_frequencies:
         mode: 0
-        bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
+        bounds: [0.0, 2.0]  # when relative error < 2.0%
         eps: 1.0e-3
 
     pressure:
@@ -35,7 +35,7 @@ precision:
 
     cohesive_energy:
         mode: 0
-        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
         eps: 1.0e-3
 
     delta:
@@ -45,7 +45,7 @@ precision:
 
     phonon_frequencies:
         mode: 0
-        bounds: [0.0, 1.0]  # when error < 1.0 meV/atom
+        bounds: [0.0, 1.0]  # when error < 1.0 %
         eps: 1.0e-3
 
     pressure:

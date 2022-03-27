@@ -352,13 +352,14 @@ class VerificationWorkChain(WorkChain):
         ##
         # bands
         ##
-        running = self.submit(
-            ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
-        )
-        self.report(f"submit workchain bands distance convergence pk={running.pk}")
+        if "convergence:bands" in self.ctx.properties_list:
+            running = self.submit(
+                ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
+            )
+            self.report(f"submit workchain bands distance convergence pk={running.pk}")
 
-        self.to_context(verify_bands=running)
-        self.ctx.workchains["convergence_bands"] = running
+            self.to_context(verify_bands=running)
+            self.ctx.workchains["convergence_bands"] = running
 
     def inspect_convergence(self):
         """inspect the convergence result"""
