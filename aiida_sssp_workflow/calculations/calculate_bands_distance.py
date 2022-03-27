@@ -5,6 +5,8 @@ calculate bands distance
 import numpy as np
 from aiida import orm
 
+from aiida_sssp_workflow.efermi import find_efermi
+
 
 def get_homo(bands, num_electrons: int):
     """
@@ -37,8 +39,6 @@ def retrieve_bands(
     """
     docstring
     """
-    from efermi import pyefermi
-
     bands = bandsdata.get_bands()
     bands = bands - efermi  # shift all bands to fermi energy 0
     bands = bands[:, start_band:]
@@ -53,7 +53,9 @@ def retrieve_bands(
         bands = np.asfortranarray(bands)
         meth = 2  # firmi-dirac smearing
 
-        output_efermi = pyefermi(bands, weights, nelectrons, smearing, nkpoints, meth)
+        output_efermi = find_efermi(
+            bands, weights, nelectrons, smearing, nkpoints, meth
+        )
 
     else:
         homo_energy = get_homo(bands, num_electrons)

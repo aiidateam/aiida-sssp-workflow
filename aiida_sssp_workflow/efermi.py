@@ -13,7 +13,7 @@ HMCUT = 10.0  # Hermite cutoff
 POSHMA = -0.5634  # Positive Hermite (cold I) `a`
 
 
-def pyefermi(
+def find_efermi(
     bands,
     weights,
     nelec: int,
