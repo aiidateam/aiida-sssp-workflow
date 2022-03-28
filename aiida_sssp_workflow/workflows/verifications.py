@@ -41,7 +41,8 @@ def parse_pseudo_info(pseudo: UpfData):
 
 DEFAULT_PROPERTIES_LIST = [
     "accuracy:delta",
-    "accuracy:bands" "convergence:cohesive_energy",
+    "accuracy:bands",
+    "convergence:cohesive_energy",
     "convergence:phonon_frequencies",
     "convergence:pressure",
     "convergence:delta",
