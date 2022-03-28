@@ -25,7 +25,7 @@ def helper_delta_difference(
     res = {
         "delta": res_delta,
         "relative_diff": relative_diff,
-        "absolute_unit": "meV",
+        "delta_unit": "meV",
         "relative_unit": "%",
     }
 
@@ -39,7 +39,7 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
 
     _PROPERTY_NAME = "delta"
     _EVALUATE_WORKCHAIN = DeltaWorkChain
-    _MEASURE_OUT_PROPERTY = "absolute_diff"
+    _MEASURE_OUT_PROPERTY = "relative_diff"
 
     def init_setup(self):
         super().init_setup()
@@ -114,6 +114,6 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
 
     def get_result_metadata(self):
         return {
-            "absolute_unit": "meV",
+            "delta_unit": "meV",
             "relative_unit": "%",
         }
