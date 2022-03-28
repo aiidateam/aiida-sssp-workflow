@@ -20,14 +20,12 @@ def helper_delta_difference(
     """calculate the delta difference from parameters"""
     res_delta = input_parameters["delta"]
     ref_delta = ref_parameters["delta"]
-    absolute_diff = res_delta - ref_delta
     relative_diff = abs((res_delta - ref_delta) / ref_delta) * 100
 
     res = {
-        "cohesive_energy_per_atom": res_delta,
-        "absolute_diff": absolute_diff,
+        "delta": res_delta,
         "relative_diff": relative_diff,
-        "absolute_unit": "meV/atom",
+        "absolute_unit": "meV",
         "relative_unit": "%",
     }
 
@@ -116,6 +114,6 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
 
     def get_result_metadata(self):
         return {
-            "absolute_unit": "eV/atom",
+            "absolute_unit": "meV",
             "relative_unit": "%",
         }
