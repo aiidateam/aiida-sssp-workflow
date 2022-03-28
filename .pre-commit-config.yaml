@@ -7,7 +7,12 @@ repos:
           - id: check-json
           - id: check-yaml
           - id: end-of-file-fixer
+            exclude: &exclude_pre_commit_hooks >
+                (?x)^(
+                    demo/_static/.*/.*|
+                )$
           - id: trailing-whitespace
+            exclude: *exclude_pre_commit_hooks
 
     - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
       rev: 0.1.0
