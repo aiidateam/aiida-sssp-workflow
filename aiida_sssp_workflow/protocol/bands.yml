@@ -36,4 +36,4 @@ demo:
     kpoints_distance: 0.25
 
     init_nbands_factor: 3
-    fermi_shift: 10.0
+    fermi_shift: 5.0

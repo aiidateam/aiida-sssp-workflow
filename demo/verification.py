@@ -7,7 +7,7 @@ import os
 import sys
 
 from aiida import orm
-from aiida.engine import run_get_node
+from aiida.engine import run_get_node, submit
 from aiida.plugins import DataFactory, WorkflowFactory
 
 UpfData = DataFactory("pseudo.upf")
@@ -16,7 +16,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_static")
 
 
-def run_verification(pw_code, ph_code, upf):
+def run_verification(pw_code, ph_code, upf, is_submit=True, clean_level=9):
     inputs = {
         "pw_code": pw_code,
         "ph_code": ph_code,
@@ -39,18 +39,22 @@ def run_verification(pw_code, ph_code, upf):
             dict={
                 "resources": {
                     "num_machines": 1,
-                    "num_mpiprocs_per_machine": 1,
+                    "num_mpiprocs_per_machine": 32,
                 },
-                "max_wallclock_seconds": 1800 * 3,
+                "max_wallclock_seconds": 1800,
                 "withmpi": True,
             }
         ),
         # 'parallelization': orm.Dict(dict={}),
-        "clean_workdir_level": orm.Int(0),
+        "clean_workdir_level": orm.Int(clean_level),
     }
 
-    res, node = run_get_node(VerificationWorkChain, **inputs)
-    return res, node
+    if is_submit:
+        node = submit(VerificationWorkChain, **inputs)
+        return node
+    else:
+        res, node = run_get_node(VerificationWorkChain, **inputs)
+        return node
 
 
 if __name__ == "__main__":
@@ -62,6 +66,7 @@ if __name__ == "__main__":
         raise
 
     try:
+        # can be the filename or with the path
         fn = sys.argv[2]
     except:
         raise
@@ -71,14 +76,13 @@ if __name__ == "__main__":
     except:
         raise
 
-    pw_code = load_code("pw-6.7@localhost")
-    ph_code = load_code("ph-6.7@localhost")
+    pw_code = load_code("pw-6.7@imxgesrv1")
+    ph_code = load_code("ph-6.7@imxgesrv1")
 
-    pp_path = os.path.join(STATIC_DIR, element, fn)
+    pp_path = os.path.join(STATIC_DIR, element, os.path.basename(fn))
     with open(pp_path, "rb") as stream:
         pseudo = UpfData(stream)
 
-    res, node = run_verification(pw_code, ph_code, pseudo)
+    node = run_verification(pw_code, ph_code, pseudo, is_submit=True, clean_level=9)
     node.description = label
     print(node)
-    print(res)
