@@ -32,7 +32,7 @@ def flatten_output(attr_dict):
 
 
 @cmd_root.command("dump")
-@click.option("--pk", "-p", type=int, multiple=True)
+@click.argument("pk", type=int, nargs=-1)
 @click.argument("filename", type=click.Path())
 def dump_output(pk, filename):
     """dump the verification result"""
