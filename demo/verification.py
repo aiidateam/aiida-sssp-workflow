@@ -16,7 +16,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_static")
 
 
-def run_verification(pw_code, ph_code, upf, is_submit=True, clean_level=9):
+def run_verification(pw_code, ph_code, upf, label, is_submit=True, clean_level=9):
     inputs = {
         "pw_code": pw_code,
         "ph_code": ph_code,
@@ -24,6 +24,7 @@ def run_verification(pw_code, ph_code, upf, is_submit=True, clean_level=9):
         "protocol": orm.Str("demo"),
         "criteria": orm.Str("efficiency"),
         "cutoff_control": orm.Str("demo"),
+        "label": orm.Str(label),
         "properties_list": orm.List(
             list=[
                 "accuracy:delta",
@@ -83,7 +84,17 @@ if __name__ == "__main__":
     with open(pp_path, "rb") as stream:
         pseudo = UpfData(stream)
 
-    node = run_verification(pw_code, ph_code, pseudo, is_submit=True, clean_level=9)
+    node = run_verification(
+        pw_code, ph_code, pseudo, label, is_submit=True, clean_level=9
+    )
     node.description = label
-    node.set_extra("label", label)
     print(node)
+
+# verdi run demo/verification.py Si demo/_static/Si/Si.pbe-n-kjpaw_psl.0.1.UPF si/paw/z=4/psl/v0.1
+# verdi run demo/verification.py Si demo/_static/Si/Si_ONCV_PBE-1.2.upf si/nc/z=4/sg15/v1.2-o2
+# verdi run demo/verification.py Si demo/_static/Si/Si.sg15-v1.2-oncv4.upf si/nc/z=4/sg15/v1.2-o4
+# verdi run demo/verification.py Si demo/_static/Si/Si.dojo-sr-04-std.upf si/nc/z=4/dojo/v04
+# verdi run demo/verification.py Mg demo/_static/Mg/Mg_ONCV_PBE-1.2.upf mg/nc/z=10/sg15/v1.2-o2
+# verdi run demo/verification.py Mg demo/_static/Mg/Mg.sg15-v1.2-oncv4.upf mg/nc/z=10/sg15/v1.2-o4
+# verdi run demo/verification.py Mg demo/_static/Mg/Mg.dojo-sr-04-std.upf mg/nc/z=10/dojo/v04
+# verdi run demo/verification.py Mg demo/_static/Mg/Mg.pbe-spn-kjpaw_psl.1.0.0.UPF mg/paw/z=10/psl/v1.0.0
