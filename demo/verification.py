@@ -85,4 +85,5 @@ if __name__ == "__main__":
 
     node = run_verification(pw_code, ph_code, pseudo, is_submit=True, clean_level=9)
     node.description = label
+    node.set_extra("label", label)
     print(node)
