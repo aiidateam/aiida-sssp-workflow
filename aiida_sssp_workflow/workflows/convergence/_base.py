@@ -341,7 +341,7 @@ class BaseLegacyWorkChain(WorkChain):
             self.to_context(children_rho=append_(running))
 
     def inspect_rho_convergence_test(self):
-        sample_nodes = self.ctx.children_rho [self.ctx.reference]
+        sample_nodes = self.ctx.children_rho + [self.ctx.reference]
 
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
