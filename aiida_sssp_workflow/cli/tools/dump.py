@@ -37,19 +37,19 @@ def flatten_output(attr_dict, node_collection):
 
 
 @cmd_root.command("dump")
-@click.argument("pk", type=int, nargs=-1)
+@click.argument("nodes", type=str, nargs=-1)
 @click.argument("filename", type=click.Path())
 @click.argument("archive", type=click.Path())
-def dump_output(pk, filename, archive):
+def dump_output(nodes, filename, archive):
     """dump the verification result"""
     from aiida.tools.importexport import ExportFileFormat, export
 
     res = {}
     archive_uuids = []
-    for p in pk:
-        node = load_node(p)
-        label = node.extras.get("label")
-        attr_dict = node.outputs._construct_attribute_dict(incoming=False)
+    for node in nodes:
+        _node = load_node(node)
+        label = _node.extras.get("label")
+        attr_dict = _node.outputs._construct_attribute_dict(incoming=False)
 
         res[label] = flatten_output(attr_dict, archive_uuids)
 
