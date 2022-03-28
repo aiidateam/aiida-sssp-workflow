@@ -282,7 +282,7 @@ class BaseLegacyWorkChain(WorkChain):
         """
         run on all other evaluation sample points
         """
-        ecutrho = self._REFERENCE_ECUTWFC * self.ctx.dual
+        self.ctx.max_ecutrho = ecutrho = self._REFERENCE_ECUTWFC * self.ctx.dual
 
         for ecutwfc in self._ECUTWFC_LIST[:-1]: # The last one is reference
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
@@ -295,7 +295,7 @@ class BaseLegacyWorkChain(WorkChain):
 
     def inspect_wfc_convergence_test(self):
         # include reference node in the last
-        sample_nodes = self.ctx.children_wfc
+        sample_nodes = self.ctx.children_wfc + [self.ctx.reference]
 
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
@@ -328,8 +328,9 @@ class BaseLegacyWorkChain(WorkChain):
         """
 
         ecutwfc = self.ctx.wfc_cutoff
-        for dual in self.ctx.dual_scan_list:
-            ecutrho = ecutwfc * dual
+        # Only run rho test when ecutrho less than the max reference
+        # otherwise meaningless for the exceeding cutoff test
+        for ecutrho in [dual * ecutwfc for dual in self.ctx.dual_scan_list if dual * ecutwfc < self.ctx.max_ecutrho]:
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
@@ -340,7 +341,7 @@ class BaseLegacyWorkChain(WorkChain):
             self.to_context(children_rho=append_(running))
 
     def inspect_rho_convergence_test(self):
-        sample_nodes = self.ctx.children_rho
+        sample_nodes = self.ctx.children_rho [self.ctx.reference]
 
         if 'extra_parameters' in self.ctx:
             output_parameters = self.result_general_process(
