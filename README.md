@@ -1,5 +1,27 @@
 # aiida-sssp-workflow
 
+## Resource options and parallelzation
+
+### Walltime settings
+
+The max wallclock seconds are set from the `options` input parameters from verification workflow.
+This option will then pass to all the inside pw and ph calculation process as the `metadata.options` setting.
+The `options` dict has the format of:
+
+```python
+{
+    "resources": {
+        "num_machines": 1,
+        "num_mpiprocs_per_machine": 32,
+    },
+    "max_wallclock_seconds": 1800,  # 30 min
+    "withmpi": True,
+}
+
+```
+where the `max_wallclock_seconds` is exactly used for pw calculation while for ph calculation the value is set to 4 time of value since the ph calculation roughly estimated to elapse 4 times slower that pw calculation of the corresponding pw calculation to finish.
+
+
 ## Configurations
 
 Different verifications use different structure configurations.
