@@ -170,6 +170,12 @@ class PhononFrequenciesWorkChain(WorkChain):
             cmdline_list.append(f"-{str(key)}")
             cmdline_list.append(str(value))
 
+        # Sinec PH calculation always runs more time then the correspoding pw calculation
+        # set the walltime to 4 times as set in option.
+        pw_max_walltime = self.ctx.options.get("max_wallclock_seconds", None)
+        if pw_max_walltime:
+            self.ctx.options["max_wallclock_seconds"] = pw_max_walltime * 4
+
         inputs = {
             "metadata": {"call_link_label": "PH"},
             "ph": {
