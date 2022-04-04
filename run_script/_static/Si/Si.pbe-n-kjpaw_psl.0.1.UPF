@@ -10,7 +10,7 @@
     Suggested minimum cutoff for charge density: 151. Ry
     The Pseudo was generated with a Scalar-Relativistic Calculation
     L component and cutoff radius for Local Potential:  2   2.0000
-    Valence configuration: 
+    Valence configuration:
     nl pn  l   occ       Rcut    Rcut US       E pseu
     3S  1  0  2.00      2.000      2.100    -0.794727
     3P  2  1  2.00      2.000      2.100    -0.299966
@@ -3122,11 +3122,11 @@ tm=.true.
     </PP_BETA.4>
     <PP_DIJ columns="4" rows="4">
   0.720383536588134       0.579108658704205       0.000000000000000E+000
-  0.000000000000000E+000  0.579108658704205        1.72653212138605     
+  0.000000000000000E+000  0.579108658704205        1.72653212138605
   0.000000000000000E+000  0.000000000000000E+000  0.000000000000000E+000
-  0.000000000000000E+000  0.290275999503530       0.251124316379982     
-  0.000000000000000E+000  0.000000000000000E+000  0.251124316379982     
-  0.529247240839822     
+  0.000000000000000E+000  0.290275999503530       0.251124316379982
+  0.000000000000000E+000  0.000000000000000E+000  0.251124316379982
+  0.529247240839822
     </PP_DIJ>
     <PP_AUGMENTATION q_with_l="true" nqf="0" nqlc="3" shape="PSQ" cutoff_r="1.80000000000000" cutoff_r_index="849" augmentation_epsilon="1.000000000000000E-012" l_max_aug="2">
       <PP_Q size="16">
@@ -3137,7 +3137,7 @@ tm=.true.
   0.000000000000000E+000  0.000000000000000E+000 -3.704921434142853E-002
  -6.165130815137604E-002
       </PP_Q>
-<!--augmentation charge multipoles ( only for PAW) 
+<!--augmentation charge multipoles ( only for PAW)
 multipole array dims = (nbeta,nbeta,2*lmax+1)-->
       <PP_MULTIPOLES nbeta="4" lmax="1">
  -0.181963673331241      -3.041955553636956E-002  0.000000000000000E+000
