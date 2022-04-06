@@ -7,6 +7,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
+from aiida_sssp_workflow.utils import update_dict
 from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
@@ -46,10 +47,24 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
     def init_setup(self):
         super().init_setup()
         self.ctx.extra_pw_parameters = {}
+        self.ctx.extra_pw_parameters_for_atom = {}
 
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
         super().extra_setup_for_magnetic_element()
+        self.ctx.extra_pw_parameters_for_atom = {
+            "SYSTEM": {
+                "nspin": 2,
+                "starting_magnetization": {
+                    self.ctx.element: 0.5,
+                },
+            },
+            "ELECTRONS": {
+                "diagonalization": 'cg',
+                "mixing_beta": 0.5,
+                "electron_maxstep": 200,
+            },
+        }
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
@@ -74,9 +89,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
                                                                    self._BULK_SMEARING,
                                                                    self._CONV_THR)
 
-        # self.ctx.bulk_parameters = update_dict(self.ctx.bulk_parameters,
-        #                                 self.ctx.extra_pw_parameters)
-
         self.ctx.atom_parameters = {
             'SYSTEM': {
                 'degauss': self._DEGAUSS,
@@ -87,6 +99,11 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
                 'conv_thr': self._CONV_THR,
             },
         }
+
+        self.ctx.atom_parameters = update_dict(
+            self.ctx.atom_parameters,
+            self.ctx.extra_pw_parameters_for_atom
+        )
 
         self.report(
             f'The bulk parameters for convergence is: {self.ctx.bulk_parameters}'

@@ -167,6 +167,7 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
+        # import ipdb; ipdb.set_trace()
         bulk_inputs = {
             "metadata": {"call_link_label": "bulk_scf"},
             "pw": {

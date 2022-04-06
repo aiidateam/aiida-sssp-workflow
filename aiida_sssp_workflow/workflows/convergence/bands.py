@@ -62,10 +62,6 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
         super().init_setup()
         self.ctx.extra_pw_parameters = {}
 
-    def extra_setup_for_magnetic_element(self):
-        """Extra setup for magnetic element"""
-        super().extra_setup_for_magnetic_element()
-
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init

@@ -1,5 +1,37 @@
 # aiida-sssp-workflow
 
+## Parameters of protocol
+
+### Specific parameters for magnetic elements
+
+For bulk structure (Diamond configuration in this case) calculation in convergence verification.
+The spin polarization is on for magnetic elements Fe, Mn, Cr, Co, Ni where,
+```
+"SYSTEM": {
+    "nspin": 2,
+    "starting_magnetization": {
+        self.ctx.element: 0.5,
+    },
+},
+```
+
+For atomic energy calculated for cohesive energy, it is hard to converge for magnetic elements with untreated parameters.
+The following extra parameters are added for the calculation:
+
+```
+"SYSTEM": {
+    "nspin": 2,
+    "starting_magnetization": {
+        self.ctx.element: 0.5,
+    },
+},
+"ELECTRONS": {
+    "diagonalization": 'cg',
+    "mixing_beta": 0.5,
+    "electron_maxstep": 200,
+},
+```
+
 ## Resource options and parallelzation
 
 ### Walltime settings

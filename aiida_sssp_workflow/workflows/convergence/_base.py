@@ -13,7 +13,6 @@ from aiida_sssp_workflow.utils import (
     convergence_analysis,
     get_protocol,
     get_standard_structure,
-    helper_get_magnetic_inputs,
     update_dict,
 )
 
@@ -70,7 +69,8 @@ class BaseLegacyWorkChain(WorkChain):
         spec.outline(
             cls.init_setup,
             if_(cls.is_magnetic_element)(
-                cls.extra_setup_for_magnetic_element, ),
+                cls.extra_setup_for_magnetic_element,
+            ),
             cls.setup_code_parameters_from_protocol,
             cls.setup_criteria_parameters_from_protocol,
             cls.setup_code_resource_options,
@@ -147,18 +147,22 @@ class BaseLegacyWorkChain(WorkChain):
 
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
-        self.ctx.structure = self.ctx.cif.get_structure(primitive_cell=False)
-
-        self.ctx.structure, self.ctx.magnetic_extra_parameters = helper_get_magnetic_inputs(
-            self.ctx.structure)
+        self.ctx.magnetic_extra_parameters = {
+            "SYSTEM": {
+                "nspin": 2,
+                "starting_magnetization": {
+                    self.ctx.element: 0.5,
+                },
+            },
+        }
         self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, self.ctx.magnetic_extra_parameters)
 
-        # setting pseudos
-        pseudos = {}
-        pseudo = self.inputs.pseudo
-        for kind_name in self.ctx.structure.get_kind_names():
-            pseudos[kind_name] = pseudo
-        self.ctx.pseudos = pseudos
+        # # setting pseudos
+        # pseudos = {}
+        # pseudo = self.inputs.pseudo
+        # for kind_name in self.ctx.structure.get_kind_names():
+        #     pseudos[kind_name] = pseudo
+        # self.ctx.pseudos = pseudos
 
     # def is_rare_earth_element(self):
     #     """Check if the element is rare earth"""
@@ -202,8 +206,7 @@ class BaseLegacyWorkChain(WorkChain):
             **protocol[self._PROPERTY_NAME]
         }
 
-    @staticmethod
-    def _get_pw_base_parameters(degauss, occupations, smearing, conv_thr):
+    def _get_pw_base_parameters(self, degauss, occupations, smearing, conv_thr):
         """Return base pw parameters dict for all convengence bulk workflow
         Unchanged dict for caching purpose"""
         parameters = {
@@ -221,6 +224,10 @@ class BaseLegacyWorkChain(WorkChain):
                 'tstress': True,
             },
         }
+
+        # update with extra pw params, for magnetic ane lanthenides
+        if self.ctx.extra_pw_parameters:
+            parameters = update_dict(parameters, self.ctx.extra_pw_parameters)
 
         return parameters
 
