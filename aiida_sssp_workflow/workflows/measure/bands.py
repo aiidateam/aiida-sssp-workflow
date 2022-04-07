@@ -9,6 +9,7 @@ from aiida.engine import ToContext, WorkChain, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
+    MAGNETIC_ELEMENTS,
     NONMETAL_ELEMENTS,
     RARE_EARTH_ELEMENTS,
     get_protocol,
@@ -19,6 +20,75 @@ from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
+
+def helper_get_magnetic_inputs(structure: orm.StructureData):
+    """
+    To set initial magnet to the magnetic system, need to set magnetic order to
+    every magnetic element site, with certain pw starting_mainetization parameters.
+
+    ! Only for typical configurations of magnetic elements.
+    """
+    MAG_INIT_Mn = {
+        "Mn1": 0.5,
+        "Mn2": -0.3,
+        "Mn3": 0.5,
+        "Mn4": -0.3,
+    }  # pylint: disable=invalid-name
+    MAG_INIT_O = {
+        "O1": 0.5,
+        "O2": 0.5,
+        "O3": -0.5,
+        "O4": -0.5,
+    }  # pylint: disable=invalid-name
+    MAG_INIT_Cr = {"Cr1": 0.5, "Cr2": -0.5}  # pylint: disable=invalid-name
+
+    mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
+    kind_name = structure.get_kind_names()[0]
+
+    # ferromagnetic
+    if kind_name in ["Fe", "Co", "Ni"]:
+        for i, site in enumerate(structure.sites):
+            mag_structure.append_atom(position=site.position, symbols=kind_name)
+
+        parameters = {
+            "SYSTEM": {
+                "nspin": 2,
+                "starting_magnetization": {kind_name: 0.2},
+            },
+        }
+
+    #
+    if kind_name in ["Mn", "O", "Cr"]:
+        for i, site in enumerate(structure.sites):
+            mag_structure.append_atom(
+                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
+            )
+
+        if kind_name == "Mn":
+            parameters = {
+                "SYSTEM": {
+                    "nspin": 2,
+                    "starting_magnetization": MAG_INIT_Mn,
+                },
+            }
+
+        if kind_name == "O":
+            parameters = {
+                "SYSTEM": {
+                    "nspin": 2,
+                    "starting_magnetization": MAG_INIT_O,
+                },
+            }
+
+        if kind_name == "Cr":
+            parameters = {
+                "SYSTEM": {
+                    "nspin": 2,
+                    "starting_magnetization": MAG_INIT_Cr,
+                },
+            }
+
+    return mag_structure, parameters
 
 def validate_input_pseudos(d_pseudos, _):
     """Validate that all input pseudos map to same element"""
@@ -34,8 +104,6 @@ class BandsMeasureWorkChain(WorkChain):
     run without sym for distance compare and band structure along the path
     """
     _MAX_WALLCLOCK_SECONDS = 1800 * 3
-
-    _LARGE_DUAL_ELEMENTS = ['Fe', 'Hf']
     _RY_TO_EV = 13.6056980659
 
     @classmethod
@@ -60,6 +128,9 @@ class BandsMeasureWorkChain(WorkChain):
 
         spec.outline(
             cls.init_setup,
+            if_(cls.is_magnetic_element)(
+                cls.extra_setup_for_magnetic_element,
+            ),
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element, ),
             cls.setup_pw_parameters_from_protocol,
@@ -77,7 +148,6 @@ class BandsMeasureWorkChain(WorkChain):
         """
         # parse pseudo and output its header information
         self.ctx.pw_parameters = {}
-        self.ctx.extra_parameters = {}
 
         element = self.ctx.element = self.inputs.pseudo.element
 
@@ -89,6 +159,22 @@ class BandsMeasureWorkChain(WorkChain):
         # extra setting for bands convergence
         self.ctx.is_metal = element not in NONMETAL_ELEMENTS
 
+    def is_magnetic_element(self):
+        """Check if the element is magnetic"""
+        return self.ctx.element in MAGNETIC_ELEMENTS
+
+    def extra_setup_for_magnetic_element(self):
+        """Extra setup for magnetic element"""
+        self.ctx.structure, magnetic_extra_parameters = helper_get_magnetic_inputs(self.ctx.structure)
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, magnetic_extra_parameters)
+
+        # setting pseudos
+        pseudos = {}
+        pseudo = self.inputs.pseudo
+        for kind_name in self.ctx.structure.get_kind_names():
+            pseudos[kind_name] = pseudo
+        self.ctx.pseudos = pseudos
+
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
         return self.ctx.element in RARE_EARTH_ELEMENTS
@@ -97,21 +183,21 @@ class BandsMeasureWorkChain(WorkChain):
         """Extra setup for rare earth element"""
         import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
                                                'N.pbe-n-radius_5.upf')
-        with import_path as pp_path, open(pp_path, 'rb') as stream:
-            upf_nitrogen = UpfData(stream)
-            self.ctx.pseudo_N = upf_nitrogen
+        # with import_path as pp_path, open(pp_path, 'rb') as stream:
+        #     upf_nitrogen = UpfData(stream)
+        #     self.ctx.pseudo_N = upf_nitrogen
 
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
+        # # In rare earth case, increase the initial number of bands,
+        # # otherwise the occupation will not fill up in the highest band
+        # # which always trigger the `PwBaseWorkChain` sanity check.
+        # nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
+        # nbands_factor = 2
 
-        self.ctx.extra_parameters = {
-            'SYSTEM': {
-                'nbnd': int(nbands * nbands_factor),
-            },
-        }
+        # self.ctx.extra_parameters = {
+        #     'SYSTEM': {
+        #         'nbnd': int(nbands * nbands_factor),
+        #     },
+        # }
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""

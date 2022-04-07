@@ -94,8 +94,9 @@ def get_standard_structure(
     And for lanthanides using the Nitrides from Wenzowech paper.
     Using the uniaries/diamond configurations for convergence verification.
 
-    NOTICE!!: that for convergence verification the SiF4 structure is used, the
-    name of file is `SiF4.cif` which can be get by `element=SiF4`.
+    The structure is convert to primitive cell except for those magnetic elements
+    configurations (typical ones of Cottiner's paper) for bands measure, since we need to
+    set the starting magnetizations for sites.
 
     If prop is delta must provide specific configuration name.
 
@@ -131,10 +132,15 @@ def get_standard_structure(
             f"aiida_sssp_workflow.statics.cif.{dir}", fn
         )
 
+    if element in MAGNETIC_ELEMENTS and prop == "bands":
+        primitive_cell = False
+    else:
+        primitive_cell = True
+
     with res_path as path:
         structure = orm.CifData.get_or_create(str(path), use_first=True)[
             0
-        ].get_structure(primitive_cell=True)
+        ].get_structure(primitive_cell=primitive_cell)
 
     return structure
 
@@ -183,74 +189,6 @@ def to_valid_key(name):
     valid_name = re.sub(r"[^\w\s]", "_", name)
 
     return valid_name
-
-
-# def helper_get_magnetic_inputs(structure: orm.StructureData):
-#     """
-#     To set initial magnet to the magnetic system, need to set magnetic order to
-#     every magnetic element site, with certain pw starting_mainetization parameters.
-#     """
-#     MAG_INIT_Mn = {
-#         "Mn1": 0.5,
-#         "Mn2": -0.3,
-#         "Mn3": 0.5,
-#         "Mn4": -0.3,
-#     }  # pylint: disable=invalid-name
-#     MAG_INIT_O = {
-#         "O1": 0.5,
-#         "O2": 0.5,
-#         "O3": -0.5,
-#         "O4": -0.5,
-#     }  # pylint: disable=invalid-name
-#     MAG_INIT_Cr = {"Cr1": 0.5, "Cr2": -0.5}  # pylint: disable=invalid-name
-
-#     mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
-#     kind_name = structure.get_kind_names()[0]
-
-#     # ferromagnetic
-#     if kind_name in ["Fe", "Co", "Ni"]:
-#         for i, site in enumerate(structure.sites):
-#             mag_structure.append_atom(position=site.position, symbols=kind_name)
-
-#         parameters = {
-#             "SYSTEM": {
-#                 "nspin": 2,
-#                 "starting_magnetization": {kind_name: 0.2},
-#             },
-#         }
-
-#     #
-#     if kind_name in ["Mn", "O", "Cr"]:
-#         for i, site in enumerate(structure.sites):
-#             mag_structure.append_atom(
-#                 position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
-#             )
-
-#         if kind_name == "Mn":
-#             parameters = {
-#                 "SYSTEM": {
-#                     "nspin": 2,
-#                     "starting_magnetization": MAG_INIT_Mn,
-#                 },
-#             }
-
-#         if kind_name == "O":
-#             parameters = {
-#                 "SYSTEM": {
-#                     "nspin": 2,
-#                     "starting_magnetization": MAG_INIT_O,
-#                 },
-#             }
-
-#         if kind_name == "Cr":
-#             parameters = {
-#                 "SYSTEM": {
-#                     "nspin": 2,
-#                     "starting_magnetization": MAG_INIT_Cr,
-#                 },
-#             }
-
-#     return mag_structure, parameters
 
 
 @calcfunction
