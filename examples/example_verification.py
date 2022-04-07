@@ -64,12 +64,14 @@ if __name__ == "__main__":
     pw_code = load_code("pw-6.7@localhost")
     ph_code = load_code("ph-6.7@localhost")
 
-    if element == "Si":
-        pp_label = "psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF"
-    elif element == "Mg":
+    if element == "Mg":
         pp_label = "psl/Mg.pbe-spn-kjpaw_psl.1.0.0.UPF"
     elif element == "Fe":
         pp_label = "psl/Fe.pbe-spn-kjpaw_psl.0.2.1.UPF"
+    elif element == "O":
+        pp_label = "psl/O.pbe-n-kjpaw_psl.1.0.0.UPF"
+    else:
+        pp_label = "psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF"
 
     pp_name = pp_label.split("/")[1]
     pp_path = os.path.join(STATIC_DIR, pp_name)

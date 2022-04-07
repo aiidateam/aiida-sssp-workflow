@@ -150,6 +150,7 @@ class BandsMeasureWorkChain(WorkChain):
         self.ctx.pw_parameters = {}
 
         element = self.ctx.element = self.inputs.pseudo.element
+        self.ctx.pseudos = {self.ctx.element: self.inputs.pseudo}
 
         self.ctx.structure = get_standard_structure(
             element,
@@ -168,7 +169,8 @@ class BandsMeasureWorkChain(WorkChain):
         self.ctx.structure, magnetic_extra_parameters = helper_get_magnetic_inputs(self.ctx.structure)
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, magnetic_extra_parameters)
 
-        # setting pseudos
+        # override pseudos setting
+        # required for O, Mn, Cr where the kind names varies for sites
         pseudos = {}
         pseudo = self.inputs.pseudo
         for kind_name in self.ctx.structure.get_kind_names():
@@ -270,8 +272,8 @@ class BandsMeasureWorkChain(WorkChain):
         """
         get inputs for the bands evaluation with given pseudo
         """
-        if element in RARE_EARTH_ELEMENTS:
-            pseudos['N'] = self.ctx.pseudo_N
+        # if element in RARE_EARTH_ELEMENTS:
+        #     pseudos['N'] = self.ctx.pseudo_N
 
         inputs = {
             'code': self.inputs.pw_code,
@@ -294,7 +296,6 @@ class BandsMeasureWorkChain(WorkChain):
     def run_bands_evaluation(self):
         """run bands evaluation of psp in inputs list"""
         pseudos = {self.ctx.element: self.inputs.pseudo}
-
         inputs = self._get_inputs(self.ctx.element, pseudos)
 
         running = self.submit(BandsWorkChain, **inputs)
