@@ -50,19 +50,43 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
         self.ctx.extra_pw_parameters_for_atom = {}
 
     def extra_setup_for_magnetic_element(self):
-        """Extra setup for magnetic element"""
+        """Extra setup for magnetic element, for atom especially"""
         super().extra_setup_for_magnetic_element()
         self.ctx.extra_pw_parameters_for_atom = {
-            "SYSTEM": {
-                "nspin": 2,
-                "starting_magnetization": {
-                    self.ctx.element: 0.5,
+            self.ctx.element: {
+                "SYSTEM": {
+                    "nspin": 2,
+                    "starting_magnetization": {
+                        self.ctx.element: 0.5,
+                    },
                 },
-            },
-            "ELECTRONS": {
-                "diagonalization": 'cg',
-                "mixing_beta": 0.5,
-                "electron_maxstep": 200,
+                "ELECTRONS": {
+                    "diagonalization": 'cg',
+                    "mixing_beta": 0.5,
+                    "electron_maxstep": 200,
+                },
+            }
+        }
+
+    def extra_setup_for_rare_earth_element(self):
+        """Extra setup for rare earth element, for atom especially"""
+        super().extra_setup_for_rare_earth_element()
+        self.ctx.extra_pw_parameters_for_atom = {
+            self.ctx.element: {
+                "SYSTEM": {
+                    "nspin": 2,
+                    "starting_magnetization": {
+                        self.ctx.element: 0.5,
+                    },
+                    # Need high number of bands to make atom calculation of lanthanoids
+                    # converged.
+                    "nbnd": int(self.inputs.pseudo.z_valence * 3),
+                },
+                "ELECTRONS": {
+                    "diagonalization": 'cg',
+                    "mixing_beta": 0.3, # even small mixing_beta value
+                    "electron_maxstep": 200,
+                },
             },
         }
 
@@ -88,8 +112,7 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
                                                                    self._OCCUPATIONS,
                                                                    self._BULK_SMEARING,
                                                                    self._CONV_THR)
-
-        self.ctx.atom_parameters = {
+        base_atom_pw_parameters = {
             'SYSTEM': {
                 'degauss': self._DEGAUSS,
                 'occupations': self._OCCUPATIONS,
@@ -99,6 +122,10 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
                 'conv_thr': self._CONV_THR,
             },
         }
+
+        self.ctx.atom_parameters = {}
+        for element in self.ctx.structure.get_symbols_set():
+            self.ctx.atom_parameters[element] = base_atom_pw_parameters
 
         self.ctx.atom_parameters = update_dict(
             self.ctx.atom_parameters,

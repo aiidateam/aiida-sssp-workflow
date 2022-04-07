@@ -10,11 +10,15 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
+    RARE_EARTH_ELEMENTS,
     convergence_analysis,
     get_protocol,
     get_standard_structure,
     reset_pseudos_for_magnetic,
     update_dict,
+)
+from aiida_sssp_workflow.workflows.common import (
+    get_extra_parameters_and_pseudos_for_lanthanoid,
 )
 
 UpfData = DataFactory('pseudo.upf')
@@ -71,6 +75,9 @@ class BaseLegacyWorkChain(WorkChain):
             cls.init_setup,
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
+            ),
+            if_(cls.is_rare_earth_element)(
+                cls.extra_setup_for_rare_earth_element,
             ),
             cls.setup_code_parameters_from_protocol,
             cls.setup_criteria_parameters_from_protocol,
@@ -146,6 +153,34 @@ class BaseLegacyWorkChain(WorkChain):
         """Check if the element is magnetic"""
         return self.ctx.element in MAGNETIC_ELEMENTS
 
+    @staticmethod
+    def _get_extra_parameters_and_pseudos_for_mag_on(structure, pseudo):
+        """
+        Return extra parameters and magnetic pseudos setting with given
+        structure data and pseudo data.
+        """
+        mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
+        element = kind_name = structure.get_kind_names()[0]
+
+        for i, site in enumerate(structure.sites):
+            mag_structure.append_atom(
+                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
+            )
+
+        extra_parameters = {
+            "SYSTEM": {
+                "nspin": 2,
+                "starting_magnetization": {
+                    f'{element}1': 0.5,
+                    f'{element}2': -0.4,
+                },
+            },
+        }
+        # override pseudos setting for two sites of diamond cell
+        pseudos = reset_pseudos_for_magnetic(pseudo, mag_structure)
+
+        return extra_parameters, pseudos, mag_structure
+
     def extra_setup_for_magnetic_element(self):
         """
         Extra setup for magnetic element
@@ -156,63 +191,27 @@ class BaseLegacyWorkChain(WorkChain):
         is broken.
         The starting magnetizations are set to [0.5, -0.4] for two sites.
         """
-        structure = self.ctx.structure
-        mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
-        kind_name = structure.get_kind_names()[0]
+        extra_parameters, self.ctx.pseudos, self.ctx.structure = self._get_extra_parameters_and_pseudos_for_mag_on(
+            self.ctx.structure, self.inputs.pseudo)
 
-        for i, site in enumerate(structure.sites):
-            mag_structure.append_atom(
-                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
+        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, extra_parameters)
+
+    def is_rare_earth_element(self):
+        """Check if the element is rare earth"""
+        return self.ctx.element in RARE_EARTH_ELEMENTS
+
+    def extra_setup_for_rare_earth_element(self):
+        """
+        Extra setup for rare-earth element same as magnetic elements
+
+        We use nitrdes configuration for the convergence verification of rare-earth elements.
+        Otherwise it is hard to get converged in scf calculation.
+        """
+        self.ctx.extra_pw_parameters, self.ctx.pseudos = \
+            get_extra_parameters_and_pseudos_for_lanthanoid(
+                self.ctx.element,
+                pseudo_RE=self.inputs.pseudo
             )
-        self.ctx.structure = mag_structure
-
-        self.ctx.magnetic_extra_parameters = {
-            "SYSTEM": {
-                "nspin": 2,
-                "starting_magnetization": {
-                    f'{self.ctx.element}1': 0.5,
-                    f'{self.ctx.element}2': -0.4,
-                },
-            },
-        }
-        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, self.ctx.magnetic_extra_parameters)
-
-        # override pseudos setting for two sites of diamond cell
-        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
-
-    # def is_rare_earth_element(self):
-    #     """Check if the element is rare earth"""
-    #     return self.ctx.element in RARE_EARTH_ELEMENTS
-
-    # def extra_setup_for_rare_earth_element(self):
-    #     """Extra setup for rare earth element"""
-    #     import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
-    #                                            'N.pbe-n-radius_5.upf')
-    #     with import_path as pp_path, open(pp_path, 'rb') as stream:
-    #         upf_nitrogen = UpfData(stream)
-    #         self.ctx.pseudos['N'] = upf_nitrogen
-
-    #     # In rare earth case, increase the initial number of bands,
-    #     # otherwise the occupation will not fill up in the highest band
-    #     # which always trigger the `PwBaseWorkChain` sanity check.
-    #     nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-    #     nbands_factor = 2
-
-    #     extra_pw_parameters = {
-    #         'SYSTEM': {
-    #             'nbnd': int(nbands * nbands_factor),
-    #             'nspin': 2,
-    #             'starting_magnetization': {
-    #                 self.ctx.element: 0.2,
-    #                 'N': 0.0,
-    #             },
-    #         },
-    #         'ELECTRONS': {
-    #             'diagonalization': 'cg',
-    #         }
-    #     }
-    #     self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters,
-    #                                          extra_pw_parameters)
 
     def setup_code_parameters_from_protocol(self):
         """unzip and parse protocol parameters to context"""

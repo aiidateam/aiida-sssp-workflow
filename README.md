@@ -61,8 +61,8 @@ Different verifications use different structure configurations.
 For all delta measure verification, the configurations are all compatible with the ACWF.
 While for bands measure and convergence workflow, the configurations used are set in file `statics/cif/mapping.json`.
 The principles are for bands measure, using the configurations from Cottiner's paper since they are the groud state structures exist in real wolrd.
-And for lanthanides using the Nitrides from Wenzowech paper.
-Using the uniaries/diamond configurations for convergence verification.
+And for lanthanoids using the Nitrides from Wenzowech paper for bands measure and convergence otherwise hard to converge in scf calculation.
+Using the uniaries/diamond configurations for convergence verification except for lanthenoids.
 
 ## For maintainers
 

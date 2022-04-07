@@ -28,11 +28,11 @@ def run_verification(pw_code, ph_code, upf):
             list=[
                 # "accuracy:delta",
                 # "accuracy:bands",
-                # "convergence:cohesive_energy",
+                "convergence:cohesive_energy",
                 # "convergence:phonon_frequencies",
                 # "convergence:pressure",
                 # "convergence:delta",
-                "convergence:bands",
+                # "convergence:bands",
             ]
         ),
         "options": orm.Dict(
@@ -70,6 +70,8 @@ if __name__ == "__main__":
         pp_label = "psl/Fe.pbe-spn-kjpaw_psl.0.2.1.UPF"
     elif element == "O":
         pp_label = "psl/O.pbe-n-kjpaw_psl.1.0.0.UPF"
+    elif element == "Er":
+        pp_label = "Wentzcovitch/Er.GGA-PBE-paw-v1.0.UPF"
     else:
         pp_label = "psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF"
 

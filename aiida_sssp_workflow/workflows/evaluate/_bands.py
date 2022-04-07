@@ -138,6 +138,8 @@ class BandsWorkChain(WorkChain):
         }
 
         pw_bands_parameters = update_dict(pw_parameters, parameters)
+        # if nbnd set from pw_base_parametres (lanthanoids case) remove the key `nbnd`
+        pw_bands_parameters["SYSTEM"].pop("nbnd", None)
 
         self.ctx.pw_scf_parameters = pw_scf_parameters
         self.ctx.pw_bands_parameters = pw_bands_parameters

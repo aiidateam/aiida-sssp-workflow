@@ -2,7 +2,6 @@
 """
 Bands distance of many input pseudos
 """
-import importlib
 
 from aiida import orm
 from aiida.engine import ToContext, WorkChain, if_
@@ -16,6 +15,9 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     reset_pseudos_for_magnetic,
     update_dict,
+)
+from aiida_sssp_workflow.workflows.common import (
+    get_extra_parameters_and_pseudos_for_lanthanoid,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
@@ -181,23 +183,12 @@ class BandsMeasureWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
-                                               'N.pbe-n-radius_5.upf')
-        # with import_path as pp_path, open(pp_path, 'rb') as stream:
-        #     upf_nitrogen = UpfData(stream)
-        #     self.ctx.pseudo_N = upf_nitrogen
+        self.ctx.pw_parameters, self.ctx.pseudos = \
+            get_extra_parameters_and_pseudos_for_lanthanoid(
+                self.ctx.element,
+                pseudo_RE=self.inputs.pseudo
+            )
 
-        # # In rare earth case, increase the initial number of bands,
-        # # otherwise the occupation will not fill up in the highest band
-        # # which always trigger the `PwBaseWorkChain` sanity check.
-        # nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        # nbands_factor = 2
-
-        # self.ctx.extra_parameters = {
-        #     'SYSTEM': {
-        #         'nbnd': int(nbands * nbands_factor),
-        #     },
-        # }
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""

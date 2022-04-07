@@ -58,7 +58,7 @@ class CohesiveEnergyWorkChain(WorkChain):
         spec.input('bulk_parameters', valid_type=orm.Dict,
                     help='parameters for pwscf of bulk calculation.')
         spec.input('atom_parameters', valid_type=orm.Dict,
-                    help='parameters for pwscf of atom calculation.')
+                    help='parameters for pwscf of atom calculation for each element in structure.')
         spec.input('ecutwfc', valid_type=orm.Float,
                     help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
         spec.input('ecutrho', valid_type=orm.Float,
@@ -101,7 +101,8 @@ class CohesiveEnergyWorkChain(WorkChain):
             },
         }
         bulk_parameters = update_dict(bulk_parameters, parameters)
-        atom_parameters = update_dict(atom_parameters, parameters)
+        for key in atom_parameters.keys():
+            atom_parameters[key] = update_dict(atom_parameters[key], parameters)
 
         self.ctx.bulk_parameters = bulk_parameters
         self.ctx.atom_parameters = atom_parameters
@@ -200,7 +201,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                     "pseudos": {
                         element: self._get_pseudo(element, self.inputs.pseudos),
                     },
-                    "parameters": orm.Dict(dict=self.ctx.atom_parameters),
+                    "parameters": orm.Dict(dict=self.ctx.atom_parameters[element]),
                     "metadata": {
                         "options": self.ctx.options,
                     },
@@ -208,13 +209,6 @@ class CohesiveEnergyWorkChain(WorkChain):
                 },
                 "kpoints": atom_kpoints,
             }
-
-            # resources = {
-            #     'num_machines': 1,
-            #     'num_mpiprocs_per_machine': 1,
-            # }
-            # atom_inputs['pw']['metadata']['options'].setdefault(
-            #     'resources', resources)
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.report(f"Submit atomic SCF of {element}.")
