@@ -1,5 +1,13 @@
 # aiida-sssp-workflow
 
+## bands distance compare specitication
+
+### bands distance of magnetic structures
+
+The bands of magnetic structure has one more dimension to distinguish up and down spins.
+In bands distance comparing, I simply reduce the array along the last axis e.g. does not distinguish the spins but
+merge eigenvalues (sorted) of the same kpoints.
+
 ## Parameters of protocol
 
 ### Specific parameters for magnetic elements

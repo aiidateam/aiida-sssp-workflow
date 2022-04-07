@@ -22,7 +22,7 @@ def helper_bands_distence_difference(
     bands_parameters_b: orm.Dict,
     smearing: orm.Float,
     fermi_shift: orm.Float,
-    is_metal: orm.Bool,
+    do_smearing: orm.Bool,
 ):
     """doc"""
     res = get_bands_distance(
@@ -32,7 +32,7 @@ def helper_bands_distence_difference(
         bands_parameters_b,
         smearing.value,
         fermi_shift.value,
-        is_metal.value,
+        do_smearing.value,
     )
     eta = res.get("eta_c", None)
     shift = res.get("shift_c", None)
@@ -123,13 +123,14 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
         sample_bands_structure = sample_node.outputs['bands'].band_structure
         reference_bands_structure = reference_node.outputs['bands'].band_structure
 
+        # Always process smearing to find fermi level even for non-metal elements.
         res = helper_bands_distence_difference(sample_bands_structure,
                                                sample_bands_output,
                                                reference_bands_structure,
                                                reference_bands_output,
                                                smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
                                                fermi_shift=orm.Float(self.ctx.fermi_shift),
-                                               is_metal=orm.Bool(self.ctx.is_metal),
+                                               do_smearing=orm.Bool(True),
                                                ).get_dict()
 
         return res
