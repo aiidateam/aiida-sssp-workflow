@@ -17,6 +17,9 @@ from aiida_sssp_workflow.utils import (
     reset_pseudos_for_magnetic,
     update_dict,
 )
+from aiida_sssp_workflow.workflows.common import (
+    get_extra_parameters_and_pseudos_for_lanthanoid,
+)
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -201,17 +204,14 @@ class BaseLegacyWorkChain(WorkChain):
         """
         Extra setup for rare-earth element same as magnetic elements
 
-        We use diamond configuration for the convergence verification.
-        It contains two atoms in the cell. For the magnetic elements, it makes
-        more sense that the two atom sites are distinguished so that the symmetry
-        is broken.
-        The starting magnetizations are set to [0.5, -0.4] for two sites.
+        We use nitrdes configuration for the convergence verification of rare-earth elements.
+        Otherwise it is hard to get converged in scf calculation.
         """
-        extra_parameters, self.ctx.pseudos, self.ctx.structure = self._get_extra_parameters_and_pseudos_for_mag_on(
-            self.ctx.structure, self.inputs.pseudo)
-
-        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, extra_parameters)
-
+        self.ctx.extra_pw_parameters, self.ctx.pseudos = \
+            get_extra_parameters_and_pseudos_for_lanthanoid(
+                self.ctx.element,
+                pseudo_RE=self.inputs.pseudo
+            )
 
     def setup_code_parameters_from_protocol(self):
         """unzip and parse protocol parameters to context"""
