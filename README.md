@@ -1,5 +1,38 @@
 # aiida-sssp-workflow
 
+## bands distance compare specitication
+
+### bands distance of magnetic structures
+
+The bands of magnetic structure has one more dimension to distinguish up and down spins.
+In bands distance comparing, I simply reduce the array along the last axis e.g. does not distinguish the spins but
+merge eigenvalues (sorted) of the same kpoints.
+
+## Parameters of protocol
+
+### Specific parameters for magnetic elements
+
+For bulk structure (Diamond configuration in this case) calculation in convergence verification.
+The spin polarization is on for magnetic elements Fe, Mn, Cr, Co, Ni where
+the start magnetizations are set to [0.5, -0.4] respectively for each sites of diamond cell.
+
+For atomic energy calculated for cohesive energy, it is hard to converge for magnetic elements with untreated parameters.
+The following extra parameters are added for the calculation:
+
+```
+"SYSTEM": {
+    "nspin": 2,
+    "starting_magnetization": {
+        self.ctx.element: 0.5,
+    },
+},
+"ELECTRONS": {
+    "diagonalization": 'cg',
+    "mixing_beta": 0.5,
+    "electron_maxstep": 200,
+},
+```
+
 ## Resource options and parallelzation
 
 ### Walltime settings

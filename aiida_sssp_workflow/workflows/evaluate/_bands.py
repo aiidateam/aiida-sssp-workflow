@@ -53,6 +53,10 @@ class BandsWorkChain(WorkChain):
     """WorkChain calculate the bands for certain pseudopotential
     Can choose only run bands or only on bandstructure"""
 
+    # maximum number of bands factor increase loop
+    # to prevent the infinite loop in bands evaluation
+    _MAX_NUM_BANDS_FACTOR = 5
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -106,6 +110,9 @@ class BandsWorkChain(WorkChain):
         spec.expose_outputs(PwBandsWorkChain, namespace='bands')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
+        spec.exit_code(203, 'ERROR_REACH_MAX_BANDS_FACTOR_INCREASE_LOOP',
+                    message=f'The maximum number={cls._MAX_NUM_BANDS_FACTOR} of bands factor'
+                            'increase loop reached.')
         # yapf: enable
 
     def setup_base_parameters(self):
@@ -240,6 +247,17 @@ class BandsWorkChain(WorkChain):
 
     def increase_nbands(self):
         """inspect the result of bands calculation."""
+        # It is here because of a bug that return exit in `while_` not terminate the workflow.
+        ###
+        # If the bands evaluation failed it will keeps on increasing the `nbands_factor`
+        # which lead to the infinite loop to this work chain.
+        # Here I work around it by giving maximum nbands_factor loop to _MAX_NUM_BANDS_FACTOR=5.
+        if (
+            self.ctx.nbands_factor
+            > self.inputs.init_nbands_factor + self._MAX_NUM_BANDS_FACTOR
+        ):
+            return self.exit_codes.ERROR_REACH_MAX_BANDS_FACTOR_INCREASE_LOOP
+
         self.ctx.nbands_factor += 1.0
 
     def should_run_bands_structure(self):

@@ -34,19 +34,38 @@ def fermi_dirac(band_energy, fermi_energy, smearing):
 
 
 def retrieve_bands(
-    bandsdata: orm.BandsData, start_band, num_electrons, efermi, smearing, is_metal
+    bandsdata: orm.BandsData,
+    start_band,
+    num_electrons,
+    efermi,
+    smearing,
+    do_smearing,
 ):
     """
-    docstring
+    collect the bands of certain number with setting the start band.
+    In order to make sure that when comparing two bands distance the number of bands is the same.
+
+    The bands calculation of magnetic elements will giving a three dimensional bands where the
+    first dimension is for the up and down spin.
+    I simply concatenate along the first dimension.
     """
     bands = bandsdata.get_bands()
+
+    # reduce by first dimension of up, down spins
+    if len(bands.shape) > 2:
+        nspin, nk, nbands = bands.shape
+        bands = bands.reshape(nk, nbands * nspin)
+        np.sort(bands)  # sort along last axis - eigenvalues of specific kpoint
+
     bands = bands - efermi  # shift all bands to fermi energy 0
     bands = bands[:, start_band:]
     output_bands = orm.ArrayData()
     output_bands.set_array("kpoints", bandsdata.get_kpoints())
     output_bands.set_array("bands", bands)
 
-    if is_metal:
+    if do_smearing:
+        # for bands distance convergence
+        # and metals in bands measure verification.
         nelectrons = num_electrons
         nkpoints = np.shape(bands)[0]
         weights = np.ones(nkpoints) / nkpoints
@@ -56,6 +75,8 @@ def retrieve_bands(
         output_efermi = find_efermi(bands, weights, nelectrons, smearing, meth)
 
     else:
+        # easy to spot the efermi energy only used for non-metals of typical configurations
+        # in bands measure.
         homo_energy = get_homo(bands, num_electrons)
         output_efermi = homo_energy
 
@@ -128,7 +149,7 @@ def get_bands_distance(
     band_parameters_b: orm.Dict,
     smearing: float,
     fermi_shift: float,
-    is_metal: bool,
+    do_smearing: bool,
 ):
     """
     TODO docstring
@@ -140,13 +161,13 @@ def get_bands_distance(
 
     if num_electrons_a <= num_electrons_b:
         num_electrons = int(num_electrons_a)
-        res = retrieve_bands(bands_a, 0, num_electrons, efermi_a, smearing, is_metal)
+        res = retrieve_bands(bands_a, 0, num_electrons, efermi_a, smearing, do_smearing)
         bands_a = res["bands"]
         efermi_a = res["efermi"]
 
         start_band = int(num_electrons_b - num_electrons_a) // 2
         res = retrieve_bands(
-            bands_b, start_band, num_electrons, efermi_b, smearing, is_metal
+            bands_b, start_band, num_electrons, efermi_b, smearing, do_smearing
         )
         bands_b = res["bands"]
         efermi_b = res["efermi"]
@@ -155,18 +176,18 @@ def get_bands_distance(
         num_electrons = int(num_electrons_b)
         start_band = int(num_electrons_a - num_electrons_b) // 2
         res = retrieve_bands(
-            bands_a, start_band, num_electrons, efermi_a, smearing, is_metal
+            bands_a, start_band, num_electrons, efermi_a, smearing, do_smearing
         )
         bands_a = res["bands"]
         efermi_a = res["efermi"]
 
-        res = retrieve_bands(bands_b, 0, num_electrons, efermi_b, smearing, is_metal)
+        res = retrieve_bands(bands_b, 0, num_electrons, efermi_b, smearing, do_smearing)
         bands_b = res["bands"]
         efermi_b = res["efermi"]
 
     # eta_v
     fermi_shift_v = 0.0
-    if is_metal:
+    if do_smearing:
         smearing_v = smearing
     else:
         smearing_v = 0
