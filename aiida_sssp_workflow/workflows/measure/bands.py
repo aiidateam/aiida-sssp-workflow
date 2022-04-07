@@ -2,7 +2,6 @@
 """
 Bands distance of many input pseudos
 """
-import importlib
 
 from aiida import orm
 from aiida.engine import ToContext, WorkChain, if_
@@ -16,6 +15,9 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     reset_pseudos_for_magnetic,
     update_dict,
+)
+from aiida_sssp_workflow.workflows.common import (
+    get_extra_parameters_and_pseudos_for_lanthanoid,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
@@ -181,32 +183,11 @@ class BandsMeasureWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib.resources.path('aiida_sssp_workflow.statics.upf',
-                                               'N.pbe-n-radius_5.upf')
-        with import_path as psp_path, open(psp_path, 'rb') as stream:
-            pseudo_N = UpfData(stream)
-
-        self.ctx.pseudos['N'] = pseudo_N
-
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        # The nbnd only take effect for the scf step of PwBandsWorkChain
-        # since for the bands step, the nbnd is controled by init_nbands_factor
-        # while `nbnd` is removed from scf parameters.
-        nbands = self.inputs.pseudo.z_valence + pseudo_N.z_valence
-        nbands_factor = 2
-
-        rare_earth_extra_parameters = {
-            'SYSTEM': {
-                'nspin': 2,
-                'starting_magnetization': {
-                    self.ctx.element: 1.0,
-                },
-                'nbnd': int(nbands * nbands_factor),
-            },
-        }
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, rare_earth_extra_parameters)
+        self.ctx.pw_parameters, self.ctx.pseudos = \
+            get_extra_parameters_and_pseudos_for_lanthanoid(
+                self.ctx.element,
+                pseudo_RE=self.inputs.pseudo
+            )
 
 
     def setup_pw_parameters_from_protocol(self):
