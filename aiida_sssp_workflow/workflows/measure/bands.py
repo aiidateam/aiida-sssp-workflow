@@ -181,23 +181,33 @@ class BandsMeasureWorkChain(WorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        import_path = importlib.resources.path('aiida_sssp_workflow.statics.UPFs',
+        import_path = importlib.resources.path('aiida_sssp_workflow.statics.upf',
                                                'N.pbe-n-radius_5.upf')
-        # with import_path as pp_path, open(pp_path, 'rb') as stream:
-        #     upf_nitrogen = UpfData(stream)
-        #     self.ctx.pseudo_N = upf_nitrogen
+        with import_path as psp_path, open(psp_path, 'rb') as stream:
+            pseudo_N = UpfData(stream)
 
-        # # In rare earth case, increase the initial number of bands,
-        # # otherwise the occupation will not fill up in the highest band
-        # # which always trigger the `PwBaseWorkChain` sanity check.
-        # nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        # nbands_factor = 2
+        self.ctx.pseudos['N'] = pseudo_N
 
-        # self.ctx.extra_parameters = {
-        #     'SYSTEM': {
-        #         'nbnd': int(nbands * nbands_factor),
-        #     },
-        # }
+        # In rare earth case, increase the initial number of bands,
+        # otherwise the occupation will not fill up in the highest band
+        # which always trigger the `PwBaseWorkChain` sanity check.
+        # The nbnd only take effect for the scf step of PwBandsWorkChain
+        # since for the bands step, the nbnd is controled by init_nbands_factor
+        # while `nbnd` is removed from scf parameters.
+        nbands = self.inputs.pseudo.z_valence + pseudo_N.z_valence
+        nbands_factor = 2
+
+        rare_earth_extra_parameters = {
+            'SYSTEM': {
+                'nspin': 2,
+                'starting_magnetization': {
+                    self.ctx.element: 1.0,
+                },
+                'nbnd': int(nbands * nbands_factor),
+            },
+        }
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, rare_earth_extra_parameters)
+
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
