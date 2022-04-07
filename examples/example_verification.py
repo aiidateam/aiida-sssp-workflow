@@ -27,12 +27,12 @@ def run_verification(pw_code, ph_code, upf):
         "properties_list": orm.List(
             list=[
                 # "accuracy:delta",
-                "accuracy:bands",
+                # "accuracy:bands",
                 # "convergence:cohesive_energy",
                 # "convergence:phonon_frequencies",
                 # "convergence:pressure",
                 # "convergence:delta",
-                # "convergence:bands",
+                "convergence:bands",
             ]
         ),
         "options": orm.Dict(
