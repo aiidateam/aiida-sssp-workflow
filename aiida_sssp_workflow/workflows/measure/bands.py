@@ -295,8 +295,7 @@ class BandsMeasureWorkChain(WorkChain):
 
     def run_bands_evaluation(self):
         """run bands evaluation of psp in inputs list"""
-        pseudos = {self.ctx.element: self.inputs.pseudo}
-        inputs = self._get_inputs(self.ctx.element, pseudos)
+        inputs = self._get_inputs(self.ctx.element, self.ctx.pseudos)
 
         running = self.submit(BandsWorkChain, **inputs)
 
