@@ -3,15 +3,10 @@
 import importlib
 
 from aiida import orm
-from aiida.engine import WorkChain, if_
+from aiida.engine import WorkChain
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import (
-    RARE_EARTH_ELEMENTS,
-    get_protocol,
-    get_standard_structure,
-    update_dict,
-)
+from aiida_sssp_workflow.utils import get_protocol, get_standard_structure, update_dict
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
@@ -48,9 +43,6 @@ class DeltaMeasureWorkChain(WorkChain):
                     help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
         spec.outline(
             cls.init_setup,
-            if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element,
-            ),
             cls.setup_pw_parameters_from_protocol,
             cls.setup_pw_resource_options,
             cls.run_delta,
@@ -112,40 +104,6 @@ class DeltaMeasureWorkChain(WorkChain):
                 prop="delta",
                 configuration=configuration,
             )
-
-    def is_rare_earth_element(self):
-        """Check if the element is rare earth"""
-        return self.ctx.element in RARE_EARTH_ELEMENTS
-
-    def extra_setup_for_rare_earth_element(self):
-        """Extra setup for rare earth element"""
-        import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.UPFs", "N.pbe-n-radius_5.upf"
-        )
-        with import_path as pp_path, open(pp_path, "rb") as stream:
-            upf_nitrogen = UpfData(stream)
-            self.ctx.pseudos["N"] = upf_nitrogen
-
-        # In rare earth case, increase the initial number of bands,
-        # otherwise the occupation will not fill up in the highest band
-        # which always trigger the `PwBaseWorkChain` sanity check.
-        nbands = self.inputs.pseudo.z_valence + upf_nitrogen.z_valence // 2
-        nbands_factor = 2
-
-        extra_parameters = {
-            "SYSTEM": {
-                "nbnd": int(nbands * nbands_factor),
-                # Althrough magnetic off for mag element
-                # still turn on for Lanths for converge reason
-                # Furthure investigation needed in future.
-                "nspin": 2,
-                "starting_magnetization": {
-                    self.ctx.element: 0.2,
-                    "N": 0.0,
-                },
-            },
-        }
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, extra_parameters)
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
