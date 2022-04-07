@@ -217,3 +217,17 @@ def convergence_analysis(xy: orm.List, criteria: orm.Dict):
         "cutoff": orm.Float(cutoff),
         "value": orm.Float(value),
     }
+
+
+def reset_pseudos_for_magnetic(pseudo, structure):
+    """
+    override pseudos setting
+    required for O, Mn, Cr typical configuration and
+    diamond configuration of all magnetic elements where
+    the kind names varies for sites
+    """
+    pseudos = {}
+    for kind_name in structure.get_kind_names():
+        pseudos[kind_name] = pseudo
+
+    return pseudos

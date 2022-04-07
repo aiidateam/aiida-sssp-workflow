@@ -5,15 +5,8 @@
 ### Specific parameters for magnetic elements
 
 For bulk structure (Diamond configuration in this case) calculation in convergence verification.
-The spin polarization is on for magnetic elements Fe, Mn, Cr, Co, Ni where,
-```
-"SYSTEM": {
-    "nspin": 2,
-    "starting_magnetization": {
-        self.ctx.element: 0.5,
-    },
-},
-```
+The spin polarization is on for magnetic elements Fe, Mn, Cr, Co, Ni where
+the start magnetizations are set to [0.5, -0.4] respectively for each sites of diamond cell.
 
 For atomic energy calculated for cohesive energy, it is hard to converge for magnetic elements with untreated parameters.
 The following extra parameters are added for the calculation:

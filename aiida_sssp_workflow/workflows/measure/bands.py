@@ -14,6 +14,7 @@ from aiida_sssp_workflow.utils import (
     RARE_EARTH_ELEMENTS,
     get_protocol,
     get_standard_structure,
+    reset_pseudos_for_magnetic,
     update_dict,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
@@ -171,11 +172,8 @@ class BandsMeasureWorkChain(WorkChain):
 
         # override pseudos setting
         # required for O, Mn, Cr where the kind names varies for sites
-        pseudos = {}
-        pseudo = self.inputs.pseudo
-        for kind_name in self.ctx.structure.get_kind_names():
-            pseudos[kind_name] = pseudo
-        self.ctx.pseudos = pseudos
+        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
+
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""

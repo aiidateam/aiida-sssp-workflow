@@ -13,6 +13,7 @@ from aiida_sssp_workflow.utils import (
     convergence_analysis,
     get_protocol,
     get_standard_structure,
+    reset_pseudos_for_magnetic,
     update_dict,
 )
 
@@ -146,23 +147,38 @@ class BaseLegacyWorkChain(WorkChain):
         return self.ctx.element in MAGNETIC_ELEMENTS
 
     def extra_setup_for_magnetic_element(self):
-        """Extra setup for magnetic element"""
+        """
+        Extra setup for magnetic element
+
+        We use diamond configuration for the convergence verification.
+        It contains two atoms in the cell. For the magnetic elements, it makes
+        more sense that the two atom sites are distinguished so that the symmetry
+        is broken.
+        The starting magnetizations are set to [0.5, -0.4] for two sites.
+        """
+        structure = self.ctx.structure
+        mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
+        kind_name = structure.get_kind_names()[0]
+
+        for i, site in enumerate(structure.sites):
+            mag_structure.append_atom(
+                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
+            )
+        self.ctx.structure = mag_structure
+
         self.ctx.magnetic_extra_parameters = {
             "SYSTEM": {
                 "nspin": 2,
                 "starting_magnetization": {
-                    self.ctx.element: 0.5,
+                    f'{self.ctx.element}1': 0.5,
+                    f'{self.ctx.element}2': -0.4,
                 },
             },
         }
         self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, self.ctx.magnetic_extra_parameters)
 
-        # # setting pseudos
-        # pseudos = {}
-        # pseudo = self.inputs.pseudo
-        # for kind_name in self.ctx.structure.get_kind_names():
-        #     pseudos[kind_name] = pseudo
-        # self.ctx.pseudos = pseudos
+        # override pseudos setting for two sites of diamond cell
+        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
 
     # def is_rare_earth_element(self):
     #     """Check if the element is rare earth"""
