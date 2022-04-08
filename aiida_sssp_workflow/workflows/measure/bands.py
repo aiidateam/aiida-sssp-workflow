@@ -106,7 +106,6 @@ class BandsMeasureWorkChain(WorkChain):
     WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
     """
-    _MAX_WALLCLOCK_SECONDS = 1800 * 3
     _RY_TO_EV = 13.6056980659
 
     @classmethod
@@ -245,9 +244,7 @@ class BandsMeasureWorkChain(WorkChain):
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
-            self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS, with_mpi=True
-            )
+            self.ctx.options = get_default_options(with_mpi=True)
 
         if "parallelization" in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()

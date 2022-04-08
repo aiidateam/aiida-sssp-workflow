@@ -34,8 +34,6 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
 class PressureWorkChain(WorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
-    _MAX_WALLCLOCK_SECONDS = 3600
-
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -103,9 +101,7 @@ class PressureWorkChain(WorkChain):
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
-            self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS, with_mpi=True
-            )
+            self.ctx.options = get_default_options(with_mpi=True)
 
         if "parallelization" in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
