@@ -111,8 +111,8 @@ class BaseLegacyWorkChain(WorkChain):
         from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
         cutoff_control = get_protocol(category='control', name=self.inputs.cutoff_control.value)
-        self._ECUTWFC_LIST = cutoff_control['wfc_scan']
-        self._REFERENCE_ECUTWFC = self._ECUTWFC_LIST[-1]    # use the last cutoff as reference
+        self.ctx.ecutwfc_list = self._ECUTWFC_LIST = cutoff_control['wfc_scan']
+        self.ctx.reference_ecutwfc = self._ECUTWFC_LIST[-1]    # use the last cutoff as reference
 
         self.ctx.extra_pw_parameters = {}
         content = self.inputs.pseudo.get_content()
@@ -278,7 +278,7 @@ class BaseLegacyWorkChain(WorkChain):
         """
         run on reference calculation
         """
-        ecutwfc = self._REFERENCE_ECUTWFC
+        ecutwfc = self.ctx.reference_ecutwfc
         ecutrho = ecutwfc * self.ctx.dual
         inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
@@ -304,9 +304,9 @@ class BaseLegacyWorkChain(WorkChain):
         """
         run on all other evaluation sample points
         """
-        self.ctx.max_ecutrho = ecutrho = self._REFERENCE_ECUTWFC * self.ctx.dual
+        self.ctx.max_ecutrho = ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
 
-        for ecutwfc in self._ECUTWFC_LIST[:-1]: # The last one is reference
+        for ecutwfc in self.ctx.ecutwfc_list[:-1]: # The last one is reference
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)

@@ -136,7 +136,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         # for it which need to be run before the following step.
 
         # This workflow is shared with delta factor workchain for birch murnagan fitting.
-        ecutwfc = self._REFERENCE_ECUTWFC
+        ecutwfc = self.ctx.reference_ecutwfc
         ecutrho = ecutwfc * self.ctx.dual
         parameters = {
             'SYSTEM': {
