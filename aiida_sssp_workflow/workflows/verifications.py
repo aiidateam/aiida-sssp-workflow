@@ -53,8 +53,6 @@ DEFAULT_PROPERTIES_LIST = [
 class VerificationWorkChain(WorkChain):
     """The verification workflow to run all test for the given pseudopotential"""
 
-    _MAX_WALLCLOCK_SECONDS = 1800 * 3
-
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -130,7 +128,7 @@ class VerificationWorkChain(WorkChain):
             from aiida_sssp_workflow.utils import get_default_options
 
             self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS, with_mpi=True
+                with_mpi=True,
             )
 
         if "parallelization" in self.inputs:

@@ -44,8 +44,6 @@ class BaseLegacyWorkChain(WorkChain):
     # pylint: disable=too-many-instance-attributes
     __metaclass__ = ABCMeta
 
-    _MAX_WALLCLOCK_SECONDS = 1800 * 3
-
     _PROPERTY_NAME = abstract_attribute()   # used to get convergence protocol
     _EVALUATE_WORKCHAIN = abstract_attribute()
     _MEASURE_OUT_PROPERTY = abstract_attribute()
@@ -261,9 +259,7 @@ class BaseLegacyWorkChain(WorkChain):
         else:
             from aiida_sssp_workflow.utils import get_default_options
 
-            self.ctx.options = get_default_options(
-                max_wallclock_seconds=self._MAX_WALLCLOCK_SECONDS,
-                with_mpi=True)
+            self.ctx.options = get_default_options(with_mpi=True)
 
         if 'parallelization' in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
