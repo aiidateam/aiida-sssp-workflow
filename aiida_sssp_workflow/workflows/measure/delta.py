@@ -97,7 +97,13 @@ class DeltaMeasureWorkChain(WorkChain):
         # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5
         # parentatheses means not supported yet.
         self.ctx.structures = {}
-        for configuration in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:
+        if self.ctx.element == "O":
+            # For oxygen, only unaries are available.
+            configuration_list = self._UNARIE_STRUCTURES
+        else:
+            configuration_list = self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES
+
+        for configuration in configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
                 element,
                 prop="delta",
