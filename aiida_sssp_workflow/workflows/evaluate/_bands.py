@@ -221,7 +221,7 @@ class BandsWorkChain(WorkChain):
         """run bands calculation"""
         inputs = self._get_base_bands_inputs()
         inputs["nbands_factor"] = self.ctx.nbands_factor
-        inputs["bands_kpoints"] = (self.ctx.bands_kpoints,)
+        inputs["bands_kpoints"] = self.ctx.bands_kpoints
 
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f"Running pw bands calculation pk={running.pk}")

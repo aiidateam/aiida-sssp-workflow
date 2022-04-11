@@ -30,21 +30,21 @@ def run_verification(
         "properties_list": orm.List(
             list=[
                 # "accuracy:delta",
-                "accuracy:bands",
-                # "convergence:cohesive_energy",
-                # "convergence:phonon_frequencies",
-                # "convergence:pressure",
+                # "accuracy:bands",
+                "convergence:cohesive_energy",
+                "convergence:phonon_frequencies",
+                "convergence:pressure",
                 # "convergence:delta",
-                "convergence:bands",
+                # "convergence:bands",
             ]
         ),
         "options": orm.Dict(
             dict={
                 "resources": {
                     "num_machines": 1,
-                    "num_mpiprocs_per_machine": 36,
+                    "num_mpiprocs_per_machine": 32,
                 },
-                "max_wallclock_seconds": 1800 * 2,
+                "max_wallclock_seconds": 1800,
                 "withmpi": True,
             }
         ),
@@ -85,8 +85,10 @@ if __name__ == "__main__":
     except:
         raise
 
-    pw_code = load_code("pw-6.6@daint-mc-mr0")
-    ph_code = load_code("ph-6.6@daint-mc-mr0")
+    # pw_code = load_code("pw-6.6@daint-mc-mr0")
+    # ph_code = load_code("ph-6.6@daint-mc-mr0")
+    pw_code = load_code("pw-6.7@imxgesrv1")
+    ph_code = load_code("ph-6.7@imxgesrv1")
 
     pp_path = os.path.join(STATIC_DIR, element, os.path.basename(fn))
     with open(pp_path, "rb") as stream:
