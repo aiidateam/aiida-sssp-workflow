@@ -42,9 +42,9 @@ def run_verification(
             dict={
                 "resources": {
                     "num_machines": 1,
-                    "num_mpiprocs_per_machine": 32,
+                    "num_mpiprocs_per_machine": 36,
                 },
-                "max_wallclock_seconds": 1800 * 4,
+                "max_wallclock_seconds": 1800 * 2,
                 "withmpi": True,
             }
         ),
