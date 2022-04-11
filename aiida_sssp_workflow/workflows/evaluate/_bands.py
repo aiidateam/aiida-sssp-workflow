@@ -213,7 +213,6 @@ class BandsWorkChain(WorkChain):
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
             },
-            "bands_kpoints": self.ctx.bands_kpoints,
         }
 
         return inputs
@@ -222,6 +221,7 @@ class BandsWorkChain(WorkChain):
         """run bands calculation"""
         inputs = self._get_base_bands_inputs()
         inputs["nbands_factor"] = self.ctx.nbands_factor
+        inputs["bands_kpoints"] = (self.ctx.bands_kpoints,)
 
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f"Running pw bands calculation pk={running.pk}")
@@ -269,6 +269,8 @@ class BandsWorkChain(WorkChain):
         """run band structure calculation"""
         inputs = self._get_base_bands_inputs()
         inputs["nbands_factor"] = self.ctx.nbands_factor
+
+        # since
 
         if "kpoints_distance_band_structure" in self.inputs:
             inputs["bands_kpoints_distance"] = orm.Float(

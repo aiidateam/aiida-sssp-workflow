@@ -29,12 +29,12 @@ def run_verification(
         "label": orm.Str(label),
         "properties_list": orm.List(
             list=[
-                "accuracy:delta",
+                # "accuracy:delta",
                 "accuracy:bands",
-                "convergence:cohesive_energy",
-                "convergence:phonon_frequencies",
-                "convergence:pressure",
-                "convergence:delta",
+                # "convergence:cohesive_energy",
+                # "convergence:phonon_frequencies",
+                # "convergence:pressure",
+                # "convergence:delta",
                 "convergence:bands",
             ]
         ),

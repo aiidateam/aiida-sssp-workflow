@@ -8,6 +8,20 @@ The bands of magnetic structure has one more dimension to distinguish up and dow
 In bands distance comparing, I simply reduce the array along the last axis e.g. does not distinguish the spins but
 merge eigenvalues (sorted) of the same kpoints.
 
+### bands distance protocol specifications
+
+There are three kinds of kpoint distance (`kpoints_distance_scf`, `kpoints_distance_bands` and `kpoints_distance_band_strcuture` respectively) for bands measure workflow and two for bands distance convergence workflow where the band structure is not calculated in convergence verification.
+
+In the production protocol, the `kpoints_distance_bands` is set to `0.25` which is not so dense as scf calculation since in the bands nscf calculation the symmetry is not applied (as discussed following.) which lead to the calculation very time consuming if the number of kpoints are enourmous.
+
+We choose a uniform k-grid for bands distance comparison,
+in the full Brillouin zone and with no symmetry reduction.
+Because, choosing a high-symmetry path could result in an unsatisfactory arbitrary choice,
+as different recipes for the standardisation of paths have been introduced in the recent literature and interesting features of the band structure may occur far from the high-symmetry lines (such as Weyl points).
+A uniform mesh is also more appropriate from the point of view of electron’s nearsightedness
+if the energy eigenvalues are known on a sufficiently fine uniform k-points mesh,
+it is possible to get an exact real-space representation of the Hamiltonian in a Wannier function basis32 and then interpolate to an arbitrary fine mesh.
+
 ## Parameters of protocol
 
 ### Specific parameters for magnetic elements
