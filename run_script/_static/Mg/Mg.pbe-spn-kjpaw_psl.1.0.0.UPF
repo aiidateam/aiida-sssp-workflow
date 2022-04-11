@@ -10,7 +10,7 @@
     Suggested minimum cutoff for charge density: 398. Ry
     The Pseudo was generated with a Scalar-Relativistic Calculation
     Local Potential by smoothing AE potential with Bessel fncs, cutoff radius:   1.0000
-    Valence configuration: 
+    Valence configuration:
     nl pn  l   occ       Rcut    Rcut US       E pseu
     2S  1  0  2.00      0.700      0.900    -5.868494
     3S  2  0  2.00      0.700      0.900    -0.345836
@@ -3095,7 +3095,7 @@ tm=.true.
   0.000000000000000E+000  0.000000000000000E+000  0.000000000000000E+000
   0.000000000000000E+000   4.30721543740082      -8.837007955468401E-002
   0.000000000000000E+000  0.000000000000000E+000 -8.837007955468401E-002
- -0.836350531597155     
+ -0.836350531597155
     </PP_DIJ>
     <PP_AUGMENTATION q_with_l="true" nqf="0" nqlc="3" shape="PSQ" cutoff_r="-1.00000000000000" cutoff_r_index="805" augmentation_epsilon="1.000000000000000E-012" l_max_aug="2">
       <PP_Q size="16">
@@ -3106,7 +3106,7 @@ tm=.true.
   0.000000000000000E+000  0.000000000000000E+000 -1.464737554416231E-002
  -4.205861256443233E-002
       </PP_Q>
-<!--augmentation charge multipoles ( only for PAW) 
+<!--augmentation charge multipoles ( only for PAW)
 multipole array dims = (nbeta,nbeta,2*lmax+1)-->
       <PP_MULTIPOLES nbeta="4" lmax="1">
  -0.170001751073737      -3.939069914633980E-002  0.000000000000000E+000

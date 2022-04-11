@@ -9,7 +9,7 @@ repos:
           - id: end-of-file-fixer
             exclude: &exclude_pre_commit_hooks >
                 (?x)^(
-                    demo/_static/.*/.*|
+                    run_script/_static/.*/.*|
                 )$
           - id: trailing-whitespace
             exclude: *exclude_pre_commit_hooks
