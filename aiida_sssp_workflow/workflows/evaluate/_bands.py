@@ -74,8 +74,12 @@ class BandsWorkChain(WorkChain):
                     help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
         spec.input('ecutrho', valid_type=orm.Float,
                     help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
-        spec.input('kpoints_distance', valid_type=orm.Float,
-                    help='Kpoints distance setting for bulk energy calculation and for seekpath.')
+        spec.input('kpoints_distance_scf', valid_type=orm.Float,
+                    help='Kpoints distance setting for bulk energy scf calculation.')
+        spec.input('kpoints_distance_bands', valid_type=orm.Float,
+                    help='Kpoints distance setting for bulk energy bands calculation.')
+        spec.input('kpoints_distance_band_structure', valid_type=orm.Float, required=False,
+                    help='Kpoints distance setting for band structure calculation.')
         spec.input('init_nbands_factor', valid_type=orm.Float,
                     help='initial nbands factor.')
         spec.input('fermi_shift', valid_type=orm.Float, default=lambda: orm.Float(10.0),
@@ -132,7 +136,6 @@ class BandsWorkChain(WorkChain):
             "SYSTEM": {
                 "ecutwfc": self.inputs.ecutwfc,
                 "ecutrho": self.inputs.ecutrho,
-                "noinv": True,
                 "nosym": True,
             },
         }
@@ -143,8 +146,6 @@ class BandsWorkChain(WorkChain):
 
         self.ctx.pw_scf_parameters = pw_scf_parameters
         self.ctx.pw_bands_parameters = pw_bands_parameters
-
-        self.ctx.kpoints_distance = self.inputs.kpoints_distance
 
         # set initial lowest highest bands eigenvalue - fermi_energy equals to 0.0
         self.ctx.nbands_factor = self.inputs.init_nbands_factor
@@ -157,7 +158,7 @@ class BandsWorkChain(WorkChain):
         # While for the band_structure sub-workchain, the seekpath will run and
         # give band structure along the path.
         self.ctx.bands_kpoints = create_kpoints_from_distance(
-            self.inputs.structure, self.ctx.kpoints_distance, orm.Bool(False)
+            self.inputs.structure, self.inputs.kpoints_distance_bands, orm.Bool(False)
         )
 
     def validate_structure(self):
@@ -199,7 +200,7 @@ class BandsWorkChain(WorkChain):
                     },
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
-                "kpoints_distance": self.ctx.kpoints_distance,
+                "kpoints_distance": self.inputs.kpoints_distance_scf,
             },
             "bands": {
                 "pw": {
@@ -212,6 +213,7 @@ class BandsWorkChain(WorkChain):
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
             },
+            "bands_kpoints": self.ctx.bands_kpoints,
         }
 
         return inputs
@@ -220,7 +222,6 @@ class BandsWorkChain(WorkChain):
         """run bands calculation"""
         inputs = self._get_base_bands_inputs()
         inputs["nbands_factor"] = self.ctx.nbands_factor
-        inputs["bands_kpoints"] = self.ctx.bands_kpoints
 
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f"Running pw bands calculation pk={running.pk}")
@@ -268,7 +269,16 @@ class BandsWorkChain(WorkChain):
         """run band structure calculation"""
         inputs = self._get_base_bands_inputs()
         inputs["nbands_factor"] = self.ctx.nbands_factor
-        inputs["bands_kpoints_distance"] = orm.Float(self.inputs.kpoints_distance)
+
+        if "kpoints_distance_band_structure" in self.inputs:
+            inputs["bands_kpoints_distance"] = orm.Float(
+                self.inputs.kpoints_distance_band_structure
+            )
+        else:
+            # TODO: logger warning for using scf k-distance
+            inputs["bands_kpoints_distance"] = orm.Float(
+                self.inputs.kpoints_distance_scf
+            )
 
         running = self.submit(PwBandsWorkChain, **inputs)
         self.report(f"Running pw band structure calculation pk={running.pk}")

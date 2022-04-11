@@ -199,7 +199,6 @@ class BandsMeasureWorkChain(WorkChain):
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
         self._CONV_THR = protocol['electron_conv_thr']
-        self._KDISTANCE = protocol['kpoints_distance']
 
         self._INIT_NBANDS_FACTOR = protocol['init_nbands_factor']
         self._FERMI_SHIFT = protocol['fermi_shift']
@@ -210,9 +209,13 @@ class BandsMeasureWorkChain(WorkChain):
         self._ECUTWFC = cutoff_control["max_wfc"]
 
         self.ctx.ecutwfc = self._ECUTWFC
-        self.ctx.kpoints_distance = self._KDISTANCE
         self.ctx.init_nbands_factor = self._INIT_NBANDS_FACTOR
         self.ctx.fermi_shift = self._FERMI_SHIFT
+
+        self.ctx.kpoints_distance_scf = protocol['kpoints_distance_scf']
+        self.ctx.kpoints_distance_bands = protocol['kpoints_distance_bands']
+        self.ctx.kpoints_distance_band_structure = protocol['kpoints_distance_band_structure']
+
 
         parameters = {
             "SYSTEM": {
@@ -268,7 +271,9 @@ class BandsMeasureWorkChain(WorkChain):
             'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
             'ecutwfc': orm.Float(self.ctx.ecutwfc),
             'ecutrho': orm.Float(self.ctx.ecutrho),
-            'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
+            'kpoints_distance_scf': orm.Float(self.ctx.kpoints_distance_scf),
+            'kpoints_distance_bands': orm.Float(self.ctx.kpoints_distance_bands),
+            'kpoints_distance_band_structure': orm.Float(self.ctx.kpoints_distance_band_structure),
             'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
             'fermi_shift': orm.Float(self.ctx.fermi_shift),
             'should_run_bands_structure': orm.Bool(True),

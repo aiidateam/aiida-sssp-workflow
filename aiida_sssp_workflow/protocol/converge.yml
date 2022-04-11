@@ -27,6 +27,8 @@ theos:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
+        kpoints_distance_scf: 0.15
+        kpoints_distance_bands: 0.25
 
     delta:
         scale_count: 7
@@ -60,6 +62,8 @@ test:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 5.0
+        kpoints_distance_scf: 0.5
+        kpoints_distance_bands: 0.25
 
     delta:
         scale_count: 5
@@ -93,6 +97,8 @@ demo:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 5.0
+        kpoints_distance_scf: 0.25
+        kpoints_distance_bands: 0.25
 
     delta:
         scale_count: 5
