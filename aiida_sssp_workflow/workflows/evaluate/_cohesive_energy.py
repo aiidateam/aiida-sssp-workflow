@@ -141,8 +141,13 @@ class CohesiveEnergyWorkChain(WorkChain):
 
         if "parallelization" in self.inputs:
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
+            self.ctx.atomic_parallelization = self.inputs.parallelization.get_dict()
         else:
-            self.ctx.parallelization = {}
+            self.ctx.atomic_parallelization = self.ctx.parallelization = {}
+
+        # atomic parallelization always set npool to 1 since only one kpoints
+        # requires no k parallel
+        self.ctx.atomic_parallelization.update({"npool": 1})
 
         self.report(f"resource options set to {self.ctx.options}")
         self.report(f"parallelization options set to {self.ctx.parallelization}")
@@ -201,7 +206,7 @@ class CohesiveEnergyWorkChain(WorkChain):
                     "metadata": {
                         "options": self.ctx.options,
                     },
-                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+                    "parallelization": orm.Dict(dict=self.ctx.atomic_parallelization),
                 },
                 "kpoints": atom_kpoints,
             }
