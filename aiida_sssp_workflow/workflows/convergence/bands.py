@@ -75,7 +75,8 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
         self._CONV_THR = protocol['electron_conv_thr']
-        self.ctx.kpoints_distance = self._KDISTANCE = protocol['kpoints_distance']
+        self.ctx.kpoints_distance_scf = protocol['kpoints_distance_scf']
+        self.ctx.kpoints_distance_bands = protocol['kpoints_distance_bands']
 
         # Set context parameters
         self.ctx.parameters = super()._get_pw_base_parameters(self._DEGAUSS,
@@ -103,7 +104,8 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
             'pw_base_parameters': orm.Dict(dict=self.ctx.parameters),
             'ecutwfc': orm.Float(ecutwfc),
             'ecutrho': orm.Float(ecutrho),
-            'kpoints_distance': orm.Float(self.ctx.kpoints_distance),
+            'kpoints_distance_scf': orm.Float(self.ctx.kpoints_distance_scf),
+            'kpoints_distance_bands': orm.Float(self.ctx.kpoints_distance_bands),
             'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
             'fermi_shift': orm.Float(self.ctx.fermi_shift),
             'should_run_bands_structure': orm.Bool(False), # for convergence no band structure evaluate
