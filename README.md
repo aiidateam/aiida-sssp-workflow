@@ -26,10 +26,6 @@ it is possible to get an exact real-space representation of the Hamiltonian in a
 
 ### Specific parameters for magnetic elements
 
-For bulk structure (Diamond configuration in this case) calculation in convergence verification.
-The spin polarization is on for magnetic elements Fe, Mn, Cr, Co, Ni where
-the start magnetizations are set to [0.5, -0.4] respectively for each sites of diamond cell.
-
 For atomic energy calculated for cohesive energy, it is hard to converge for magnetic elements with untreated parameters.
 The following extra parameters are added for the calculation:
 
@@ -75,8 +71,14 @@ Different verifications use different structure configurations.
 For all delta measure verification, the configurations are all compatible with the ACWF.
 While for bands measure and convergence workflow, the configurations used are set in file `statics/cif/mapping.json`.
 The principles are for bands measure, using the configurations from Cottiner's paper since they are the groud state structures exist in real wolrd.
-And for lanthanoids using the Nitrides from Wenzowech paper for bands measure and convergence otherwise hard to converge in scf calculation.
-Using the uniaries/diamond configurations for convergence verification except for lanthenoids.
+And for lanthanoids using the Nitrides from Wenzowitch paper for bands measure and convergence otherwise hard to converge in scf calculation.
+
+But the structures used for convergence verfication are varias.
+The lanthanides still using the nitrides from Wenzovitch paper.
+For other elements, if it is a BCC, FCC, SC or Diamond in nature (e.g. from Cottiner's paper they are BCC, FCC, SC, or Diamond), we use the source from unaries set.
+Otherwise we keep on using typical nature configuration from Cottiner's paper, but convert them to primitive with pymatgen (for magnetic elements, no primitive convert process but still refine with `pymatgen`). (I will not running production HT calculation for these elements at moment since they may not cheap.)
+The plan is using BCC or FCC for these structures, since for convergence verification the configuration will not influence the results too much (test and show result!!!).
+
 
 ## For maintainers
 

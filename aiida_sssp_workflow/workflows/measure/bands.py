@@ -11,6 +11,7 @@ from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
     NONMETAL_ELEMENTS,
     RARE_EARTH_ELEMENTS,
+    get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
     reset_pseudos_for_magnetic,
@@ -23,75 +24,6 @@ from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
-
-def helper_get_magnetic_inputs(structure: orm.StructureData):
-    """
-    To set initial magnet to the magnetic system, need to set magnetic order to
-    every magnetic element site, with certain pw starting_mainetization parameters.
-
-    ! Only for typical configurations of magnetic elements.
-    """
-    MAG_INIT_Mn = {
-        "Mn1": 0.5,
-        "Mn2": -0.3,
-        "Mn3": 0.5,
-        "Mn4": -0.3,
-    }  # pylint: disable=invalid-name
-    MAG_INIT_O = {
-        "O1": 0.5,
-        "O2": 0.5,
-        "O3": -0.5,
-        "O4": -0.5,
-    }  # pylint: disable=invalid-name
-    MAG_INIT_Cr = {"Cr1": 0.5, "Cr2": -0.5}  # pylint: disable=invalid-name
-
-    mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
-    kind_name = structure.get_kind_names()[0]
-
-    # ferromagnetic
-    if kind_name in ["Fe", "Co", "Ni"]:
-        for i, site in enumerate(structure.sites):
-            mag_structure.append_atom(position=site.position, symbols=kind_name)
-
-        parameters = {
-            "SYSTEM": {
-                "nspin": 2,
-                "starting_magnetization": {kind_name: 0.2},
-            },
-        }
-
-    #
-    if kind_name in ["Mn", "O", "Cr"]:
-        for i, site in enumerate(structure.sites):
-            mag_structure.append_atom(
-                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
-            )
-
-        if kind_name == "Mn":
-            parameters = {
-                "SYSTEM": {
-                    "nspin": 2,
-                    "starting_magnetization": MAG_INIT_Mn,
-                },
-            }
-
-        if kind_name == "O":
-            parameters = {
-                "SYSTEM": {
-                    "nspin": 2,
-                    "starting_magnetization": MAG_INIT_O,
-                },
-            }
-
-        if kind_name == "Cr":
-            parameters = {
-                "SYSTEM": {
-                    "nspin": 2,
-                    "starting_magnetization": MAG_INIT_Cr,
-                },
-            }
-
-    return mag_structure, parameters
 
 def validate_input_pseudos(d_pseudos, _):
     """Validate that all input pseudos map to same element"""
@@ -168,7 +100,7 @@ class BandsMeasureWorkChain(WorkChain):
 
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
-        self.ctx.structure, magnetic_extra_parameters = helper_get_magnetic_inputs(self.ctx.structure)
+        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, magnetic_extra_parameters)
 
         # override pseudos setting

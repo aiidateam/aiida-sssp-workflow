@@ -12,6 +12,7 @@ from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
     RARE_EARTH_ELEMENTS,
     convergence_analysis,
+    get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
     reset_pseudos_for_magnetic,
@@ -139,60 +140,25 @@ class BaseLegacyWorkChain(WorkChain):
 
         self.ctx.pseudos = {element: self.inputs.pseudo}
 
-        # Structures for convergence verification are all primitive structures
-        # the original conventional structure comes from the same CIF files of
-        # http:// molmod.ugent.be/deltacodesdft/
-        # EXCEPT that for the element fluorine the `SiF4.cif` used for convergence
-        # reason. But we do the structure setup for SiF4 in the following step:
-        # `cls.extra_setup_for_fluorine_element`
+        # Please check README for what and why we use configuration set 'convergence'
+        # for convergence verification.
         self.ctx.structure = get_standard_structure(element, prop='convergence')
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
         return self.ctx.element in MAGNETIC_ELEMENTS
 
-    @staticmethod
-    def _get_extra_parameters_and_pseudos_for_mag_on(structure, pseudo):
-        """
-        Return extra parameters and magnetic pseudos setting with given
-        structure data and pseudo data.
-        """
-        mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
-        element = kind_name = structure.get_kind_names()[0]
-
-        for i, site in enumerate(structure.sites):
-            mag_structure.append_atom(
-                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
-            )
-
-        extra_parameters = {
-            "SYSTEM": {
-                "nspin": 2,
-                "starting_magnetization": {
-                    f'{element}1': 0.5,
-                    f'{element}2': -0.4,
-                },
-            },
-        }
-        # override pseudos setting for two sites of diamond cell
-        pseudos = reset_pseudos_for_magnetic(pseudo, mag_structure)
-
-        return extra_parameters, pseudos, mag_structure
-
     def extra_setup_for_magnetic_element(self):
         """
-        Extra setup for magnetic element
-
-        We use diamond configuration for the convergence verification.
-        It contains two atoms in the cell. For the magnetic elements, it makes
-        more sense that the two atom sites are distinguished so that the symmetry
-        is broken.
-        The starting magnetizations are set to [0.5, -0.4] for two sites.
+        Extra setup for magnetic element, set starting magnetization
+        and reset pseudos to correspont elements name.
         """
-        extra_parameters, self.ctx.pseudos, self.ctx.structure = self._get_extra_parameters_and_pseudos_for_mag_on(
-            self.ctx.structure, self.inputs.pseudo)
+        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
+        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 
-        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, extra_parameters)
+        # override pseudos setting
+        # required for O, Mn, Cr where the kind names varies for sites
+        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""

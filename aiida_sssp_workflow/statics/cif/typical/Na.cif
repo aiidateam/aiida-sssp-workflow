@@ -1,35 +1,29 @@
-#======================================================================
-
-# CRYSTAL DATA
-
-#----------------------------------------------------------------------
-
-data_VESTA_phase_1
-
-
-_pd_phase_name                         'Na                                    '
-_cell_length_a                         9.41813
-_cell_length_b                         9.41813
-_cell_length_c                         9.41813
-_cell_angle_alpha                      22.92203
-_cell_angle_beta                       22.92203
-_cell_angle_gamma                      22.92203
-_symmetry_space_group_name_H-M         'P 1'
-_symmetry_Int_Tables_number            1
-
+# generated using pymatgen
+data_Na
+_symmetry_space_group_name_H-M   'P 1'
+_cell_length_a   3.74278617
+_cell_length_b   3.74278617
+_cell_length_c   9.41813000
+_cell_angle_alpha   78.53898500
+_cell_angle_beta   78.53898500
+_cell_angle_gamma   60.00000000
+_symmetry_Int_Tables_number   1
+_chemical_formula_structural   Na
+_chemical_formula_sum   Na3
+_cell_volume   111.20958312
+_cell_formula_units_Z   3
 loop_
-_symmetry_equiv_pos_as_xyz
-   'x, y, z'
-
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+  1  'x, y, z'
 loop_
-   _atom_site_label
-   _atom_site_occupancy
-   _atom_site_fract_x
-   _atom_site_fract_y
-   _atom_site_fract_z
-   _atom_site_thermal_displace_type
-   _atom_site_B_iso_or_equiv
-   _atom_site_type_symbol
-   Na1      1.0    0            0            0           Biso  1.000  Na
-   Na2      1.0    0.22222      0.22222      0.22222     Biso  1.000  Na
-   Na3      1.0    0.77778      0.77778      0.77778     Biso  1.000  Na
+ _atom_site_type_symbol
+ _atom_site_label
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+  Na  Na0  1  0.00000000  0.00000000  0.00000000  1.0
+  Na  Na1  1  0.22222000  0.22222000  0.33334000  1.0
+  Na  Na2  1  0.77778000  0.77778000  0.66666000  1.0

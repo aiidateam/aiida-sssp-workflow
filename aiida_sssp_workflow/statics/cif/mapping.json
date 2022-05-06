@@ -2,19 +2,19 @@
     "_commont": "The mapping from element to configuration for convergence and bands verification.",
     "Ag": {
         "bands": "typical/Ag.cif",
-        "convergence": "unaries/Ag_Diamond.cif"
+        "convergence": "unaries/Ag_FCC.cif"
     },
     "Al": {
         "bands": "typical/Al.cif",
-        "convergence": "unaries/Al_Diamond.cif"
+        "convergence": "unaries/Al_FCC.cif"
     },
     "Ar": {
         "bands": "typical/Ar.cif",
-        "convergence": "unaries/Ar_Diamond.cif"
+        "convergence": "unaries/Ar_FCC.cif"
     },
     "As": {
         "bands": "typical/As.cif",
-        "convergence": "unaries/As_Diamond.cif"
+        "convergence": "typical/As.cif"
     },
     "At": {
         "bands": "unaries/At_Diamond.cif",
@@ -22,35 +22,35 @@
     },
     "Au": {
         "bands": "typical/Au.cif",
-        "convergence": "unaries/Au_Diamond.cif"
+        "convergence": "unaries/Au_FCC.cif"
     },
     "Ba": {
         "bands": "typical/Ba.cif",
-        "convergence": "unaries/Ba_Diamond.cif"
+        "convergence": "unaries/Ba_BCC.cif"
     },
     "Be": {
         "bands": "typical/Be.cif",
-        "convergence": "unaries/Be_Diamond.cif"
+        "convergence": "typical/Be.cif"
     },
     "B": {
         "bands": "typical/B.cif",
-        "convergence": "unaries/B_Diamond.cif"
+        "convergence": "typical/B.cif"
     },
     "Bi": {
         "bands": "typical/Bi.cif",
-        "convergence": "unaries/Bi_Diamond.cif"
+        "convergence": "typical/Bi.cif"
     },
     "Br": {
         "bands": "typical/Br.cif",
-        "convergence": "unaries/Br_Diamond.cif"
+        "convergence": "typical/Br.cif"
     },
     "Ca": {
         "bands": "typical/Ca.cif",
-        "convergence": "unaries/Ca_Diamond.cif"
+        "convergence": "unaries/Ca_FCC.cif"
     },
     "Cd": {
         "bands": "typical/Cd.cif",
-        "convergence": "unaries/Cd_Diamond.cif"
+        "convergence": "typical/Cd.cif"
     },
     "Ce": {
         "bands": "typical/CeN.cif",
@@ -58,27 +58,27 @@
     },
     "C": {
         "bands": "typical/C.cif",
-        "convergence": "unaries/C_Diamond.cif"
+        "convergence": "typical/C.cif"
     },
     "Cl": {
         "bands": "typical/Cl.cif",
-        "convergence": "unaries/Cl_Diamond.cif"
+        "convergence": "typical/Cl.cif"
     },
     "Co": {
         "bands": "typical/Co.cif",
-        "convergence": "unaries/Co_Diamond.cif"
+        "convergence": "typical/Co.cif"
     },
     "Cr": {
         "bands": "typical/Cr.cif",
-        "convergence": "unaries/Cr_Diamond.cif"
+        "convergence": "typical/Cr.cif"
     },
     "Cs": {
         "bands": "typical/Cs.cif",
-        "convergence": "unaries/Cs_Diamond.cif"
+        "convergence": "unaries/Cs_BCC.cif"
     },
     "Cu": {
         "bands": "typical/Cu.cif",
-        "convergence": "unaries/Cu_Diamond.cif"
+        "convergence": "unaries/Cu_FCC.cif"
     },
     "Dy": {
         "bands": "typical/DyN.cif",
@@ -94,15 +94,15 @@
     },
     "Fe": {
         "bands": "typical/Fe.cif",
-        "convergence": "unaries/Fe_Diamond.cif"
+        "convergence": "typical/Fe.cif"
     },
     "F": {
         "bands": "typical/F.cif",
-        "convergence": "unaries/F_Diamond.cif"
+        "convergence": "typical/F.cif"
     },
     "Ga": {
         "bands": "typical/Ga.cif",
-        "convergence": "unaries/Ga_Diamond.cif"
+        "convergence": "typical/Ga.cif"
     },
     "Gd": {
         "bands": "typical/GdN.cif",
@@ -114,19 +114,19 @@
     },
     "He": {
         "bands": "typical/He.cif",
-        "convergence": "unaries/He_Diamond.cif"
+        "convergence": "typical/He.cif"
     },
     "Hf": {
         "bands": "typical/Hf.cif",
-        "convergence": "unaries/Hf_Diamond.cif"
+        "convergence": "typical/Hf.cif"
     },
     "H": {
         "bands": "typical/H.cif",
-        "convergence": "unaries/H_Diamond.cif"
+        "convergence": "typical/H.cif"
     },
     "Hg": {
         "bands": "typical/Hg.cif",
-        "convergence": "unaries/Hg_Diamond.cif"
+        "convergence": "typical/Hg.cif"
     },
     "Ho": {
         "bands": "typical/HoN.cif",
@@ -134,23 +134,23 @@
     },
     "I": {
         "bands": "typical/I.cif",
-        "convergence": "unaries/I_Diamond.cif"
+        "convergence": "typical/I.cif"
     },
     "In": {
         "bands": "typical/In.cif",
-        "convergence": "unaries/In_Diamond.cif"
+        "convergence": "typical/In.cif"
     },
     "Ir": {
         "bands": "typical/Ir.cif",
-        "convergence": "unaries/Ir_Diamond.cif"
+        "convergence": "unaries/Ir_FCC.cif"
     },
     "K": {
         "bands": "typical/K.cif",
-        "convergence": "unaries/K_Diamond.cif"
+        "convergence": "unaries/K_BCC.cif"
     },
     "Kr": {
         "bands": "typical/Kr.cif",
-        "convergence": "unaries/Kr_Diamond.cif"
+        "convergence": "unaries/Kr_FCC.cif"
     },
     "La": {
         "bands": "typical/LaN.cif",
@@ -158,7 +158,7 @@
     },
     "Li": {
         "bands": "typical/Li.cif",
-        "convergence": "unaries/Li_Diamond.cif"
+        "convergence": "typical/Li.cif"
     },
     "Lu": {
         "bands": "typical/LuN.cif",
@@ -166,23 +166,23 @@
     },
     "Mg": {
         "bands": "typical/Mg.cif",
-        "convergence": "unaries/Mg_Diamond.cif"
+        "convergence": "typical/Mg.cif"
     },
     "Mn": {
         "bands": "typical/Mn.cif",
-        "convergence": "unaries/Mn_Diamond.cif"
+        "convergence": "typical/Mn.cif"
     },
     "Mo": {
         "bands": "typical/Mo.cif",
-        "convergence": "unaries/Mo_Diamond.cif"
+        "convergence": "unaries/Mo_BCC.cif"
     },
     "Na": {
         "bands": "typical/Na.cif",
-        "convergence": "unaries/Na_Diamond.cif"
+        "convergence": "typical/Na.cif"
     },
     "Nb": {
         "bands": "typical/Nb.cif",
-        "convergence": "unaries/Nb_Diamond.cif"
+        "convergence": "unaries/Nb_BCC.cif"
     },
     "Nd": {
         "bands": "typical/NdN.cif",
@@ -190,35 +190,35 @@
     },
     "Ne": {
         "bands": "typical/Ne.cif",
-        "convergence": "unaries/Ne_Diamond.cif"
+        "convergence": "unaries/Ne_FCC.cif"
     },
     "N": {
         "bands": "typical/N.cif",
-        "convergence": "unaries/N_Diamond.cif"
+        "convergence": "typical/N.cif"
     },
     "Ni": {
         "bands": "typical/Ni.cif",
-        "convergence": "unaries/Ni_Diamond.cif"
+        "convergence": "typical/Ni.cif"
     },
     "O": {
         "bands": "typical/O.cif",
-        "convergence": "unaries/O_Diamond.cif"
+        "convergence": "typical/O.cif"
     },
     "Os": {
         "bands": "typical/Os.cif",
-        "convergence": "unaries/Os_Diamond.cif"
+        "convergence": "typical/Os.cif"
     },
     "Pb": {
         "bands": "typical/Pb.cif",
-        "convergence": "unaries/Pb_Diamond.cif"
+        "convergence": "unaries/Pb_FCC.cif"
     },
     "Pd": {
         "bands": "typical/Pd.cif",
-        "convergence": "unaries/Pd_Diamond.cif"
+        "convergence": "unaries/Pd_FCC.cif"
     },
     "P": {
         "bands": "typical/P.cif",
-        "convergence": "unaries/P_Diamond.cif"
+        "convergence": "typical/P.cif"
     },
     "Pm": {
         "bands": "typical/PmN.cif",
@@ -226,7 +226,7 @@
     },
     "Po": {
         "bands": "typical/Po.cif",
-        "convergence": "unaries/Po_Diamond.cif"
+        "convergence": "unaries/Po_SC.cif"
     },
     "Pr": {
         "bands": "typical/PrN.cif",
@@ -234,43 +234,43 @@
     },
     "Pt": {
         "bands": "typical/Pt.cif",
-        "convergence": "unaries/Pt_Diamond.cif"
+        "convergence": "unaries/Pt_FCC.cif"
     },
     "Rb": {
         "bands": "typical/Rb.cif",
-        "convergence": "unaries/Rb_Diamond.cif"
+        "convergence": "unaries/Rb_BCC.cif"
     },
     "Re": {
         "bands": "typical/Re.cif",
-        "convergence": "unaries/Re_Diamond.cif"
+        "convergence": "typical/Re.cif"
     },
     "Rh": {
         "bands": "typical/Rh.cif",
-        "convergence": "unaries/Rh_Diamond.cif"
+        "convergence": "unaries/Rh_FCC.cif"
     },
     "Rn": {
         "bands": "typical/Rn.cif",
-        "convergence": "unaries/Rn_Diamond.cif"
+        "convergence": "unaries/Rn_FCC.cif"
     },
     "Ru": {
         "bands": "typical/Ru.cif",
-        "convergence": "unaries/Ru_Diamond.cif"
+        "convergence": "typical/Ru.cif"
     },
     "Sb": {
         "bands": "typical/Sb.cif",
-        "convergence": "unaries/Sb_Diamond.cif"
+        "convergence": "typical/Sb.cif"
     },
     "Sc": {
         "bands": "typical/Sc.cif",
-        "convergence": "unaries/Sc_Diamond.cif"
+        "convergence": "typical/Sc.cif"
     },
     "Se": {
         "bands": "typical/Se.cif",
-        "convergence": "unaries/Se_Diamond.cif"
+        "convergence": "typical/Se.cif"
     },
     "S": {
         "bands": "typical/S.cif",
-        "convergence": "unaries/S_Diamond.cif"
+        "convergence": "unaries/S_SC.cif"
     },
     "Si": {
         "bands": "typical/Si.cif",
@@ -286,11 +286,11 @@
     },
     "Sr": {
         "bands": "typical/Sr.cif",
-        "convergence": "unaries/Sr_Diamond.cif"
+        "convergence": "unaries/Sr_FCC.cif"
     },
     "Ta": {
         "bands": "typical/Ta.cif",
-        "convergence": "unaries/Ta_Diamond.cif"
+        "convergence": "unaries/Ta_BCC.cif"
     },
     "Tb": {
         "bands": "typical/TbN.cif",
@@ -298,19 +298,19 @@
     },
     "Tc": {
         "bands": "typical/Tc.cif",
-        "convergence": "unaries/Tc_Diamond.cif"
+        "convergence": "typical/Tc.cif"
     },
     "Te": {
         "bands": "typical/Te.cif",
-        "convergence": "unaries/Te_Diamond.cif"
+        "convergence": "typical/Te.cif"
     },
     "Ti": {
         "bands": "typical/Ti.cif",
-        "convergence": "unaries/Ti_Diamond.cif"
+        "convergence": "typical/Ti.cif"
     },
     "Tl": {
         "bands": "typical/Tl.cif",
-        "convergence": "unaries/Tl_Diamond.cif"
+        "convergence": "typical/Tl.cif"
     },
     "Tm": {
         "bands": "typical/TmN.cif",
@@ -318,15 +318,15 @@
     },
     "V": {
         "bands": "typical/V.cif",
-        "convergence": "unaries/V_Diamond.cif"
+        "convergence": "unaries/V_BCC.cif"
     },
     "W": {
         "bands": "typical/W.cif",
-        "convergence": "unaries/W_Diamond.cif"
+        "convergence": "unaries/W_BCC.cif"
     },
     "Xe": {
         "bands": "typical/Xe.cif",
-        "convergence": "unaries/Xe_Diamond.cif"
+        "convergence": "unaries/Xe_FCC.cif"
     },
     "Yb": {
         "bands": "typical/YbN.cif",
@@ -334,14 +334,14 @@
     },
     "Y": {
         "bands": "typical/Y.cif",
-        "convergence": "unaries/Y_Diamond.cif"
+        "convergence": "typical/Y.cif"
     },
     "Zn": {
         "bands": "typical/Zn.cif",
-        "convergence": "unaries/Zn_Diamond.cif"
+        "convergence": "typical/Zn.cif"
     },
     "Zr": {
         "bands": "typical/Zr.cif",
-        "convergence": "unaries/Zr_Diamond.cif"
+        "convergence": "typical/Zr.cif"
     }
 }
