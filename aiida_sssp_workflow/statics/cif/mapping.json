@@ -70,7 +70,7 @@
     },
     "Cr": {
         "bands": "typical/Cr.cif",
-        "convergence": "unaries/Cr_BCC.cif"
+        "convergence": "typical/Cr.cif"
     },
     "Cs": {
         "bands": "typical/Cs.cif",
@@ -94,7 +94,7 @@
     },
     "Fe": {
         "bands": "typical/Fe.cif",
-        "convergence": "unaries/Fe_BCC.cif"
+        "convergence": "typical/Fe.cif"
     },
     "F": {
         "bands": "typical/F.cif",
@@ -170,7 +170,7 @@
     },
     "Mn": {
         "bands": "typical/Mn.cif",
-        "convergence": "unaries/Mn_FCC.cif"
+        "convergence": "typical/Mn.cif"
     },
     "Mo": {
         "bands": "typical/Mo.cif",
@@ -198,7 +198,7 @@
     },
     "Ni": {
         "bands": "typical/Ni.cif",
-        "convergence": "unaries/Ni_FCC.cif"
+        "convergence": "typical/Ni.cif"
     },
     "O": {
         "bands": "typical/O.cif",

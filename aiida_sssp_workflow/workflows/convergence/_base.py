@@ -12,6 +12,7 @@ from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
     RARE_EARTH_ELEMENTS,
     convergence_analysis,
+    get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
     reset_pseudos_for_magnetic,
@@ -177,18 +178,15 @@ class BaseLegacyWorkChain(WorkChain):
 
     def extra_setup_for_magnetic_element(self):
         """
-        Extra setup for magnetic element
-
-        We use diamond configuration for the convergence verification.
-        It contains two atoms in the cell. For the magnetic elements, it makes
-        more sense that the two atom sites are distinguished so that the symmetry
-        is broken.
-        The starting magnetizations are set to [0.5, -0.4] for two sites.
+        Extra setup for magnetic element, set starting magnetization
+        and reset pseudos to correspont elements name.
         """
-        extra_parameters, self.ctx.pseudos, self.ctx.structure = self._get_extra_parameters_and_pseudos_for_mag_on(
-            self.ctx.structure, self.inputs.pseudo)
+        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
+        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 
-        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, extra_parameters)
+        # override pseudos setting
+        # required for O, Mn, Cr where the kind names varies for sites
+        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
