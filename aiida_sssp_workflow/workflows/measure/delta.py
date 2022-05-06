@@ -6,7 +6,12 @@ from aiida import orm
 from aiida.engine import WorkChain
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import get_protocol, get_standard_structure, update_dict
+from aiida_sssp_workflow.utils import (
+    RARE_EARTH_ELEMENTS,
+    get_protocol,
+    get_standard_structure,
+    update_dict,
+)
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
@@ -100,6 +105,9 @@ class DeltaMeasureWorkChain(WorkChain):
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
             configuration_list = self._UNARIE_STRUCTURES
+        elif self.ctx.element is RARE_EARTH_ELEMENTS:
+            # For lanthanides, only oxides are verifid
+            configuration_list = self._OXIDE_STRUCTURES
         else:
             configuration_list = self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES
 
