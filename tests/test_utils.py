@@ -39,20 +39,6 @@ def test_update_dict():
     assert old_expect == old_dict
 
 
-def test_cif_from_element():
-    """test cif_from_element"""
-    from aiida_sssp_workflow.utils import get_cif_abspath
-
-    fname = get_cif_abspath("Si")
-    assert "Si.cif" in fname
-
-    fname = get_cif_abspath("SiF4")
-    assert "SiF4.cif" in fname
-
-    fname = get_cif_abspath("La")
-    assert "LaN.cif" in fname
-
-
 def test_to_valid_key():
     """test to_valid_key"""
     from aiida_sssp_workflow.utils import to_valid_key

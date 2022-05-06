@@ -139,12 +139,8 @@ class BaseLegacyWorkChain(WorkChain):
 
         self.ctx.pseudos = {element: self.inputs.pseudo}
 
-        # Structures for convergence verification are all primitive structures
-        # the original conventional structure comes from the same CIF files of
-        # http:// molmod.ugent.be/deltacodesdft/
-        # EXCEPT that for the element fluorine the `SiF4.cif` used for convergence
-        # reason. But we do the structure setup for SiF4 in the following step:
-        # `cls.extra_setup_for_fluorine_element`
+        # Please check README for what and why we use configuration set 'convergence'
+        # for convergence verification.
         self.ctx.structure = get_standard_structure(element, prop='convergence')
 
     def is_magnetic_element(self):
