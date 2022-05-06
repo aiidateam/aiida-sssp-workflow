@@ -80,7 +80,7 @@ And for lanthanoids using the Nitrides from Wenzowitch paper for bands measure a
 But the structures used for convergence verfication are varias.
 The lanthanides still using the nitrides from Wenzovitch paper.
 For other elements, if it is a BCC, FCC, SC or Diamond in nature (e.g. from Cottiner's paper they are BCC, FCC, SC, or Diamond), we use the source from unaries set.
-Otherwise we keep on using typical nature configuration from Cottiner's paper. (I will not running production HT calculation for these elements since they may not cheap.)
+Otherwise we keep on using typical nature configuration from Cottiner's paper, but convert them to primitive with pymatgen (for magnetic elements, no primitive convert process but still refine with `pymatgen`). (I will not running production HT calculation for these elements at moment since they may not cheap.)
 The plan is using BCC or FCC for these structures, since for convergence verification the configuration will not influence the results too much (test and show result!!!).
 
 
