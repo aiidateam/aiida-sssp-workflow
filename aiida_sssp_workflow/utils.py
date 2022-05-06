@@ -132,7 +132,7 @@ def get_standard_structure(
             f"aiida_sssp_workflow.statics.cif.{dir}", fn
         )
 
-    if element in MAGNETIC_ELEMENTS and prop == "bands":
+    if element in MAGNETIC_ELEMENTS:
         primitive_cell = False
     else:
         primitive_cell = True

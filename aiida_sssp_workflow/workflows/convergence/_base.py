@@ -148,34 +148,6 @@ class BaseLegacyWorkChain(WorkChain):
         """Check if the element is magnetic"""
         return self.ctx.element in MAGNETIC_ELEMENTS
 
-    @staticmethod
-    def _get_extra_parameters_and_pseudos_for_mag_on(structure, pseudo):
-        """
-        Return extra parameters and magnetic pseudos setting with given
-        structure data and pseudo data.
-        """
-        mag_structure = orm.StructureData(cell=structure.cell, pbc=structure.pbc)
-        element = kind_name = structure.get_kind_names()[0]
-
-        for i, site in enumerate(structure.sites):
-            mag_structure.append_atom(
-                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
-            )
-
-        extra_parameters = {
-            "SYSTEM": {
-                "nspin": 2,
-                "starting_magnetization": {
-                    f'{element}1': 0.5,
-                    f'{element}2': -0.4,
-                },
-            },
-        }
-        # override pseudos setting for two sites of diamond cell
-        pseudos = reset_pseudos_for_magnetic(pseudo, mag_structure)
-
-        return extra_parameters, pseudos, mag_structure
-
     def extra_setup_for_magnetic_element(self):
         """
         Extra setup for magnetic element, set starting magnetization
