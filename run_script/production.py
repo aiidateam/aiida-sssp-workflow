@@ -101,4 +101,4 @@ if __name__ == "__main__":
     print(node)
 
 # verdi run run_script/production.py Si 8 run_script/_static/Si/Si.dojo-sr-04-std.upf si/nc/z=4/dojo/v04/npool-8
-# verdi run run_script/production.py Hf 4 run_script/_static/Hf/Hf.pbe-spn-kjpaw_psl.1.0.0.UPF Hf/paw/z=4/psl/v1.0.0/spn
+# verdi run run_script/production.py Hf 4 run_script/_static/Hf/Hf.pbe-spn-kjpaw_psl.1.0.0.UPF Hf/paw/z=12/psl/v1.0.0/spn
