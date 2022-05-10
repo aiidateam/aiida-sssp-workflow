@@ -366,7 +366,11 @@ class BaseLegacyWorkChain(WorkChain):
     def get_result_metadata(self):
         """
         define a dict of which is the metadata of the results, e.g. the unit of the properties
-        return a list type
+        return a list type.
+
+        This dict will be merged into the final `output_parameters` results.
+        For different convergence workflow, you may want to add different metadata
+        into output.
 
         for example:
 
