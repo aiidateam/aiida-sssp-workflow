@@ -174,6 +174,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
 
     def get_result_metadata(self):
         return {
-            'absolute_unit': 'eV/atom',
+            'absolute_unit': 'meV/atom',
             'relative_unit': '%',
         }
