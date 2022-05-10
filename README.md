@@ -1,5 +1,11 @@
 # aiida-sssp-workflow
 
+## Criteria and protocol of pressure convergence
+
+Since the magnitude of pressure (P = 1/3 Tr(sigma)) directly output from DFT calcultion depends on the stiffness of the material strongly.
+We convert it into an equivalent volume.
+This what we call it residual volume is therefore a stiffness-agnostic value that can be used to set criteria for all elements.
+
 ## bands distance compare specitication
 
 ### bands distance of magnetic structures

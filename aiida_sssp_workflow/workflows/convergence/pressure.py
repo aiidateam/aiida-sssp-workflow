@@ -21,6 +21,8 @@ def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
     such that P_BirchMurnaghan(V)=P
 
     retrun unit is (%)
+
+    !! The unit of P and B0 need to be compatible. We use GPa here.
     """
     import numpy as np
 
@@ -44,7 +46,8 @@ def helper_pressure_difference(input_parameters: orm.Dict,
                                ref_parameters: orm.Dict, V0: orm.Float,
                                B0: orm.Float, B1: orm.Float) -> orm.Dict:
     """
-    doc
+    The unit of output pressure and absolute diff is GPascal
+    therefore the B0 unit should also be GPa, otherwise the results are wrong.
     """
     res_pressure = input_parameters['hydrostatic_stress']
     ref_pressure = ref_parameters['hydrostatic_stress']
@@ -189,7 +192,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         extra_reference_parameters = extra_reference.outputs.output_birch_murnaghan_fit
 
         V0 = extra_reference_parameters['volume0']
-        B0 = extra_reference_parameters['bulk_modulus0']
+        B0 = extra_reference_parameters['bulk_modulus0_GPa']    # The unit is GPa
         B1 = extra_reference_parameters['bulk_deriv0']
 
         self.ctx.extra_parameters = {
