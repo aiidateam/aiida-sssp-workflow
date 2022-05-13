@@ -12,26 +12,9 @@ from aiida import orm
 from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS
 
 # pylint: disable=invalid-name
-
-RARE_EARTH_ELEMENTS = [
-    "La",
-    "Ce",
-    "Pr",
-    "Nd",
-    "Pm",
-    "Sm",
-    "Eu",
-    "Gd",
-    "Tb",
-    "Dy",
-    "Ho",
-    "Er",
-    "Tm",
-    "Yb",
-    "Lu",
-]
 
 
 def helper_get_v0_b0_b1(element: str, structure: str):
