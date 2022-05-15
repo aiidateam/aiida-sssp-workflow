@@ -12,7 +12,11 @@ from aiida import orm
 from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS
+from aiida_sssp_workflow.utils import (
+    OXIDES_CONFIGURATIONS,
+    RARE_EARTH_ELEMENTS,
+    UNARIE_CONFIGURATIONS,
+)
 
 # pylint: disable=invalid-name
 
@@ -83,17 +87,17 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
         ref_json = "WIEN2K_LANN.json"
         conf_key = f"{element}N"
 
-    elif configuration == "TYPICAL":
+    if configuration == "TYPICAL":
         ref_json = "WIEN2K_TYPICAL.json"
         conf_key = f"{element}"
 
-    elif "O" in configuration.value:
-        "oxides"
-        ref_json = "WIEN2K_OXIDES.json"
-        conf_key = f"{element}-{configuration.value}"
-    else:
+    if configuration in UNARIE_CONFIGURATIONS:
         ref_json = "WIEN2K_UNARIES.json"
         conf_key = f"{element}-X/{configuration.value}"
+
+    if configuration in OXIDES_CONFIGURATIONS:
+        ref_json = "WIEN2K_OXIDES.json"
+        conf_key = f"{element}-{configuration.value}"
 
     import_path = importlib.resources.path(
         "aiida_sssp_workflow.statics.AE_EOS", ref_json

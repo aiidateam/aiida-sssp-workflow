@@ -27,6 +27,7 @@ repos:
     - repo: https://github.com/psf/black
       rev: 22.3.0
       hooks:
+          - id: black-jupyter
           - id: black
             language_version: python3 # Should be a command that runs python3.6+
             exclude: |
