@@ -10,13 +10,15 @@ from aiida import orm
 from aiida.engine import run_get_node
 from aiida.plugins import DataFactory, WorkflowFactory
 
+from aiida_sssp_workflow.workflows.verifications import DEFAULT_PROPERTIES_LIST
+
 UpfData = DataFactory("pseudo.upf")
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_static")
 
 
-def run_verification(pw_code, ph_code, upf):
+def run_verification(pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_LIST):
     inputs = {
         "pw_code": pw_code,
         "ph_code": ph_code,
@@ -24,17 +26,7 @@ def run_verification(pw_code, ph_code, upf):
         "protocol": orm.Str("test"),
         "criteria": orm.Str("efficiency"),
         "cutoff_control": orm.Str("test"),
-        "properties_list": orm.List(
-            list=[
-                "accuracy:delta",
-                "accuracy:bands",
-                "convergence:cohesive_energy",
-                "convergence:phonon_frequencies",
-                "convergence:pressure",
-                "convergence:delta",
-                "convergence:bands",
-            ]
-        ),
+        "properties_list": orm.List(list=properties_list),
         "options": orm.Dict(
             dict={
                 "resources": {
@@ -61,6 +53,11 @@ if __name__ == "__main__":
     except:
         raise ("element please.")
 
+    properties_list = []
+    for property in DEFAULT_PROPERTIES_LIST:
+        if property in sys.argv[2:]:
+            properties_list.append(property)
+
     pw_code = load_code("pw-6.7@localhost")
     ph_code = load_code("ph-6.7@localhost")
 
@@ -80,7 +77,7 @@ if __name__ == "__main__":
     with open(pp_path, "rb") as stream:
         pseudo = UpfData(stream)
 
-    res, node = run_verification(pw_code, ph_code, pseudo)
+    res, node = run_verification(pw_code, ph_code, pseudo, properties_list)
     node.description = pp_label
     print(node)
     print(res)

@@ -12,26 +12,13 @@ from aiida import orm
 from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
+from aiida_sssp_workflow.utils import (
+    OXIDES_CONFIGURATIONS,
+    RARE_EARTH_ELEMENTS,
+    UNARIE_CONFIGURATIONS,
+)
 
 # pylint: disable=invalid-name
-
-RARE_EARTH_ELEMENTS = [
-    "La",
-    "Ce",
-    "Pr",
-    "Nd",
-    "Pm",
-    "Sm",
-    "Eu",
-    "Gd",
-    "Tb",
-    "Dy",
-    "Ho",
-    "Er",
-    "Tm",
-    "Yb",
-    "Lu",
-]
 
 
 def helper_get_v0_b0_b1(element: str, structure: str):
@@ -70,13 +57,47 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
+
+    The configuration can be one of:
+    - RE: for Rare-earth element
+    - TYPICAL: for BM fit results from Corttiner's paper
+    - One of OXIDES:
+        - XO
+        - XO2
+        - XO3
+        - X2O
+        - X2O3
+        - X2O5
+    - One of UNARIES:
+        - BCC
+        - FCC
+        - SC
+        - Diamond
+
+    conf_key is key in json file for configurations of every element.
     """
-    if "O" in configuration.value:
-        ref_json = "WIEN2K_OXIDES.json"
-        conf_name = configuration.value
-    else:
+    element = element.value
+    configuration = configuration.value
+    V0 = V0.value
+    B0 = B0.value
+    B1 = B1.value
+    if configuration == "RE":
+        assert element in RARE_EARTH_ELEMENTS
+
+        ref_json = "WIEN2K_LANN.json"
+        conf_key = f"{element}N"
+
+    if configuration == "TYPICAL":
+        ref_json = "WIEN2K_TYPICAL.json"
+        conf_key = f"{element}"
+
+    if configuration in UNARIE_CONFIGURATIONS:
         ref_json = "WIEN2K_UNARIES.json"
-        conf_name = f"X/{configuration.value}"
+        conf_key = f"{element}-X/{configuration}"
+
+    if configuration in OXIDES_CONFIGURATIONS:
+        ref_json = "WIEN2K_OXIDES.json"
+        conf_key = f"{element}-{configuration}"
 
     import_path = importlib.resources.path(
         "aiida_sssp_workflow.statics.AE_EOS", ref_json
@@ -84,7 +105,7 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     with import_path as path, open(path, "rb") as handle:
         data = json.load(handle)
 
-    BM_fit = data["BM_fit_data"][f"{element.value}-{conf_name}"]
+    BM_fit = data["BM_fit_data"][conf_key]
     ref_V0, ref_B0, ref_B1 = (
         BM_fit["min_volume"],
         BM_fit["bulk_modulus_ev_ang3"],
@@ -92,19 +113,17 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     )
 
     # Delta computation
-    Delta, Deltarel, Delta1 = _calcDelta(
-        ref_V0, ref_B0, ref_B1, V0.value, B0.value, B1.value
-    )
+    Delta, Deltarel, Delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
 
     nicola_measure = rel_errors_vec_length(
         ref_V0,
         ref_B0,
         ref_B1,
-        V0.value,
-        B0.value,
-        B1.value,
+        V0,
+        B0,
+        B1,
         config_string=None,
-        prefact=400,
+        prefact=400,  # XXX: re-inspect this value and set it in protocol
         weight_b0=1 / 8,
         weight_b1=1 / 64,
     )

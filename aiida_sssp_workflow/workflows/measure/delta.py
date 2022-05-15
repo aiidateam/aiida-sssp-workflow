@@ -7,7 +7,9 @@ from aiida.engine import WorkChain
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
+    OXIDES_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
+    UNARIE_CONFIGURATIONS,
     get_protocol,
     get_standard_structure,
     update_dict,
@@ -23,8 +25,8 @@ class DeltaMeasureWorkChain(WorkChain):
 
     # pylint: disable=too-many-instance-attributes
 
-    _OXIDE_STRUCTURES = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
-    _UNARIE_STRUCTURES = ["BCC", "FCC", "SC", "Diamond"]
+    _OXIDE_CONFIGURATIONS = OXIDES_CONFIGURATIONS
+    _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS
 
     @classmethod
     def define(cls, spec):
@@ -54,7 +56,7 @@ class DeltaMeasureWorkChain(WorkChain):
             cls.finalize,
         )
         # namespace for storing all detail of run on each configuration
-        for configuration in cls._OXIDE_STRUCTURES + cls._UNARIE_STRUCTURES:
+        for configuration in cls._OXIDE_CONFIGURATIONS + cls._UNARIE_CONFIGURATIONS:
             spec.expose_outputs(DeltaWorkChain, namespace=configuration,
                         namespace_options={'help': f'Delta calculation result of {configuration} EOS.'})
 
@@ -104,12 +106,15 @@ class DeltaMeasureWorkChain(WorkChain):
         self.ctx.structures = {}
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
-            configuration_list = self._UNARIE_STRUCTURES
+            configuration_list = self._UNARIE_CONFIGURATIONS
         elif self.ctx.element is RARE_EARTH_ELEMENTS:
-            # For lanthanides, only oxides are verifid
-            configuration_list = self._OXIDE_STRUCTURES
+            # For lanthanides, oxides are verifid
+            # TODO: add lanthanides nitrides
+            configuration_list = self._OXIDE_CONFIGURATIONS
         else:
-            configuration_list = self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES
+            configuration_list = (
+                self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
+            )
 
         for configuration in configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
@@ -242,7 +247,7 @@ class DeltaMeasureWorkChain(WorkChain):
         """calculate the delta factor"""
         output_parameters = {}
 
-        for configuration in self._OXIDE_STRUCTURES + self._UNARIE_STRUCTURES:
+        for configuration in self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS:
             try:
                 output = self.outputs[configuration].get("output_parameters")
             except KeyError:

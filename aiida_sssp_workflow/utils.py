@@ -67,6 +67,9 @@ NONMETAL_ELEMENTS = [
     "Rn",
 ]
 
+OXIDES_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
+UNARIE_CONFIGURATIONS = ["BCC", "FCC", "SC", "Diamond"]
+
 
 def update_dict(d, u):
     """update dict by7 another dict, update include all hierarchy

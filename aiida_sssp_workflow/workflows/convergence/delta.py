@@ -7,6 +7,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
+from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS
 from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 
@@ -66,8 +67,11 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
 
-        # configuration for delta convergence are all diamond
-        self.ctx.configuration = "Diamond"
+        # configuration for delta convergence
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
+            self.ctx.configuration = "RE"
+        else:
+            self.ctx.configuration = "TYPICAL"
 
         # Set context parameters
         self.ctx.kpoints_distance = self._KDISTANCE
