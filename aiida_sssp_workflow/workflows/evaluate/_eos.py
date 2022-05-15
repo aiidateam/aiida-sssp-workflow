@@ -175,10 +175,11 @@ class _EquationOfStateWorkChain(WorkChain):
         output_volume_energy = orm.Dict(dict=volume_energy).store()
         self.out("output_volume_energy", output_volume_energy)
 
-        node = run_get_node(birch_murnaghan_fit, output_volume_energy)
+        output_birch_murnaghan_fit, node = run_get_node(
+            birch_murnaghan_fit, output_volume_energy
+        )
 
         if node.is_finished_ok:
-            output_birch_murnaghan_fit = node.results
 
             self.report(
                 f"The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}"
