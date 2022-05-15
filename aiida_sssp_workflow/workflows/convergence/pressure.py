@@ -22,9 +22,13 @@ def helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
 
     retrun unit is (%)
 
-    !! The unit of P and B0 need to be compatible. We use GPa here.
+    !! The unit of P and B0 must be compatible. We use eV/angs^3 here.
+    Therefore convert P from GPa to eV/angs^3
     """
     import numpy as np
+
+    # convert P from GPa to eV/angs^3
+    P = P / 160.21766208
 
     # coefficients of the polynomial in x=(V0/V)^(1/3) (aside from the
     # constant multiplicative factor 3B0/2)
@@ -192,7 +196,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         extra_reference_parameters = extra_reference.outputs.output_birch_murnaghan_fit
 
         V0 = extra_reference_parameters['volume0']
-        B0 = extra_reference_parameters['bulk_modulus0_GPa']    # The unit is GPa
+        B0 = extra_reference_parameters['bulk_modulus0']    # The unit is eV/angstrom^3
         B1 = extra_reference_parameters['bulk_deriv0']
 
         self.ctx.extra_parameters = {
