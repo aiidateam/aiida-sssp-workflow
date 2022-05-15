@@ -1,78 +1,80 @@
 {
     "_comment": "Rare-Earth Nitrids(REN) WIEN2K eos data (courtesy of M. Topsakal)",
-    "CeN": {
-        "bulk_deriv": 4.513,
-        "bulk_modulus_ev_ang3": 0.9077588457593351,
-        "min_volume": 16.19013
-    },
-    "DyN": {
-        "bulk_deriv": 4.125,
-        "bulk_modulus_ev_ang3": 0.8924109748187882,
-        "min_volume": 14.60473
-    },
-    "ErN": {
-        "bulk_deriv": 4.46,
-        "bulk_modulus_ev_ang3": 0.9229132299169797,
-        "min_volume": 14.2553
-    },
-    "EuN": {
-        "bulk_deriv": 4.435,
-        "bulk_modulus_ev_ang3": 0.7316234582269096,
-        "min_volume": 16.10033
-    },
-    "GdN": {
-        "bulk_deriv": 0.222,
-        "bulk_modulus_ev_ang3": 0.894345842647812,
-        "min_volume": 15.53591
-    },
-    "HoN": {
-        "bulk_deriv": 4.315,
-        "bulk_modulus_ev_ang3": 0.9433978628681285,
-        "min_volume": 14.53329
-    },
-    "LaN": {
-        "bulk_deriv": 4.461,
-        "bulk_modulus_ev_ang3": 0.7616950491954152,
-        "min_volume": 18.77799
-    },
-    "LuN": {
-        "bulk_deriv": 3.892,
-        "bulk_modulus_ev_ang3": 1.0645393134923966,
-        "min_volume": 13.54987
-    },
-    "NdN": {
-        "bulk_deriv": 3.611,
-        "bulk_modulus_ev_ang3": 0.7697153884221751,
-        "min_volume": 16.57081
-    },
-    "PmN": {
-        "bulk_deriv": 0.567,
-        "bulk_modulus_ev_ang3": 0.8523092786849883,
-        "min_volume": 15.99888
-    },
-    "PrN": {
-        "bulk_deriv": 4.025,
-        "bulk_modulus_ev_ang3": 0.7507911327524972,
-        "min_volume": 16.33072
-    },
-    "SmN": {
-        "bulk_deriv": 5.106,
-        "bulk_modulus_ev_ang3": 0.7631805283673754,
-        "min_volume": 15.96972
-    },
-    "TbN": {
-        "bulk_deriv": 4.069,
-        "bulk_modulus_ev_ang3": 0.8746538813556504,
-        "min_volume": 14.77379
-    },
-    "TmN": {
-        "bulk_deriv": 4.493,
-        "bulk_modulus_ev_ang3": 0.8941149068101543,
-        "min_volume": 14.01555
-    },
-    "YbN": {
-        "bulk_deriv": 5.635,
-        "bulk_modulus_ev_ang3": 0.8797906433662522,
-        "min_volume": 13.8641
+    "BM_fit_data": {
+        "CeN": {
+            "bulk_deriv": 4.513,
+            "bulk_modulus_ev_ang3": 0.9077588457593351,
+            "min_volume": 16.19013
+        },
+        "DyN": {
+            "bulk_deriv": 4.125,
+            "bulk_modulus_ev_ang3": 0.8924109748187882,
+            "min_volume": 14.60473
+        },
+        "ErN": {
+            "bulk_deriv": 4.46,
+            "bulk_modulus_ev_ang3": 0.9229132299169797,
+            "min_volume": 14.2553
+        },
+        "EuN": {
+            "bulk_deriv": 4.435,
+            "bulk_modulus_ev_ang3": 0.7316234582269096,
+            "min_volume": 16.10033
+        },
+        "GdN": {
+            "bulk_deriv": 0.222,
+            "bulk_modulus_ev_ang3": 0.894345842647812,
+            "min_volume": 15.53591
+        },
+        "HoN": {
+            "bulk_deriv": 4.315,
+            "bulk_modulus_ev_ang3": 0.9433978628681285,
+            "min_volume": 14.53329
+        },
+        "LaN": {
+            "bulk_deriv": 4.461,
+            "bulk_modulus_ev_ang3": 0.7616950491954152,
+            "min_volume": 18.77799
+        },
+        "LuN": {
+            "bulk_deriv": 3.892,
+            "bulk_modulus_ev_ang3": 1.0645393134923966,
+            "min_volume": 13.54987
+        },
+        "NdN": {
+            "bulk_deriv": 3.611,
+            "bulk_modulus_ev_ang3": 0.7697153884221751,
+            "min_volume": 16.57081
+        },
+        "PmN": {
+            "bulk_deriv": 0.567,
+            "bulk_modulus_ev_ang3": 0.8523092786849883,
+            "min_volume": 15.99888
+        },
+        "PrN": {
+            "bulk_deriv": 4.025,
+            "bulk_modulus_ev_ang3": 0.7507911327524972,
+            "min_volume": 16.33072
+        },
+        "SmN": {
+            "bulk_deriv": 5.106,
+            "bulk_modulus_ev_ang3": 0.7631805283673754,
+            "min_volume": 15.96972
+        },
+        "TbN": {
+            "bulk_deriv": 4.069,
+            "bulk_modulus_ev_ang3": 0.8746538813556504,
+            "min_volume": 14.77379
+        },
+        "TmN": {
+            "bulk_deriv": 4.493,
+            "bulk_modulus_ev_ang3": 0.8941149068101543,
+            "min_volume": 14.01555
+        },
+        "YbN": {
+            "bulk_deriv": 5.635,
+            "bulk_modulus_ev_ang3": 0.8797906433662522,
+            "min_volume": 13.8641
+        }
     }
 }
