@@ -2,7 +2,7 @@
 """Equation of state workflow that can use any code plugin implementing the common relax workflow."""
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.engine import WorkChain, append_, calcfunction
+from aiida.engine import WorkChain, append_, calcfunction, run_get_node
 from aiida.plugins import CalculationFactory, WorkflowFactory
 
 PwBaseWorkChain = WorkflowFactory("quantumespresso.pw.base")
@@ -78,6 +78,8 @@ class _EquationOfStateWorkChain(WorkChain):
                     help='Result of birch murnaghan fitting.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')
+        spec.exit_code(500, 'ERROR_BIRCH_MURNAGHAN_FIT_FAILED',
+            message='The birch murnaghan fit failed with exit code={code}.')
         # yapf: enable
 
     def get_scale_factors(self):
@@ -171,11 +173,18 @@ class _EquationOfStateWorkChain(WorkChain):
             volume_energy["energies"][index] = energy
 
         output_volume_energy = orm.Dict(dict=volume_energy).store()
-        output_birch_murnaghan_fit = birch_murnaghan_fit(output_volume_energy)
-
-        self.report(
-            f"The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}"
-        )
-
         self.out("output_volume_energy", output_volume_energy)
-        self.out("output_birch_murnaghan_fit", output_birch_murnaghan_fit)
+
+        node = run_get_node(birch_murnaghan_fit, output_volume_energy)
+
+        if node.is_finished_ok:
+            output_birch_murnaghan_fit = node.results
+
+            self.report(
+                f"The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}"
+            )
+            self.out("output_birch_murnaghan_fit", output_birch_murnaghan_fit)
+        else:
+            return self.exit_codes.ERROR_BIRCH_MURNAGHAN_FIT_FAILED.format(
+                code=node.exit_status
+            )
