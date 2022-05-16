@@ -8,6 +8,7 @@ from aiida.engine import WorkChain, if_
 from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
+from plumpy import ToContext
 
 from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
@@ -92,6 +93,7 @@ class VerificationWorkChain(WorkChain):
             if_(cls.is_verify_convergence)(
                 if_(cls.is_caching)(
                     cls.run_caching,
+                    cls.inspect_caching,
                 ),
                 cls.run_convergence,
                 cls.inspect_convergence,
@@ -100,20 +102,22 @@ class VerificationWorkChain(WorkChain):
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
         spec.output_namespace('delta_measure', dynamic=True,
-                            help='results of delta measure calculation.')
+            help='results of delta measure calculation.')
         spec.output_namespace('bands_measure', dynamic=True,
-                            help='results of bands measure calculation.')
+            help='results of bands measure calculation.')
         spec.output_namespace('convergence_cohesive_energy', dynamic=True,
-                            help='results of convergence cohesive_energy calculation.')
+            help='results of convergence cohesive_energy calculation.')
         spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
-                            help='results of convergence phonon_frequencies calculation.')
+            help='results of convergence phonon_frequencies calculation.')
         spec.output_namespace('convergence_pressure', dynamic=True,
-                            help='results of convergence pressure calculation.')
+            help='results of convergence pressure calculation.')
         spec.output_namespace('convergence_delta', dynamic=True,
-                              help='results of convergence delta calculation.')
+            help='results of convergence delta calculation.')
         spec.output_namespace('convergence_bands', dynamic=True,
-                              help='results of convergence bands calculation.')
+            help='results of convergence bands calculation.')
 
+        spec.exit_code(401, 'ERROR_CACHING_ON_BUT_FAILED',
+            message='The caching is triggered but failed.')
         spec.exit_code(811, 'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
             message='The sub-workflows {processes} is not finished ok.')
         # yapf: enable
@@ -294,7 +298,14 @@ class VerificationWorkChain(WorkChain):
         running = self.submit(_CachingConvergenceWorkChain, **self.ctx.caching_inputs)
         self.report(f"submit workchain pressure as caching convergence pk={running.pk}")
 
-        self.to_context(verify_caching=running)
+        return ToContext(verify_caching=running)
+
+    def inspect_caching(self):
+        """Simply check whether caching run finished okay."""
+        workchain = self.ctx.verify_caching
+
+        if not workchain.is_finished_ok:
+            return self.exit_codes.ERROR_CACHING_ON_BUT_FAILED
 
     def run_convergence(self):
         """

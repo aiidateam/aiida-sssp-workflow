@@ -57,9 +57,9 @@ class CohesiveEnergyWorkChain(WorkChain):
                     help='parameters for pwscf of bulk calculation.')
         spec.input('atom_parameters', valid_type=orm.Dict,
                     help='parameters for pwscf of atom calculation for each element in structure.')
-        spec.input('ecutwfc', valid_type=orm.Float,
+        spec.input('ecutwfc', valid_type=orm.Int,
                     help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('ecutrho', valid_type=orm.Float,
+        spec.input('ecutrho', valid_type=orm.Int,
                     help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
         spec.input('kpoints_distance', valid_type=orm.Float,
                     help='Kpoints distance setting for bulk energy calculation.')
@@ -94,8 +94,8 @@ class CohesiveEnergyWorkChain(WorkChain):
 
         parameters = {
             "SYSTEM": {
-                "ecutwfc": self.inputs.ecutwfc,
-                "ecutrho": self.inputs.ecutrho,
+                "ecutwfc": self.inputs.ecutwfc.value,
+                "ecutrho": self.inputs.ecutrho.value,
             },
         }
         bulk_parameters = update_dict(bulk_parameters, parameters)
