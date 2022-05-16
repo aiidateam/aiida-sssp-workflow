@@ -49,6 +49,9 @@ class BaseLegacyWorkChain(WorkChain):
     _EVALUATE_WORKCHAIN = abstract_attribute()
     _MEASURE_OUT_PROPERTY = abstract_attribute()
 
+    _RUN_WFC_TEST = True
+    _RUN_RHO_TEST = True
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -83,23 +86,39 @@ class BaseLegacyWorkChain(WorkChain):
             cls.setup_code_resource_options,
             cls.run_reference,
             cls.inspect_reference,
-            cls.run_wfc_convergence_test,
-            cls.inspect_wfc_convergence_test,
-            cls.run_rho_convergence_test,
-            cls.inspect_rho_convergence_test,
-            cls.final_results,
+            if_(cls.is_run_wfc_convergence_test)(
+                cls.run_wfc_convergence_test,
+                cls.inspect_wfc_convergence_test,
+            ),
+            if_(cls.is_run_rho_convergence_test)(
+                cls.run_rho_convergence_test,
+                cls.inspect_rho_convergence_test,
+            ),
+            cls.finalize,
         )
 
-        spec.output('output_parameters_wfc_test', valid_type=orm.Dict, required=True,
+        spec.output('output_parameters_wfc_test', valid_type=orm.Dict, required=False,
                     help='The output parameters include results of all wfc test calculations.')
-        spec.output('output_parameters_rho_test', valid_type=orm.Dict, required=True,
+        spec.output('output_parameters_rho_test', valid_type=orm.Dict, required=False,
                     help='The output parameters include results of all rho test calculations.')
-        spec.output('final_output_parameters', valid_type=orm.Dict, required=True,
+        spec.output('final_output_parameters', valid_type=orm.Dict, required=False,
                     help='The output parameters of two stage convergence test.')
 
         spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED',
             message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
+
+    def is_run_wfc_convergence_test(self):
+        """If running wavefunction convergence test
+        default True, override class attribute `_RUN_WFC_TEST`
+        in subclass to supress running it"""
+        return self._RUN_WFC_TEST
+
+    def is_run_rho_convergence_test(self):
+        """If running charge density convergence test
+        default True, override class attribute `_RUN_RHO_TEST` in
+        subclass to supress running it"""
+        return self._RUN_RHO_TEST
 
     def init_setup(self):
         """
@@ -108,6 +127,9 @@ class BaseLegacyWorkChain(WorkChain):
         """
         # parse pseudo and output its header information
         from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
+
+        # init output_parameters to store output
+        self.ctx.output_parameters = {}
 
         cutoff_control = get_protocol(category='control', name=self.inputs.cutoff_control.value)
         self.ctx.ecutwfc_list = self._ECUTWFC_LIST = cutoff_control['wfc_scan']
@@ -301,6 +323,7 @@ class BaseLegacyWorkChain(WorkChain):
                                    orm.Dict(dict=self.ctx.criteria))
 
         self.ctx.wfc_cutoff, y_value = res['cutoff'].value, res['value'].value
+        self.ctx.output_parameters['wavefunction_cutoff'] = self.ctx.wfc_cutoff
 
         self.report(
             f'The wfc convergence at {self.ctx.wfc_cutoff} with value={y_value}'
@@ -347,6 +370,7 @@ class BaseLegacyWorkChain(WorkChain):
                                     orm.Dict(dict=self.ctx.criteria))
         self.ctx.rho_cutoff, y_value = res['cutoff'].value, res[
             'value'].value
+        self.ctx.output_parameters['chargedensity_cutoff'] = self.ctx.rho_cutoff
 
         self.report(
             f'The rho convergence at {self.ctx.rho_cutoff} with value={y_value}'
@@ -412,14 +436,10 @@ class BaseLegacyWorkChain(WorkChain):
 
         return d_output_parameters
 
-    def final_results(self):
-        output_parameters = {
-            'wfc_cutoff': self.ctx.wfc_cutoff,
-            'rho_cutoff': self.ctx.rho_cutoff,
-        }
-
+    def finalize(self):
+        # store output_parameters
         self.out('final_output_parameters',
-                 orm.Dict(dict=output_parameters).store())
+                 orm.Dict(dict=self.ctx.output_parameters).store())
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
