@@ -5,7 +5,7 @@ Base legacy work chain
 from abc import ABCMeta, abstractmethod
 
 from aiida import orm
-from aiida.engine import WorkChain, append_, if_
+from aiida.engine import append_, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
@@ -18,6 +18,7 @@ from aiida_sssp_workflow.utils import (
     reset_pseudos_for_magnetic,
     update_dict,
 )
+from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_and_pseudos_for_lanthanoid,
 )
@@ -40,7 +41,7 @@ class abstract_attribute(object):
             '%s does not set the abstract attribute <unknown>', type.__name__)
 
 
-class BaseLegacyWorkChain(WorkChain):
+class BaseLegacyWorkChain(SelfCleanWorkChain):
     """Base legacy workchain"""
     # pylint: disable=too-many-instance-attributes
     __metaclass__ = ABCMeta
@@ -71,8 +72,6 @@ class BaseLegacyWorkChain(WorkChain):
                     help='Optional `options`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
 
         spec.outline(
             cls.init_setup,
@@ -458,26 +457,3 @@ class BaseLegacyWorkChain(WorkChain):
         # store output_parameters
         self.out('final_output_parameters',
                  orm.Dict(dict=self.ctx.output_parameters).store())
-
-    def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
-        super().on_terminated()
-
-        if self.inputs.clean_workdir.value is False:
-            self.report('remote folders will not be cleaned')
-            return
-
-        cleaned_calcs = []
-
-        for called_descendant in self.node.called_descendants:
-            if isinstance(called_descendant, orm.CalcJobNode):
-                try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
-
-        if cleaned_calcs:
-            self.report(
-                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
-            )

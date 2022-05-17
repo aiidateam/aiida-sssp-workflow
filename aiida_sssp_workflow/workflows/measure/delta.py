@@ -3,7 +3,6 @@
 import importlib
 
 from aiida import orm
-from aiida.engine import WorkChain
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
@@ -14,13 +13,14 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     update_dict,
 )
+from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaMeasureWorkChain(WorkChain):
+class DeltaMeasureWorkChain(SelfCleanWorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
     # pylint: disable=too-many-instance-attributes
@@ -45,8 +45,7 @@ class DeltaMeasureWorkChain(WorkChain):
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+
         spec.outline(
             cls.init_setup,
             cls.setup_pw_parameters_from_protocol,
@@ -256,26 +255,3 @@ class DeltaMeasureWorkChain(WorkChain):
             }
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
-
-    def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
-        super().on_terminated()
-
-        if self.inputs.clean_workdir.value is False:
-            self.report("remote folders will not be cleaned")
-            return
-
-        cleaned_calcs = []
-
-        for called_descendant in self.node.called_descendants:
-            if isinstance(called_descendant, orm.CalcJobNode):
-                try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
-
-        if cleaned_calcs:
-            self.report(
-                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
-            )

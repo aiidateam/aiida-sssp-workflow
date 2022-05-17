@@ -4,7 +4,7 @@ Bands distance of many input pseudos
 """
 
 from aiida import orm
-from aiida.engine import ToContext, WorkChain, if_
+from aiida.engine import ToContext, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
@@ -17,6 +17,7 @@ from aiida_sssp_workflow.utils import (
     reset_pseudos_for_magnetic,
     update_dict,
 )
+from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_and_pseudos_for_lanthanoid,
 )
@@ -33,7 +34,7 @@ def validate_input_pseudos(d_pseudos, _):
         return f'The pseudos corespond to different elements {element}.'
 
 
-class BandsMeasureWorkChain(WorkChain):
+class BandsMeasureWorkChain(SelfCleanWorkChain):
     """
     WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
@@ -57,8 +58,6 @@ class BandsMeasureWorkChain(WorkChain):
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
 
         spec.outline(
             cls.init_setup,

@@ -178,7 +178,7 @@ class VerificationWorkChain(WorkChain):
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
             "clean_workdir": orm.Bool(
                 False
-            ),  # not clean for sub-workflow clean at final
+            ),  # not clean for sub-workflow clean after finalize
         }
 
         base_conv_inputs = base_inputs.copy()
