@@ -48,6 +48,7 @@ DEFAULT_PROPERTIES_LIST = [
     "convergence:pressure",
     "convergence:delta",
     "convergence:bands",
+    "_caching",
 ]
 
 
@@ -219,6 +220,9 @@ class VerificationWorkChain(WorkChain):
         # to collect workchains in a dict
         self.ctx.workchains = {}
 
+        # For store the finished_ok workflow
+        self.ctx.finished_ok_wf = {}
+
     def is_verify_accuracy(self):
         """
         Whether to run accuracy (delta measure, bands distance} workflow.
@@ -265,6 +269,10 @@ class VerificationWorkChain(WorkChain):
 
     def is_verify_convergence(self):
         """Whether to run convergence test workflows"""
+        if "_caching" in self.ctx.properties_list:
+            # for only run caching workflow
+            return True
+
         for p in self.ctx.properties_list:
             if "convergence" in p:
                 return True
@@ -387,7 +395,6 @@ class VerificationWorkChain(WorkChain):
         """result to respective output namespace"""
 
         not_finished_ok_wf = {}
-        self.ctx.finished_ok_wf = {}
         for wname, workchain in self.ctx.workchains.items():
             if wname in wname_list:
                 # dump all output as it is to verification workflow output
@@ -432,38 +439,67 @@ class VerificationWorkChain(WorkChain):
                 node = load_node(pk)
                 cleaned_calcs = self._clean_workdir(node)
 
-                if cleaned_calcs:
+                for k, calcs in cleaned_calcs.items():
                     self.report(
-                        f"cleaned remote folders of calculations "
-                        f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, cleaned_calcs))}"
+                        f"cleaned remote folders of calculations {k} "
+                        f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
                     )
 
             # clean the caching workdir only when phonon_frequencies sub-workflow is finished_ok
-            phonon_convergence_workchain = self.ctx.workchains[
-                "convergence_phonon_frequencies"
-            ]
-            caching_workchain = self.ctx.verify_caching
-            if phonon_convergence_workchain.is_finished_ok:
+            phonon_convergence_workchain = self.ctx.workchains.get(
+                "convergence_phonon_frequencies", None
+            )
+            if (
+                phonon_convergence_workchain
+                and phonon_convergence_workchain.is_finished_ok
+            ):
+                caching_workchain = self.ctx.verify_caching
                 cleaned_calcs = self._clean_workdir(caching_workchain)
 
-                if cleaned_calcs:
+                for k, calcs in cleaned_calcs.items():
                     self.report(
-                        f"cleaned remote folders of calculations "
-                        f"[belong to finished_ok Caching WorkChain]: {' '.join(map(str, cleaned_calcs))}"
+                        f"cleaned remote folders of calculations {k} "
+                        f"[belong to finished_ok work chain _caching]: {' '.join(map(str, calcs))}"
                     )
+            else:
+                self.logger.warning(
+                    "Convergence verification of phonon frequecies not run, don't clean caching."
+                )
 
     @staticmethod
-    def _clean_workdir(wfnode):
+    def _clean_workdir(wfnode, include_caching=True):
         """clean the remote folder of all calculation in the workchain node
         return the node pk of cleaned calculation.
         """
-        cleaned_calcs = []
+
+        def clean(node: orm.CalcJobNode):
+            """clean node workdir"""
+            cleaned_calcs_lst = []
+            node.outputs.remote_folder._clean()  # pylint: disable=protected-access
+            cleaned_calcs.append(called_descendant.pk)
+
+            return cleaned_calcs_lst
+
+        cleaned_calcs = {}
         for called_descendant in wfnode.called_descendants:
             if isinstance(called_descendant, orm.CalcJobNode):
                 try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
+                    calcs = clean(called_descendant)
+                    cleaned_calcs[
+                        "menon"
+                    ] = calcs  # menon for noumenon for not cached but real one
+
+                    # clean caching node
+                    if include_caching:
+                        caching_nodes = called_descendant.get_all_same_nodes()
+                        if len(caching_nodes) > 1:  # since it always contain the menon
+                            for node in caching_nodes:
+                                cached_calcs = clean(node)
+                                cleaned_calcs["cached"] = cached_calcs
+
+                except (IOError, OSError, KeyError) as exc:
+                    raise RuntimeError(
+                        "Failed to clean working dirctory of calcjob"
+                    ) from exc
 
         return cleaned_calcs
