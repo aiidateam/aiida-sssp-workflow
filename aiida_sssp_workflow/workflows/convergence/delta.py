@@ -79,7 +79,9 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
-        self.report(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
+        self.logger.info(
+            f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
+        )
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """

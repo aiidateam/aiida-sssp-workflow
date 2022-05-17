@@ -181,9 +181,6 @@ class BandsWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
-
     def _get_base_bands_inputs(self):
         """
         get the inputs for raw band workflow
@@ -232,7 +229,7 @@ class BandsWorkChain(WorkChain):
         workchain = self.ctx.workchain_bands
 
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"PwBandsWorkChain for bands evaluation failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
@@ -298,12 +295,11 @@ class BandsWorkChain(WorkChain):
 
     def _inspect_workchain(self, namespace, workchain):
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"PwBandsWorkChain uuid={workchain.uuid} failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
-        self.report("pw band structure workchain successfully completed")
         self.out_many(
             self.exposed_outputs(workchain, PwBandsWorkChain, namespace=namespace)
         )

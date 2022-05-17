@@ -158,7 +158,7 @@ class DeltaMeasureWorkChain(WorkChain):
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
-        self.report(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
+        self.logger.info(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
 
     def setup_pw_resource_options(self):
         """
@@ -175,9 +175,6 @@ class DeltaMeasureWorkChain(WorkChain):
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
-
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def _get_inputs(self, structure, configuration):
         if "O" in configuration:
@@ -226,7 +223,7 @@ class DeltaMeasureWorkChain(WorkChain):
             workchain = self.ctx[f"{configuration}_delta"]
 
             if not workchain.is_finished_ok:
-                self.report(
+                self.logger.warning(
                     f"DeltaWorkChain of {configuration} failed with exit status {workchain.exit_status}"
                 )
                 failed.append(configuration)
@@ -251,7 +248,9 @@ class DeltaMeasureWorkChain(WorkChain):
             try:
                 output = self.outputs[configuration].get("output_parameters")
             except KeyError:
-                self.report(f"Can not get the key {configuration} from outputs.")
+                self.logger.warning(
+                    f"Can not get the key {configuration} from outputs, not verify or failed."
+                )
                 continue
 
             output_parameters[configuration] = {

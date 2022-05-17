@@ -140,9 +140,6 @@ class VerificationWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
-
     @staticmethod
     def _label_from_pseudo_info(pseudo_info) -> str:
         """derive a label string from pseudo_info dict"""
@@ -241,7 +238,9 @@ class VerificationWorkChain(WorkChain):
             running = self.submit(
                 DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs
             )
-            self.report(f"submit workchain delta measure pk={running}")
+            self.report(
+                f"Submit accuracy verification workchain delta measure pk={running}"
+            )
 
             self.to_context(verify_delta_measure=running)
             self.ctx.workchains["delta_measure"] = running
@@ -253,7 +252,9 @@ class VerificationWorkChain(WorkChain):
             running = self.submit(
                 BandsMeasureWorkChain, **self.ctx.bands_measure_inputs
             )
-            self.report(f"submit workchain accuracy bands measure pk={running}")
+            self.report(
+                f"Submit accuracy verification workchain bands measure pk={running}"
+            )
 
             self.to_context(verify_bands_measure=running)
             self.ctx.workchains["bands_measure"] = running
@@ -296,7 +297,11 @@ class VerificationWorkChain(WorkChain):
         # Pressure as caching
         ##
         running = self.submit(_CachingConvergenceWorkChain, **self.ctx.caching_inputs)
-        self.report(f"submit workchain pressure as caching convergence pk={running.pk}")
+        self.report(
+            f"The caching is triggered, submit and run caching "
+            f"workchain pk={running.pk} for following convergence test."
+            ""
+        )
 
         return ToContext(verify_caching=running)
 
@@ -318,7 +323,9 @@ class VerificationWorkChain(WorkChain):
             running = self.submit(
                 ConvergenceCohesiveEnergy, **self.ctx.cohesive_energy_inputs
             )
-            self.report(f"submit workchain cohesive energy convergence pk={running.pk}")
+            self.report(
+                f"Submit convergence workchain of cohesive energy pk={running.pk}"
+            )
 
             self.to_context(verify_cohesive_energy=running)
             self.ctx.workchains["convergence_cohesive_energy"] = running
@@ -331,7 +338,7 @@ class VerificationWorkChain(WorkChain):
                 ConvergencePhononFrequencies, **self.ctx.phonon_frequencies_inputs
             )
             self.report(
-                f"submit workchain phonon frequencies convergence pk={running.pk}"
+                f"Submit convergence workchain of phonon frequencies pk={running.pk}"
             )
 
             self.to_context(verify_phonon_frequencies=running)
@@ -344,7 +351,7 @@ class VerificationWorkChain(WorkChain):
             running = self.submit(
                 ConvergencePressureWorkChain, **self.ctx.pressure_inputs
             )
-            self.report(f"submit workchain pressure convergence pk={running.pk}")
+            self.report(f"Submit convergence workchain of pressure pk={running.pk}")
 
             self.to_context(verify_pressure=running)
             self.ctx.workchains["convergence_pressure"] = running
@@ -354,7 +361,7 @@ class VerificationWorkChain(WorkChain):
         ##
         if "convergence:delta" in self.ctx.properties_list:
             running = self.submit(ConvergenceDeltaWorkChain, **self.ctx.delta_inputs)
-            self.report(f"submit workchain delta convergence pk={running.pk}")
+            self.report(f"Submit convergence workchain of delta factor pk={running.pk}")
 
             self.to_context(verify_delta=running)
             self.ctx.workchains["convergence_delta"] = running
@@ -366,7 +373,9 @@ class VerificationWorkChain(WorkChain):
             running = self.submit(
                 ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
             )
-            self.report(f"submit workchain bands distance convergence pk={running.pk}")
+            self.report(
+                f"Submit convergence workchain of bands distance pk={running.pk}"
+            )
 
             self.to_context(verify_bands=running)
             self.ctx.workchains["convergence_bands"] = running

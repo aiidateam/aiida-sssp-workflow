@@ -132,13 +132,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             self.ctx.atom_parameters, self.ctx.extra_pw_parameters_for_atom
         )
 
-        self.report(
-            f"The bulk parameters for convergence is: {self.ctx.bulk_parameters}"
-        )
-        self.report(
-            f"The atom parameters for convergence is: {self.ctx.atom_parameters}"
-        )
-
     def _get_inputs(self, ecutwfc, ecutrho):
         """
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,

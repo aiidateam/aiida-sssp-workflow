@@ -108,9 +108,6 @@ class PressureWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
-
     def run_scf(self):
         """
         set the inputs and submit scf

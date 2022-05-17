@@ -112,9 +112,6 @@ class PhononFrequenciesWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
-
     def run_scf(self):
         """
         set the inputs and submit scf
@@ -143,7 +140,7 @@ class PhononFrequenciesWorkChain(WorkChain):
         workchain = self.ctx.workchain_scf
 
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF

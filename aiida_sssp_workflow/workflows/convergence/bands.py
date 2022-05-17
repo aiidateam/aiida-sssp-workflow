@@ -89,7 +89,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
         self.ctx.init_nbands_factor = protocol["init_nbands_factor"]
         self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
 
-        self.report(f"The atom parameters for convergence is: {self.ctx.parameters}")
+        self.logger.info(f"The atom parameters for convergence is: {self.ctx.parameters}")
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """

@@ -166,7 +166,7 @@ class BandsMeasureWorkChain(WorkChain):
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
-        self.report(
+        self.logger.info(
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
 
@@ -185,9 +185,6 @@ class BandsMeasureWorkChain(WorkChain):
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
-
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def _get_inputs(self, element, pseudos):
         """
@@ -223,7 +220,7 @@ class BandsMeasureWorkChain(WorkChain):
         running = self.submit(BandsWorkChain, **inputs)
 
         self.report(
-            f'launching pseudo >_<: {self.inputs.pseudo} BandsWorkChain<{running.pk}>'
+            f'launching BandsWorkChain<{running.pk}>'
         )
 
         return ToContext(bands=running)

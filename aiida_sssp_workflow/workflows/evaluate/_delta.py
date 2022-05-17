@@ -103,9 +103,6 @@ class DeltaWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
-
     def _get_inputs(self):
         inputs = {
             "structure": self.inputs.structure,
@@ -128,8 +125,6 @@ class DeltaWorkChain(WorkChain):
 
     def run_eos(self):
         """run eos workchain"""
-        self.report(f"{self.ctx.pw_parameters}")
-
         inputs = self._get_inputs()
 
         future = self.submit(_EquationOfStateWorkChain, **inputs)
@@ -142,7 +137,7 @@ class DeltaWorkChain(WorkChain):
         workchain = self.ctx.eos
 
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"_EquationOfStateWorkChain failed with exit status {workchain.exit_status}"
             )
 

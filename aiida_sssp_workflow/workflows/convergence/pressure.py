@@ -125,7 +125,7 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
 
         self.ctx.kpoints_distance = self._KDISTANCE
 
-        self.report(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
+        self.logger.info(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -170,7 +170,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
         }
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
-        self.report(f"{self.ctx.pw_parameters}")
         inputs = {
             "structure": self.ctx.structure,
             "kpoints_distance": orm.Float(self._KDISTANCE),
@@ -198,8 +197,9 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
 
         workchain = self.ctx.extra_reference
         if not workchain.is_finished_ok:
-            self.report(
-                f"{workchain.process_label} pk={workchain.pk} for reference run is failed with exit_code={workchain.exit_status}."
+            self.logger.warning(
+                f"{workchain.process_label} pk={workchain.pk} for extra reference of "
+                "pressure convergence run is failed with exit_code={workchain.exit_status}."
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
                 label="extra_reference"

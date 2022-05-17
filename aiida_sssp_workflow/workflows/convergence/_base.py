@@ -105,6 +105,8 @@ class BaseLegacyWorkChain(WorkChain):
         spec.output('final_output_parameters', valid_type=orm.Dict, required=False,
                     help='The output parameters of two stage convergence test.')
 
+        spec.exit_code(401, 'ERROR_REFERENCE_CALCULATION_FAILED',
+            message='The reference calculation failed.')
         spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED',
             message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
@@ -303,10 +305,6 @@ class BaseLegacyWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f'resource options set to {self.ctx.options}')
-        self.report(
-            f'parallelization options set to {self.ctx.parallelization}')
-
     def run_reference(self):
         """
         run on reference calculation
@@ -316,7 +314,7 @@ class BaseLegacyWorkChain(WorkChain):
         inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
 
         running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
-        self.report(f'launching reference {running.process_label}<{running.pk}>')
+        self.report(f'launching reference calculation: {running.process_label}<{running.pk}>')
 
         self.to_context(reference=running)
 
@@ -328,10 +326,9 @@ class BaseLegacyWorkChain(WorkChain):
 
         if not workchain.is_finished_ok:
             self.report(
-                f'{workchain.process_label} pk={workchain.pk} for reference run is failed with exit_code={workchain.exit_status}.'
+                f'{workchain.process_label} pk={workchain.pk} for reference run is failed.'
             )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(
-                label=f'reference')
+            return self.exit_codes.ERROR_REFERENCE_CALCULATION_FAILED
 
     def run_wfc_convergence_test(self):
         """
@@ -374,7 +371,7 @@ class BaseLegacyWorkChain(WorkChain):
         self.ctx.wfc_cutoff, y_value = res['cutoff'].value, res['value'].value
         self.ctx.output_parameters['wavefunction_cutoff'] = self.ctx.wfc_cutoff
 
-        self.report(
+        self.logger.info(
             f'The wfc convergence at {self.ctx.wfc_cutoff} with value={y_value}'
         )
 
@@ -421,7 +418,7 @@ class BaseLegacyWorkChain(WorkChain):
             'value'].value
         self.ctx.output_parameters['chargedensity_cutoff'] = self.ctx.rho_cutoff
 
-        self.report(
+        self.logger.info(
             f'The rho convergence at {self.ctx.rho_cutoff} with value={y_value}'
         )
 

@@ -99,6 +99,13 @@ Additional notes:
   - The release tag (e.g. a/b/rc) is determined from the last release.
     Use the `--tag` option to switch the release tag.
 
+### Logger level
+
+The aiida-core logger level is recommened to set to `REPORT` as default.
+In workflow, process related messages are pop to daemon logger in REPORT level.
+If process finished with none-zero exit_code, log a waring message.
+While for debug purpose, the INFO level is for showing the parameters infomations when processes are launched.
+
 ## License
 
 MIT

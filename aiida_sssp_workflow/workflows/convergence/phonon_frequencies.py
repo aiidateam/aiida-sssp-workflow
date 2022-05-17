@@ -127,8 +127,8 @@ class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
         )
         self.ctx.kpoints_distance = self._KDISTANCE
 
-        self.report(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
-        self.report(f"The ph parameters for convergence is: {self.ctx.ph_parameters}")
+        self.logger.info(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
+        self.logger.info(f"The ph parameters for convergence is: {self.ctx.ph_parameters}")
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
