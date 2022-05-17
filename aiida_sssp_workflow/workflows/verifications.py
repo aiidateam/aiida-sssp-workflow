@@ -279,15 +279,6 @@ class VerificationWorkChain(WorkChain):
         identifier = "aiida.calculations:quantumespresso.pw"
         if not get_use_cache(identifier=identifier):
             return False
-
-        # If less than two convergence wf, no caching run.
-        count = 0
-        for p in self.ctx.properties_list:
-            if "convergence" in p:
-                count += 1
-
-        if count < 2:
-            return False
         else:
             return True
 
