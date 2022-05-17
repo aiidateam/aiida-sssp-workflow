@@ -208,7 +208,6 @@ class BandsMeasureWorkChain(WorkChain):
             'should_run_bands_structure': orm.Bool(True),
             'options': orm.Dict(dict=self.ctx.options),
             'parallelization': orm.Dict(dict=self.ctx.parallelization),
-            'clean_workdir': orm.Bool(False),   # will leave the workdir clean to outer most wf
         }
 
         return inputs

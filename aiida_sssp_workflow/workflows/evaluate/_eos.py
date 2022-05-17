@@ -57,8 +57,8 @@ class _EquationOfStateWorkChain(WorkChain):
             namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.input('structure', valid_type=orm.StructureData, help='The structure at equilibrium volume.')
         spec.input('kpoints_distance', valid_type=orm.Float, required=True,
-                   help='The kpoints distance used in generating the kmesh of '
-                        'unscaled structure then for all scaled structures')
+            help='The kpoints distance used in generating the kmesh of '
+                'unscaled structure then for all scaled structures')
         spec.input('scale_factors', valid_type=orm.List, required=False, validator=validate_scale_factors,
             help='The list of scale factors at which the volume and total energy of the structure should be computed.')
         spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7), validator=validate_scale_count,
@@ -73,9 +73,9 @@ class _EquationOfStateWorkChain(WorkChain):
             cls.inspect_eos,
         )
         spec.output('output_volume_energy', valid_type=orm.Dict,
-                    help='Results volumes and energise.')
+            help='Results volumes and energise.')
         spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict,
-                    help='Result of birch murnaghan fitting.')
+            help='Result of birch murnaghan fitting.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')
         spec.exit_code(500, 'ERROR_BIRCH_MURNAGHAN_FIT_FAILED',

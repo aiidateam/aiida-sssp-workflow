@@ -69,15 +69,14 @@ class CohesiveEnergyWorkChain(WorkChain):
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+
         spec.outline(
             cls.setup_base_parameters,
             cls.validate_structure,
             cls.setup_code_resource_options,
             cls.run_energy,
             cls.inspect_energy,
-            cls.results,
+            cls.finalize,
         )
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include cohesive energy of the structure.')
@@ -250,7 +249,7 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.ctx.calc_time = calc_time
         self.ctx.element_energy = element_energy
 
-    def results(self):
+    def finalize(self):
         """result"""
         num_of_atoms = sum(self.ctx.d_element_count.values())
         cohesive_energy = self.ctx.bulk_energy
@@ -275,26 +274,3 @@ class CohesiveEnergyWorkChain(WorkChain):
         output_parameters = orm.Dict(dict=parameters_dict)
 
         self.out("output_parameters", output_parameters.store())
-
-    def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
-        super().on_terminated()
-
-        if self.inputs.clean_workdir.value is False:
-            self.report("remote folders will not be cleaned")
-            return
-
-        cleaned_calcs = []
-
-        for called_descendant in self.node.called_descendants:
-            if isinstance(called_descendant, orm.CalcJobNode):
-                try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
-
-        if cleaned_calcs:
-            self.report(
-                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
-            )

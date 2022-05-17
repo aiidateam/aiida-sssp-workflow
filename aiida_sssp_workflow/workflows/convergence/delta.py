@@ -102,9 +102,6 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
             "scale_increment": orm.Float(self.ctx.scale_increment),
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs

@@ -112,9 +112,6 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
             ),  # for convergence no band structure evaluate
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs

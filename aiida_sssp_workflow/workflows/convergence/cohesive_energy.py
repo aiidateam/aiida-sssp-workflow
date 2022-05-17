@@ -149,9 +149,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             "vacuum_length": orm.Float(self.ctx.vacuum_length),
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs

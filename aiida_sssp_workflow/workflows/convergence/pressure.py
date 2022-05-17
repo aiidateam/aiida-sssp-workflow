@@ -142,9 +142,6 @@ class ConvergencePressureWorkChain(BaseLegacyWorkChain):
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs
