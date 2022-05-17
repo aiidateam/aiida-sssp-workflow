@@ -49,6 +49,10 @@ class BaseLegacyWorkChain(WorkChain):
     _EVALUATE_WORKCHAIN = abstract_attribute()
     _MEASURE_OUT_PROPERTY = abstract_attribute()
 
+    # Default set to True, override it in subclass to turn it off
+    _RUN_WFC_TEST = True
+    _RUN_RHO_TEST = True
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -83,23 +87,80 @@ class BaseLegacyWorkChain(WorkChain):
             cls.setup_code_resource_options,
             cls.run_reference,
             cls.inspect_reference,
-            cls.run_wfc_convergence_test,
-            cls.inspect_wfc_convergence_test,
-            cls.run_rho_convergence_test,
-            cls.inspect_rho_convergence_test,
-            cls.final_results,
+            if_(cls._is_run_wfc_convergence_test)(
+                cls.run_wfc_convergence_test,
+                cls.inspect_wfc_convergence_test,
+            ),
+            if_(cls._is_run_rho_convergence_test)(
+                cls.run_rho_convergence_test,
+                cls.inspect_rho_convergence_test,
+            ),
+            cls.finalize,
         )
 
-        spec.output('output_parameters_wfc_test', valid_type=orm.Dict, required=True,
+        spec.output('output_parameters_wfc_test', valid_type=orm.Dict, required=False,
                     help='The output parameters include results of all wfc test calculations.')
-        spec.output('output_parameters_rho_test', valid_type=orm.Dict, required=True,
+        spec.output('output_parameters_rho_test', valid_type=orm.Dict, required=False,
                     help='The output parameters include results of all rho test calculations.')
-        spec.output('final_output_parameters', valid_type=orm.Dict, required=True,
+        spec.output('final_output_parameters', valid_type=orm.Dict, required=False,
                     help='The output parameters of two stage convergence test.')
 
         spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED',
             message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
+
+    @abstractmethod
+    def helper_compare_result_extract_fun(self, sample_node, reference_node, **kwargs) -> dict:
+        """
+        Must be implemented for specific convergence workflow to extrac the result
+        Expected to return a dict of result.
+
+        Get the node of sample and reference as input. Extract the parameters for
+        properties extract helper function.
+        """
+
+    @abstractmethod
+    def get_result_metadata(self):
+        """
+        define a dict of which is the metadata of the results, e.g. the unit of the properties
+        return a list type.
+
+        This dict will be merged into the final `output_parameters` results.
+        For different convergence workflow, you may want to add different metadata
+        into output.
+
+        for example:
+
+        return {
+            'absolute_unit': 'meV/atom',
+            'relative_unit': '%',
+        }
+        """
+
+    @abstractmethod
+    def _get_inputs(self, ecutwfc: int, ecutrho: int) -> dict:
+        """generate inputs for the evaluate workflow
+        Must compatible with inputs format of every evaluate workflow.
+        This is used in actual submit of reference and convergence tests.
+
+        Since the ecutwfc and ecutrho has less point set to be a float with decimals.
+        Therefore, always pass round to nearst int inputs for ecutwfc and ecutrho.
+        It also bring the advantage that the inputs to final calcjob always the same
+        for these two inputs and caching will properly triggered.
+        """
+        # TODO: there can be a validation of inputs and the evaluate workflow inputs ports
+
+    def _is_run_wfc_convergence_test(self):
+        """If running wavefunction convergence test
+        default True, override class attribute `_RUN_WFC_TEST`
+        in subclass to supress running it"""
+        return self._RUN_WFC_TEST
+
+    def _is_run_rho_convergence_test(self):
+        """If running charge density convergence test
+        default True, override class attribute `_RUN_RHO_TEST` in
+        subclass to supress running it"""
+        return self._RUN_RHO_TEST
 
     def init_setup(self):
         """
@@ -109,9 +170,16 @@ class BaseLegacyWorkChain(WorkChain):
         # parse pseudo and output its header information
         from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
+        # init output_parameters to store output
+        self.ctx.output_parameters = {}
+
         cutoff_control = get_protocol(category='control', name=self.inputs.cutoff_control.value)
         self.ctx.ecutwfc_list = self._ECUTWFC_LIST = cutoff_control['wfc_scan']
-        self.ctx.reference_ecutwfc = self._ECUTWFC_LIST[-1]    # use the last cutoff as reference
+
+        # use the last cutoff as reference
+        # IMPORTANT to convert to float since the value should have
+        # the same tye so the caching will correctly activated.
+        self.ctx.reference_ecutwfc = self._ECUTWFC_LIST[-1]
 
         self.ctx.extra_pw_parameters = {}
         content = self.inputs.pseudo.get_content()
@@ -182,12 +250,15 @@ class BaseLegacyWorkChain(WorkChain):
         protocol = get_protocol(category='converge', name=self.inputs.protocol.value)
         self.ctx.protocol = {
             **protocol['base'],
-            **protocol[self._PROPERTY_NAME]
+            **protocol.get(self._PROPERTY_NAME, dict()),    # if _PROPERTY_NAME not set, simply use base
         }
 
     def _get_pw_base_parameters(self, degauss, occupations, smearing, conv_thr):
         """Return base pw parameters dict for all convengence bulk workflow
-        Unchanged dict for caching purpose"""
+        Unchanged dict for caching purpose
+
+        TODO: move this method out of class
+        """
         parameters = {
             'SYSTEM': {
                 'degauss': degauss,
@@ -204,7 +275,7 @@ class BaseLegacyWorkChain(WorkChain):
             },
         }
 
-        # update with extra pw params, for magnetic ane lanthenides
+        # update with extra pw params, for magnetic and lanthenides
         if self.ctx.extra_pw_parameters:
             parameters = update_dict(parameters, self.ctx.extra_pw_parameters)
 
@@ -242,7 +313,7 @@ class BaseLegacyWorkChain(WorkChain):
         """
         ecutwfc = self.ctx.reference_ecutwfc
         ecutrho = ecutwfc * self.ctx.dual
-        inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
+        inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
 
         running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
         self.report(f'launching reference {running.process_label}<{running.pk}>')
@@ -269,7 +340,7 @@ class BaseLegacyWorkChain(WorkChain):
         self.ctx.max_ecutrho = ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
 
         for ecutwfc in self.ctx.ecutwfc_list[:-1]: # The last one is reference
-            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
+            inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
             self.report(
@@ -301,6 +372,7 @@ class BaseLegacyWorkChain(WorkChain):
                                    orm.Dict(dict=self.ctx.criteria))
 
         self.ctx.wfc_cutoff, y_value = res['cutoff'].value, res['value'].value
+        self.ctx.output_parameters['wavefunction_cutoff'] = self.ctx.wfc_cutoff
 
         self.report(
             f'The wfc convergence at {self.ctx.wfc_cutoff} with value={y_value}'
@@ -315,7 +387,7 @@ class BaseLegacyWorkChain(WorkChain):
         # Only run rho test when ecutrho less than the max reference
         # otherwise meaningless for the exceeding cutoff test
         for ecutrho in [dual * ecutwfc for dual in self.ctx.dual_scan_list if dual * ecutwfc < self.ctx.max_ecutrho]:
-            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
+            inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
             self.report(
@@ -347,38 +419,11 @@ class BaseLegacyWorkChain(WorkChain):
                                     orm.Dict(dict=self.ctx.criteria))
         self.ctx.rho_cutoff, y_value = res['cutoff'].value, res[
             'value'].value
+        self.ctx.output_parameters['chargedensity_cutoff'] = self.ctx.rho_cutoff
 
         self.report(
             f'The rho convergence at {self.ctx.rho_cutoff} with value={y_value}'
         )
-
-    @abstractmethod
-    def helper_compare_result_extract_fun(self, sample_node, reference_node, **kwargs) -> dict:
-        """
-        Must be implemented for specific convergence workflow to extrac the result
-        Expected to return a dict of result.
-
-        Get the node of sample and reference as input. Extract the parameters for
-        properties extract helper function.
-        """
-
-    @abstractmethod
-    def get_result_metadata(self):
-        """
-        define a dict of which is the metadata of the results, e.g. the unit of the properties
-        return a list type.
-
-        This dict will be merged into the final `output_parameters` results.
-        For different convergence workflow, you may want to add different metadata
-        into output.
-
-        for example:
-
-        return {
-            'absolute_unit': 'eV/atom',
-            'relative_unit': '%',
-        }
-        """
 
     def result_general_process(self, reference_node, sample_nodes, **kwargs) -> dict:
         """set results of sub-workflows to output ports"""
@@ -412,14 +457,10 @@ class BaseLegacyWorkChain(WorkChain):
 
         return d_output_parameters
 
-    def final_results(self):
-        output_parameters = {
-            'wfc_cutoff': self.ctx.wfc_cutoff,
-            'rho_cutoff': self.ctx.rho_cutoff,
-        }
-
+    def finalize(self):
+        # store output_parameters
         self.out('final_output_parameters',
-                 orm.Dict(dict=output_parameters).store())
+                 orm.Dict(dict=self.ctx.output_parameters).store())
 
     def on_terminated(self):
         """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""

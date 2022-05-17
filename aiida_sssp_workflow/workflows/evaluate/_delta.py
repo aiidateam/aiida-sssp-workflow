@@ -33,9 +33,9 @@ class DeltaWorkChain(WorkChain):
                     help='Configuration name of structure, BCC, FCC, SC and Diamond and name for oxides')
         spec.input('pw_base_parameters', valid_type=orm.Dict,
                     help='parameters for pwscf of calculation.')
-        spec.input('ecutwfc', valid_type=orm.Float,
+        spec.input('ecutwfc', valid_type=orm.Int,
                     help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('ecutrho', valid_type=orm.Float,
+        spec.input('ecutrho', valid_type=orm.Int,
                     help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
         spec.input('kpoints_distance', valid_type=orm.Float,
                     help='Kpoints distance setting for bulk energy calculation.')
@@ -73,8 +73,8 @@ class DeltaWorkChain(WorkChain):
 
         parameters = {
             "SYSTEM": {
-                "ecutwfc": self.inputs.ecutwfc,
-                "ecutrho": self.inputs.ecutrho,
+                "ecutwfc": self.inputs.ecutwfc.value,
+                "ecutrho": self.inputs.ecutrho.value,
             },
         }
         pw_parameters = update_dict(pw_parameters, parameters)
