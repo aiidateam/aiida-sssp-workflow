@@ -41,7 +41,7 @@ class abstract_attribute(object):
             '%s does not set the abstract attribute <unknown>', type.__name__)
 
 
-class BaseLegacyWorkChain(SelfCleanWorkChain):
+class BaseConvergenceWorkChain(SelfCleanWorkChain):
     """Base legacy workchain"""
     # pylint: disable=too-many-instance-attributes
     __metaclass__ = ABCMeta

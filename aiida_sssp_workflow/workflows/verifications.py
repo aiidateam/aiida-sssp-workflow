@@ -447,6 +447,20 @@ class VerificationWorkChain(WorkChain):
                         f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, cleaned_calcs))}"
                     )
 
+            # clean the caching workdir only when phonon_frequencies sub-workflow is finished_ok
+            phonon_convergence_workchain = self.ctx.workchains[
+                "convergence_phonon_frequencies"
+            ]
+            caching_workchain = self.ctx.verify_caching
+            if phonon_convergence_workchain.is_finished_ok:
+                cleaned_calcs = self._clean_workdir(caching_workchain)
+
+                if cleaned_calcs:
+                    self.report(
+                        f"cleaned remote folders of calculations "
+                        f"[belong to finished_ok Caching WorkChain]: {' '.join(map(str, cleaned_calcs))}"
+                    )
+
     @staticmethod
     def _clean_workdir(wfnode):
         """clean the remote folder of all calculation in the workchain node

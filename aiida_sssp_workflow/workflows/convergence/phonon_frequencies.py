@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import (
     PhononFrequenciesWorkChain,
 )
@@ -51,7 +51,7 @@ def helper_phonon_frequencies_difference(
     )
 
 
-class ConvergencePhononFrequenciesWorkChain(BaseLegacyWorkChain):
+class ConvergencePhononFrequenciesWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
 
     # pylint: disable=too-many-instance-attributes
