@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
 )
@@ -37,7 +37,7 @@ def helper_cohesive_energy_difference(
     return orm.Dict(dict=res)
 
 
-class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
+class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -132,13 +132,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             self.ctx.atom_parameters, self.ctx.extra_pw_parameters_for_atom
         )
 
-        self.report(
-            f"The bulk parameters for convergence is: {self.ctx.bulk_parameters}"
-        )
-        self.report(
-            f"The atom parameters for convergence is: {self.ctx.atom_parameters}"
-        )
-
     def _get_inputs(self, ecutwfc, ecutrho):
         """
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
@@ -156,9 +149,6 @@ class ConvergenceCohesiveEnergyWorkChain(BaseLegacyWorkChain):
             "vacuum_length": orm.Float(self.ctx.vacuum_length),
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs

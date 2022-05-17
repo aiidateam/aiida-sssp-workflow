@@ -57,8 +57,8 @@ class _EquationOfStateWorkChain(WorkChain):
             namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.input('structure', valid_type=orm.StructureData, help='The structure at equilibrium volume.')
         spec.input('kpoints_distance', valid_type=orm.Float, required=True,
-                   help='The kpoints distance used in generating the kmesh of '
-                        'unscaled structure then for all scaled structures')
+            help='The kpoints distance used in generating the kmesh of '
+                'unscaled structure then for all scaled structures')
         spec.input('scale_factors', valid_type=orm.List, required=False, validator=validate_scale_factors,
             help='The list of scale factors at which the volume and total energy of the structure should be computed.')
         spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7), validator=validate_scale_count,
@@ -73,9 +73,9 @@ class _EquationOfStateWorkChain(WorkChain):
             cls.inspect_eos,
         )
         spec.output('output_volume_energy', valid_type=orm.Dict,
-                    help='Results volumes and energise.')
+            help='Results volumes and energise.')
         spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict,
-                    help='Result of birch murnaghan fitting.')
+            help='Result of birch murnaghan fitting.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')
         spec.exit_code(500, 'ERROR_BIRCH_MURNAGHAN_FIT_FAILED',
@@ -137,14 +137,14 @@ class _EquationOfStateWorkChain(WorkChain):
         workchain = self.ctx.children[0]
 
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"PwBaseWorkChain pk={workchain.pk} for first scale structure run is failed."
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=PwBaseWorkChain)
 
         for scale_factor in self.get_scale_factors()[1:]:
             builder = self.get_sub_workchain_builder(scale_factor)
-            self.report(
+            self.logger.info(
                 f"submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`"
             )
             self.to_context(children=append_(self.submit(builder)))
@@ -168,7 +168,7 @@ class _EquationOfStateWorkChain(WorkChain):
                 "energy"
             ]  # Already the free energy E-TS (metal)
             num_of_atoms = child.outputs.output_parameters["number_of_atoms"]
-            self.report(f"Image {index}: volume={volume}, total energy={energy}")
+            self.logger.info(f"Image {index}: volume={volume}, total energy={energy}")
             volume_energy["volumes"][index] = volume
             volume_energy["energies"][index] = energy
 
@@ -179,13 +179,13 @@ class _EquationOfStateWorkChain(WorkChain):
             birch_murnaghan_fit, output_volume_energy
         )
 
-        if node.is_finished_ok:
-
+        if not node.is_finished_ok:
+            self.logger.warning(f"The birch murnaghan fit failed for node pk={node.pk}")
+            return self.exit_codes.ERROR_BIRCH_MURNAGHAN_FIT_FAILED.format(
+                code=node.exit_status
+            )
+        else:
             self.report(
                 f"The birch murnaghan fitting results are: {output_birch_murnaghan_fit.get_dict()}"
             )
             self.out("output_birch_murnaghan_fit", output_birch_murnaghan_fit)
-        else:
-            return self.exit_codes.ERROR_BIRCH_MURNAGHAN_FIT_FAILED.format(
-                code=node.exit_status
-            )

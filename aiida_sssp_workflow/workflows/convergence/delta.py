@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS
-from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 
 UpfData = DataFactory("pseudo.upf")
@@ -33,7 +33,7 @@ def helper_delta_difference(
     return orm.Dict(dict=res)
 
 
-class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
+class ConvergenceDeltaWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on delta factor of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -79,7 +79,9 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
-        self.report(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
+        self.logger.info(
+            f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
+        )
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -100,9 +102,6 @@ class ConvergenceDeltaWorkChain(BaseLegacyWorkChain):
             "scale_increment": orm.Float(self.ctx.scale_increment),
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs

@@ -38,7 +38,7 @@ def run_verification(pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_L
             }
         ),
         # 'parallelization': orm.Dict(dict={}),
-        "clean_workdir_level": orm.Int(0),
+        "clean_workdir_level": orm.Int(1),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)
@@ -80,4 +80,3 @@ if __name__ == "__main__":
     res, node = run_verification(pw_code, ph_code, pseudo, properties_list)
     node.description = pp_label
     print(node)
-    print(res)

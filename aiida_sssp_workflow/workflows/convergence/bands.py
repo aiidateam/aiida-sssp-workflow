@@ -9,7 +9,7 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
 from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS
-from aiida_sssp_workflow.workflows.convergence._base import BaseLegacyWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
 UpfData = DataFactory("pseudo.upf")
@@ -49,7 +49,7 @@ def helper_bands_distence_difference(
     )
 
 
-class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
+class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -89,7 +89,7 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
         self.ctx.init_nbands_factor = protocol["init_nbands_factor"]
         self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
 
-        self.report(f"The atom parameters for convergence is: {self.ctx.parameters}")
+        self.logger.info(f"The atom parameters for convergence is: {self.ctx.parameters}")
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -112,9 +112,6 @@ class ConvergenceBandsWorkChain(BaseLegacyWorkChain):
             ),  # for convergence no band structure evaluate
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs

@@ -57,8 +57,7 @@ class PressureWorkChain(WorkChain):
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+
         spec.outline(
             cls.setup_base_parameters,
             cls.validate_structure,
@@ -107,9 +106,6 @@ class PressureWorkChain(WorkChain):
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
-
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def run_scf(self):
         """

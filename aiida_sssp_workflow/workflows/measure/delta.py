@@ -3,7 +3,6 @@
 import importlib
 
 from aiida import orm
-from aiida.engine import WorkChain
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
@@ -14,13 +13,14 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     update_dict,
 )
+from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaMeasureWorkChain(WorkChain):
+class DeltaMeasureWorkChain(SelfCleanWorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
     # pylint: disable=too-many-instance-attributes
@@ -45,8 +45,7 @@ class DeltaMeasureWorkChain(WorkChain):
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+
         spec.outline(
             cls.init_setup,
             cls.setup_pw_parameters_from_protocol,
@@ -158,7 +157,7 @@ class DeltaMeasureWorkChain(WorkChain):
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
-        self.report(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
+        self.logger.info(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
 
     def setup_pw_resource_options(self):
         """
@@ -175,9 +174,6 @@ class DeltaMeasureWorkChain(WorkChain):
             self.ctx.parallelization = self.inputs.parallelization.get_dict()
         else:
             self.ctx.parallelization = {}
-
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
 
     def _get_inputs(self, structure, configuration):
         if "O" in configuration:
@@ -199,9 +195,6 @@ class DeltaMeasureWorkChain(WorkChain):
             "scale_increment": orm.Float(self.ctx.scale_increment),
             "options": orm.Dict(dict=self.ctx.options),
             "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            "clean_workdir": orm.Bool(
-                False
-            ),  # will leave the workdir clean to outer most wf
         }
 
         return inputs
@@ -226,7 +219,7 @@ class DeltaMeasureWorkChain(WorkChain):
             workchain = self.ctx[f"{configuration}_delta"]
 
             if not workchain.is_finished_ok:
-                self.report(
+                self.logger.warning(
                     f"DeltaWorkChain of {configuration} failed with exit status {workchain.exit_status}"
                 )
                 failed.append(configuration)
@@ -251,7 +244,9 @@ class DeltaMeasureWorkChain(WorkChain):
             try:
                 output = self.outputs[configuration].get("output_parameters")
             except KeyError:
-                self.report(f"Can not get the key {configuration} from outputs.")
+                self.logger.warning(
+                    f"Can not get the key {configuration} from outputs, not verify or failed."
+                )
                 continue
 
             output_parameters[configuration] = {
@@ -260,26 +255,3 @@ class DeltaMeasureWorkChain(WorkChain):
             }
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
-
-    def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
-        super().on_terminated()
-
-        if self.inputs.clean_workdir.value is False:
-            self.report("remote folders will not be cleaned")
-            return
-
-        cleaned_calcs = []
-
-        for called_descendant in self.node.called_descendants:
-            if isinstance(called_descendant, orm.CalcJobNode):
-                try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
-
-        if cleaned_calcs:
-            self.report(
-                f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
-            )

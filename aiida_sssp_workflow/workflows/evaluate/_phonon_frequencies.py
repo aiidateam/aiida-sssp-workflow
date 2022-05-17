@@ -46,8 +46,7 @@ class PhononFrequenciesWorkChain(WorkChain):
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options for the `PwCalculations`.')
-        spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
-                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+
         spec.outline(
             cls.setup_base_parameters,
             cls.validate_structure,
@@ -56,7 +55,6 @@ class PhononFrequenciesWorkChain(WorkChain):
             cls.inspect_scf,
             cls.run_ph,
             cls.inspect_ph,
-            cls.results,
         )
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include phonon frequencies.')
@@ -112,9 +110,6 @@ class PhononFrequenciesWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
-        self.report(f"resource options set to {self.ctx.options}")
-        self.report(f"parallelization options set to {self.ctx.parallelization}")
-
     def run_scf(self):
         """
         set the inputs and submit scf
@@ -143,7 +138,7 @@ class PhononFrequenciesWorkChain(WorkChain):
         workchain = self.ctx.workchain_scf
 
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
@@ -209,8 +204,3 @@ class PhononFrequenciesWorkChain(WorkChain):
             }
         )
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
-
-    def results(self):
-        """
-        doc
-        """
