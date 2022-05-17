@@ -1,7 +1,7 @@
 ---
-theos:
-    name: theos
-    description: The THEOS protocol for pseudopotential veerifications, input parameters same with common workflow.
+acwf:
+    name: acwf
+    description: The protocol where input parameters bring from AiiDA common workflow (ACWF).
 
     base:   # base parameters is inherit by other process
         occupations: smearing

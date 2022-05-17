@@ -1,6 +1,6 @@
 ---
-theos:
-    name: theos
+acwf:
+    name: acwf
     description: Bands measure parameters
 
     occupations: smearing
