@@ -1,7 +1,7 @@
 ---
-theos:
-    name: theos
-    description: Delta measure parameters compatible with common-workflow
+acwf:
+    name: acwf
+    description: Delta measure parameters compatible with AiiDA common workflow
 
     occupations: smearing
     degauss: 0.0045

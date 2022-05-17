@@ -23,7 +23,7 @@ def run_verification(
         "pw_code": pw_code,
         "ph_code": ph_code,
         "pseudo": upf,
-        "protocol": orm.Str("theos"),
+        "protocol": orm.Str("acwf"),
         "criteria": orm.Str("efficiency"),
         "cutoff_control": orm.Str("standard"),
         "label": orm.Str(label),
