@@ -149,9 +149,8 @@ class PhononFrequenciesWorkChain(WorkChain):
             self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
-            self.ctx.not_ready_for_ph = (
-                False  # otherwise while_ will not break by return exit_codes
-            )
+            # set condition to False to break loop
+            self.ctx.not_ready_for_ph = False
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
@@ -172,9 +171,8 @@ class PhononFrequenciesWorkChain(WorkChain):
                     node.delete_extra("_aiida_hash")
 
         except NotExistentAttributeError:
-            self.ctx.not_ready_for_ph = (
-                False  # otherwise while_ will not break by return exit_codes
-            )
+            # set condition to False to break loop
+            self.ctx.not_ready_for_ph = False
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER
 
         self.ctx.calc_time = workchain.outputs.output_parameters["wall_time_seconds"]

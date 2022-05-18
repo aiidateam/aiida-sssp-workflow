@@ -41,19 +41,33 @@ def parse_pseudo_info(pseudo: UpfData):
 
 
 DEFAULT_PROPERTIES_LIST = [
-    "accuracy:delta",
-    "accuracy:bands",
-    "convergence:cohesive_energy",
-    "convergence:phonon_frequencies",
-    "convergence:pressure",
-    "convergence:delta",
-    "convergence:bands",
+    "accuracy.delta",
+    "accuracy.bands",
+    "convergence.cohesive_energy",
+    "convergence.phonon_frequencies",
+    "convergence.pressure",
+    "convergence.delta",
+    "convergence.bands",
     "_caching",
 ]
 
 
 class VerificationWorkChain(WorkChain):
     """The verification workflow to run all test for the given pseudopotential"""
+
+    # This two class attributes will control whether a WF flow is
+    # run and results write to outputs ports.
+    _VALID_CONGENCENCE_WF = [
+        "convergence.cohesive_energy",
+        "convergence.phonon_frequencies",
+        "convergence.pressure",
+        "convergence.delta",
+        "convergence.bands",
+    ]
+    _VALID_ACCURACY_WF = [
+        "accuracy.delta",
+        "accuracy.bands",
+    ]
 
     @classmethod
     def define(cls, spec):
@@ -102,20 +116,12 @@ class VerificationWorkChain(WorkChain):
         )
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
-        spec.output_namespace('delta_measure', dynamic=True,
-            help='results of delta measure calculation.')
-        spec.output_namespace('bands_measure', dynamic=True,
-            help='results of bands measure calculation.')
-        spec.output_namespace('convergence_cohesive_energy', dynamic=True,
-            help='results of convergence cohesive_energy calculation.')
-        spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
-            help='results of convergence phonon_frequencies calculation.')
-        spec.output_namespace('convergence_pressure', dynamic=True,
-            help='results of convergence pressure calculation.')
-        spec.output_namespace('convergence_delta', dynamic=True,
-            help='results of convergence delta calculation.')
-        spec.output_namespace('convergence_bands', dynamic=True,
-            help='results of convergence bands calculation.')
+        for wfname in cls._VALID_ACCURACY_WF:
+            spec.output_namespace(wfname, dynamic=True,
+                help=f'results of {wfname} calculation.')
+        for wfname in cls._VALID_CONGENCENCE_WF:
+            spec.output_namespace(wfname, dynamic=True,
+                help=f'results of {wfname} calculation.')
 
         spec.exit_code(401, 'ERROR_CACHING_ON_BUT_FAILED',
             message='The caching is triggered but failed.')
@@ -186,7 +192,10 @@ class VerificationWorkChain(WorkChain):
         base_conv_inputs["criteria"] = self.inputs.criteria
 
         # Properties list
-        self.ctx.properties_list = self.inputs.properties_list.get_list()
+        valid_list = self._VALID_ACCURACY_WF + self._VALID_CONGENCENCE_WF
+        self.ctx.properties_list = [
+            p for p in self.inputs.properties_list.get_list() if p in valid_list
+        ]
 
         # Accuracy inputs setting
         # Delta measure
@@ -238,7 +247,7 @@ class VerificationWorkChain(WorkChain):
         ##
         # delta factor
         ##
-        if "accuracy:delta" in self.ctx.properties_list:
+        if "accuracy.delta" in self.ctx.properties_list:
             running = self.submit(
                 DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs
             )
@@ -247,12 +256,12 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_delta_measure=running)
-            self.ctx.workchains["delta_measure"] = running
+            self.ctx.workchains["accuracy.delta"] = running
 
         ##
         # bands distance
         ##
-        if "accuracy:bands" in self.ctx.properties_list:
+        if "accuracy.bands" in self.ctx.properties_list:
             running = self.submit(
                 BandsMeasureWorkChain, **self.ctx.bands_measure_inputs
             )
@@ -261,11 +270,11 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_bands_measure=running)
-            self.ctx.workchains["bands_measure"] = running
+            self.ctx.workchains["accuracy.bands"] = running
 
     def inspect_accuracy(self):
         """Inspect delta measure results"""
-        return self._report_and_results(wname_list=["delta_measure", "bands_measure"])
+        return self._report_and_results(wname_list=self._VALID_ACCURACY_WF)
 
     def is_verify_convergence(self):
         """Whether to run convergence test workflows"""
@@ -318,7 +327,7 @@ class VerificationWorkChain(WorkChain):
         ##
         # Cohesive energy
         ##
-        if "convergence:cohesive_energy" in self.ctx.properties_list:
+        if "convergence.cohesive_energy" in self.ctx.properties_list:
             running = self.submit(
                 ConvergenceCohesiveEnergy, **self.ctx.cohesive_energy_inputs
             )
@@ -327,12 +336,12 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_cohesive_energy=running)
-            self.ctx.workchains["convergence_cohesive_energy"] = running
+            self.ctx.workchains["convergence.cohesive_energy"] = running
 
         ##
         # phonon frequencies convergence test
         ##
-        if "convergence:phonon_frequencies" in self.ctx.properties_list:
+        if "convergence.phonon_frequencies" in self.ctx.properties_list:
             running = self.submit(
                 ConvergencePhononFrequencies, **self.ctx.phonon_frequencies_inputs
             )
@@ -341,34 +350,34 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_phonon_frequencies=running)
-            self.ctx.workchains["convergence_phonon_frequencies"] = running
+            self.ctx.workchains["convergence.phonon_frequencies"] = running
 
         ##
         # Pressure
         ##
-        if "convergence:pressure" in self.ctx.properties_list:
+        if "convergence.pressure" in self.ctx.properties_list:
             running = self.submit(
                 ConvergencePressureWorkChain, **self.ctx.pressure_inputs
             )
             self.report(f"Submit convergence workchain of pressure pk={running.pk}")
 
             self.to_context(verify_pressure=running)
-            self.ctx.workchains["convergence_pressure"] = running
+            self.ctx.workchains["convergence.pressure"] = running
 
         ##
         # Pressure
         ##
-        if "convergence:delta" in self.ctx.properties_list:
+        if "convergence.delta" in self.ctx.properties_list:
             running = self.submit(ConvergenceDeltaWorkChain, **self.ctx.delta_inputs)
             self.report(f"Submit convergence workchain of delta factor pk={running.pk}")
 
             self.to_context(verify_delta=running)
-            self.ctx.workchains["convergence_delta"] = running
+            self.ctx.workchains["convergence.delta"] = running
 
         ##
         # bands
         ##
-        if "convergence:bands" in self.ctx.properties_list:
+        if "convergence.bands" in self.ctx.properties_list:
             running = self.submit(
                 ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
             )
@@ -377,19 +386,15 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_bands=running)
-            self.ctx.workchains["convergence_bands"] = running
+            self.ctx.workchains["convergence.bands"] = running
 
     def inspect_convergence(self):
-        """inspect the convergence result"""
-        return self._report_and_results(
-            wname_list=[
-                "convergence_cohesive_energy",
-                "convergence_phonon_frequencies",
-                "convergence_pressure",
-                "convergence_delta",
-                "convergence_bands",
-            ]
-        )
+        """
+        inspect the convergence result
+
+        the list set the avaliable convergence workchain that will be inspected
+        """
+        return self._report_and_results(wname_list=self._VALID_CONGENCENCE_WF)
 
     def _report_and_results(self, wname_list):
         """result to respective output namespace"""
@@ -400,6 +405,7 @@ class VerificationWorkChain(WorkChain):
                 # dump all output as it is to verification workflow output
                 self.ctx.finished_ok_wf[wname] = workchain.pk
                 for label in workchain.outputs:
+                    # output node and namespace -> verification workflow outputs
                     self.out(f"{wname}.{label}", workchain.outputs[label])
 
                 if not workchain.is_finished_ok:
@@ -447,7 +453,7 @@ class VerificationWorkChain(WorkChain):
 
             # clean the caching workdir only when phonon_frequencies sub-workflow is finished_ok
             phonon_convergence_workchain = self.ctx.workchains.get(
-                "convergence_phonon_frequencies", None
+                "convergence.phonon_frequencies", None
             )
             if (
                 phonon_convergence_workchain
