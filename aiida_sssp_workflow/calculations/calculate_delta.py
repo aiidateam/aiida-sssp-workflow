@@ -137,7 +137,7 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
             "delta_relative_unit": "%",
             "birch_murnaghan_results": [V0, B0, B1],
             "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
-            "V0_B0_B1_units_info": "all atoms for oxide / per atom for unitary + eV A^3",
+            "V0_B0_B1_units_info": "eV/A^3 for B0",
             "rel_errors_vec_length": nicola_measure,
         }
     )
