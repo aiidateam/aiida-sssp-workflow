@@ -272,7 +272,9 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         """calculate the delta factor"""
         output_parameters = {}
 
-        for configuration in self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS:
+        for configuration in (
+            self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS + ["RE"]
+        ):
             try:
                 output = self.outputs[configuration].get("output_parameters")
             except KeyError:
