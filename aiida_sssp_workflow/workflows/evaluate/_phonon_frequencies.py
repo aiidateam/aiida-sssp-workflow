@@ -4,7 +4,7 @@ WorkChain calculate phonon frequencies at Gamma
 """
 from aiida import orm
 from aiida.common import NotExistentAttributeError
-from aiida.engine import ToContext, WorkChain
+from aiida.engine import ToContext, WorkChain, while_
 from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.utils import update_dict
@@ -51,8 +51,10 @@ class PhononFrequenciesWorkChain(WorkChain):
             cls.setup_base_parameters,
             cls.validate_structure,
             cls.setup_code_resource_options,
-            cls.run_scf,
-            cls.inspect_scf,
+            while_(cls.is_pw_not_ready_for_ph)(
+                cls.run_scf,
+                cls.inspect_scf,
+            ),
             cls.run_ph,
             cls.inspect_ph,
         )
@@ -110,6 +112,12 @@ class PhononFrequenciesWorkChain(WorkChain):
         else:
             self.ctx.parallelization = {}
 
+        self.ctx.not_ready_for_ph = True
+
+    def is_pw_not_ready_for_ph(self):
+        """used to check if the remote folder is not empty, otherwise rerun pw with caching off"""
+        return self.ctx.not_ready_for_ph
+
     def run_scf(self):
         """
         set the inputs and submit scf
@@ -141,11 +149,30 @@ class PhononFrequenciesWorkChain(WorkChain):
             self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
+            # set condition to False to break loop
+            self.ctx.not_ready_for_ph = False
+
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
         try:
-            self.ctx.scf_remote_folder = workchain.outputs.remote_folder
+            remote_folder = self.ctx.scf_remote_folder = workchain.outputs.remote_folder
+
+            if not remote_folder.is_empty:
+                # when the remote_folder is not empty we regard it is ready for ph
+                # even if the subsequent ph is successful
+                self.ctx.not_ready_for_ph = False
+            else:
+                # set all same node to caching off and rerun
+                pw_node = [
+                    c for c in workchain.called if isinstance(c, orm.CalcJobNode)
+                ][0]
+                all_same_nodes = pw_node.get_all_same_nodes()
+                for node in all_same_nodes:
+                    node.delete_extra("_aiida_hash")
+
         except NotExistentAttributeError:
+            # set condition to False to break loop
+            self.ctx.not_ready_for_ph = False
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER
 
         self.ctx.calc_time = workchain.outputs.output_parameters["wall_time_seconds"]

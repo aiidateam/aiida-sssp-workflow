@@ -41,18 +41,33 @@ def parse_pseudo_info(pseudo: UpfData):
 
 
 DEFAULT_PROPERTIES_LIST = [
-    "accuracy:delta",
-    "accuracy:bands",
-    "convergence:cohesive_energy",
-    "convergence:phonon_frequencies",
-    "convergence:pressure",
-    "convergence:delta",
-    "convergence:bands",
+    "accuracy.delta",
+    "accuracy.bands",
+    "convergence.cohesive_energy",
+    "convergence.phonon_frequencies",
+    "convergence.pressure",
+    "convergence.delta",
+    "convergence.bands",
+    "_caching",
 ]
 
 
 class VerificationWorkChain(WorkChain):
     """The verification workflow to run all test for the given pseudopotential"""
+
+    # This two class attributes will control whether a WF flow is
+    # run and results write to outputs ports.
+    _VALID_CONGENCENCE_WF = [
+        "convergence.cohesive_energy",
+        "convergence.phonon_frequencies",
+        "convergence.pressure",
+        "convergence.delta",
+        "convergence.bands",
+    ]
+    _VALID_ACCURACY_WF = [
+        "accuracy.delta",
+        "accuracy.bands",
+    ]
 
     @classmethod
     def define(cls, spec):
@@ -101,20 +116,12 @@ class VerificationWorkChain(WorkChain):
         )
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
-        spec.output_namespace('delta_measure', dynamic=True,
-            help='results of delta measure calculation.')
-        spec.output_namespace('bands_measure', dynamic=True,
-            help='results of bands measure calculation.')
-        spec.output_namespace('convergence_cohesive_energy', dynamic=True,
-            help='results of convergence cohesive_energy calculation.')
-        spec.output_namespace('convergence_phonon_frequencies', dynamic=True,
-            help='results of convergence phonon_frequencies calculation.')
-        spec.output_namespace('convergence_pressure', dynamic=True,
-            help='results of convergence pressure calculation.')
-        spec.output_namespace('convergence_delta', dynamic=True,
-            help='results of convergence delta calculation.')
-        spec.output_namespace('convergence_bands', dynamic=True,
-            help='results of convergence bands calculation.')
+        for wfname in cls._VALID_ACCURACY_WF:
+            spec.output_namespace(wfname, dynamic=True,
+                help=f'results of {wfname} calculation.')
+        for wfname in cls._VALID_CONGENCENCE_WF:
+            spec.output_namespace(wfname, dynamic=True,
+                help=f'results of {wfname} calculation.')
 
         spec.exit_code(401, 'ERROR_CACHING_ON_BUT_FAILED',
             message='The caching is triggered but failed.')
@@ -185,7 +192,10 @@ class VerificationWorkChain(WorkChain):
         base_conv_inputs["criteria"] = self.inputs.criteria
 
         # Properties list
-        self.ctx.properties_list = self.inputs.properties_list.get_list()
+        valid_list = self._VALID_ACCURACY_WF + self._VALID_CONGENCENCE_WF
+        self.ctx.properties_list = [
+            p for p in self.inputs.properties_list.get_list() if p in valid_list
+        ]
 
         # Accuracy inputs setting
         # Delta measure
@@ -219,6 +229,9 @@ class VerificationWorkChain(WorkChain):
         # to collect workchains in a dict
         self.ctx.workchains = {}
 
+        # For store the finished_ok workflow
+        self.ctx.finished_ok_wf = {}
+
     def is_verify_accuracy(self):
         """
         Whether to run accuracy (delta measure, bands distance} workflow.
@@ -234,7 +247,7 @@ class VerificationWorkChain(WorkChain):
         ##
         # delta factor
         ##
-        if "accuracy:delta" in self.ctx.properties_list:
+        if "accuracy.delta" in self.ctx.properties_list:
             running = self.submit(
                 DeltaMeasureWorkChain, **self.ctx.delta_measure_inputs
             )
@@ -243,12 +256,12 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_delta_measure=running)
-            self.ctx.workchains["delta_measure"] = running
+            self.ctx.workchains["accuracy.delta"] = running
 
         ##
         # bands distance
         ##
-        if "accuracy:bands" in self.ctx.properties_list:
+        if "accuracy.bands" in self.ctx.properties_list:
             running = self.submit(
                 BandsMeasureWorkChain, **self.ctx.bands_measure_inputs
             )
@@ -257,14 +270,18 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_bands_measure=running)
-            self.ctx.workchains["bands_measure"] = running
+            self.ctx.workchains["accuracy.bands"] = running
 
     def inspect_accuracy(self):
         """Inspect delta measure results"""
-        self._report_and_results(wname_list=["delta_measure", "bands_measure"])
+        return self._report_and_results(wname_list=self._VALID_ACCURACY_WF)
 
     def is_verify_convergence(self):
         """Whether to run convergence test workflows"""
+        if "_caching" in self.ctx.properties_list:
+            # for only run caching workflow
+            return True
+
         for p in self.ctx.properties_list:
             if "convergence" in p:
                 return True
@@ -310,7 +327,7 @@ class VerificationWorkChain(WorkChain):
         ##
         # Cohesive energy
         ##
-        if "convergence:cohesive_energy" in self.ctx.properties_list:
+        if "convergence.cohesive_energy" in self.ctx.properties_list:
             running = self.submit(
                 ConvergenceCohesiveEnergy, **self.ctx.cohesive_energy_inputs
             )
@@ -319,12 +336,12 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_cohesive_energy=running)
-            self.ctx.workchains["convergence_cohesive_energy"] = running
+            self.ctx.workchains["convergence.cohesive_energy"] = running
 
         ##
         # phonon frequencies convergence test
         ##
-        if "convergence:phonon_frequencies" in self.ctx.properties_list:
+        if "convergence.phonon_frequencies" in self.ctx.properties_list:
             running = self.submit(
                 ConvergencePhononFrequencies, **self.ctx.phonon_frequencies_inputs
             )
@@ -333,34 +350,34 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_phonon_frequencies=running)
-            self.ctx.workchains["convergence_phonon_frequencies"] = running
+            self.ctx.workchains["convergence.phonon_frequencies"] = running
 
         ##
         # Pressure
         ##
-        if "convergence:pressure" in self.ctx.properties_list:
+        if "convergence.pressure" in self.ctx.properties_list:
             running = self.submit(
                 ConvergencePressureWorkChain, **self.ctx.pressure_inputs
             )
             self.report(f"Submit convergence workchain of pressure pk={running.pk}")
 
             self.to_context(verify_pressure=running)
-            self.ctx.workchains["convergence_pressure"] = running
+            self.ctx.workchains["convergence.pressure"] = running
 
         ##
         # Pressure
         ##
-        if "convergence:delta" in self.ctx.properties_list:
+        if "convergence.delta" in self.ctx.properties_list:
             running = self.submit(ConvergenceDeltaWorkChain, **self.ctx.delta_inputs)
             self.report(f"Submit convergence workchain of delta factor pk={running.pk}")
 
             self.to_context(verify_delta=running)
-            self.ctx.workchains["convergence_delta"] = running
+            self.ctx.workchains["convergence.delta"] = running
 
         ##
         # bands
         ##
-        if "convergence:bands" in self.ctx.properties_list:
+        if "convergence.bands" in self.ctx.properties_list:
             running = self.submit(
                 ConvergenceBandsWorkChain, **self.ctx.bands_distance_inputs
             )
@@ -369,34 +386,30 @@ class VerificationWorkChain(WorkChain):
             )
 
             self.to_context(verify_bands=running)
-            self.ctx.workchains["convergence_bands"] = running
+            self.ctx.workchains["convergence.bands"] = running
 
     def inspect_convergence(self):
-        """inspect the convergence result"""
-        self._report_and_results(
-            wname_list=[
-                "convergence_cohesive_energy",
-                "convergence_phonon_frequencies",
-                "convergence_pressure",
-                "convergence_delta",
-                "convergence_bands",
-            ]
-        )
+        """
+        inspect the convergence result
+
+        the list set the avaliable convergence workchain that will be inspected
+        """
+        return self._report_and_results(wname_list=self._VALID_CONGENCENCE_WF)
 
     def _report_and_results(self, wname_list):
         """result to respective output namespace"""
 
         not_finished_ok_wf = {}
-        self.ctx.finished_ok_wf = {}
         for wname, workchain in self.ctx.workchains.items():
             if wname in wname_list:
                 # dump all output as it is to verification workflow output
                 self.ctx.finished_ok_wf[wname] = workchain.pk
                 for label in workchain.outputs:
+                    # output node and namespace -> verification workflow outputs
                     self.out(f"{wname}.{label}", workchain.outputs[label])
 
                 if not workchain.is_finished_ok:
-                    self.report(
+                    self.logger.warning(
                         f"The sub-workflow {wname} pk={workchain.pk} not finished ok."
                     )
                     not_finished_ok_wf[wname] = workchain.pk
@@ -432,38 +445,67 @@ class VerificationWorkChain(WorkChain):
                 node = load_node(pk)
                 cleaned_calcs = self._clean_workdir(node)
 
-                if cleaned_calcs:
+                for k, calcs in cleaned_calcs.items():
                     self.report(
-                        f"cleaned remote folders of calculations "
-                        f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, cleaned_calcs))}"
+                        f"cleaned remote folders of calculations {k} "
+                        f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
                     )
 
             # clean the caching workdir only when phonon_frequencies sub-workflow is finished_ok
-            phonon_convergence_workchain = self.ctx.workchains[
-                "convergence_phonon_frequencies"
-            ]
-            caching_workchain = self.ctx.verify_caching
-            if phonon_convergence_workchain.is_finished_ok:
+            phonon_convergence_workchain = self.ctx.workchains.get(
+                "convergence.phonon_frequencies", None
+            )
+            if (
+                phonon_convergence_workchain
+                and phonon_convergence_workchain.is_finished_ok
+            ):
+                caching_workchain = self.ctx.verify_caching
                 cleaned_calcs = self._clean_workdir(caching_workchain)
 
-                if cleaned_calcs:
+                for k, calcs in cleaned_calcs.items():
                     self.report(
-                        f"cleaned remote folders of calculations "
-                        f"[belong to finished_ok Caching WorkChain]: {' '.join(map(str, cleaned_calcs))}"
+                        f"cleaned remote folders of calculations {k} "
+                        f"[belong to finished_ok work chain _caching]: {' '.join(map(str, calcs))}"
                     )
+            else:
+                self.logger.warning(
+                    "Convergence verification of phonon frequecies not run, don't clean caching."
+                )
 
     @staticmethod
-    def _clean_workdir(wfnode):
+    def _clean_workdir(wfnode, include_caching=True):
         """clean the remote folder of all calculation in the workchain node
         return the node pk of cleaned calculation.
         """
-        cleaned_calcs = []
+
+        def clean(node: orm.CalcJobNode):
+            """clean node workdir"""
+            cleaned_calcs_lst = []
+            node.outputs.remote_folder._clean()  # pylint: disable=protected-access
+            cleaned_calcs_lst.append(called_descendant.pk)
+
+            return cleaned_calcs_lst
+
+        cleaned_calcs = {}
         for called_descendant in wfnode.called_descendants:
             if isinstance(called_descendant, orm.CalcJobNode):
                 try:
-                    called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
-                    cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
-                    pass
+                    calcs = clean(called_descendant)
+                    cleaned_calcs[
+                        "menon"
+                    ] = calcs  # menon for noumenon for not cached but real one
+
+                    # clean caching node
+                    if include_caching:
+                        caching_nodes = called_descendant.get_all_same_nodes()
+                        if len(caching_nodes) > 1:  # since it always contain the menon
+                            for node in caching_nodes:
+                                cached_calcs = clean(node)
+                                cleaned_calcs["cached"] = cached_calcs
+
+                except (IOError, OSError, KeyError) as exc:
+                    raise RuntimeError(
+                        "Failed to clean working dirctory of calcjob"
+                    ) from exc
 
         return cleaned_calcs

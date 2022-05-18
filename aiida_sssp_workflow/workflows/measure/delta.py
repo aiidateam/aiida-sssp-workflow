@@ -188,8 +188,8 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
             "element": orm.Str(self.ctx.element),  # _base wf hold attribute `element`
             "configuration": orm.Str(configuration),
             "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
-            "ecutwfc": orm.Float(self.ctx.ecutwfc),
-            "ecutrho": orm.Float(self.ctx.ecutrho),
+            "ecutwfc": orm.Int(self.ctx.ecutwfc),
+            "ecutrho": orm.Int(self.ctx.ecutrho),
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
             "scale_count": orm.Int(self.ctx.scale_count),
             "scale_increment": orm.Float(self.ctx.scale_increment),

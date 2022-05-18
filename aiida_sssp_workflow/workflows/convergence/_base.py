@@ -336,7 +336,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         self.ctx.max_ecutrho = ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
 
         for ecutwfc in self.ctx.ecutwfc_list[:-1]: # The last one is reference
-            inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
+            ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
+            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
             self.report(
@@ -383,7 +384,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         # Only run rho test when ecutrho less than the max reference
         # otherwise meaningless for the exceeding cutoff test
         for ecutrho in [dual * ecutwfc for dual in self.ctx.dual_scan_list if dual * ecutwfc < self.ctx.max_ecutrho]:
-            inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
+            ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
+            inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
             self.report(
