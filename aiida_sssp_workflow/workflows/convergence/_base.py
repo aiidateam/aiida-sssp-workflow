@@ -20,7 +20,7 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
-    get_extra_parameters_and_pseudos_for_lanthanoid,
+    get_extra_parameters_and_pseudos_for_lanthanides,
 )
 
 UpfData = DataFactory('pseudo.upf')
@@ -241,7 +241,7 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         Otherwise it is hard to get converged in scf calculation.
         """
         self.ctx.extra_pw_parameters, self.ctx.pseudos = \
-            get_extra_parameters_and_pseudos_for_lanthanoid(
+            get_extra_parameters_and_pseudos_for_lanthanides(
                 self.ctx.element,
                 pseudo_RE=self.inputs.pseudo
             )

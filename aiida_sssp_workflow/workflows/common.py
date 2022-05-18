@@ -5,7 +5,7 @@ from aiida.plugins import DataFactory
 UpfData = DataFactory("pseudo.upf")
 
 
-def get_extra_parameters_and_pseudos_for_lanthanoid(element, pseudo_RE):
+def get_extra_parameters_and_pseudos_for_lanthanides(element, pseudo_RE):
     import_path = importlib.resources.path(
         "aiida_sssp_workflow.statics.upf", "N.pbe-n-radius_5.upf"
     )

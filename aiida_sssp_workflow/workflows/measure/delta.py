@@ -3,6 +3,7 @@
 import importlib
 
 from aiida import orm
+from aiida.engine import if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
@@ -14,6 +15,9 @@ from aiida_sssp_workflow.utils import (
     update_dict,
 )
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
+from aiida_sssp_workflow.workflows.common import (
+    get_extra_parameters_and_pseudos_for_lanthanides,
+)
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
@@ -48,6 +52,8 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
 
         spec.outline(
             cls.init_setup,
+            if_(cls.is_rare_earth_element)(
+                cls.extra_setup_for_rare_earth_element, ),
             cls.setup_pw_parameters_from_protocol,
             cls.setup_pw_resource_options,
             cls.run_delta,
@@ -55,9 +61,12 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
             cls.finalize,
         )
         # namespace for storing all detail of run on each configuration
-        for configuration in cls._OXIDE_CONFIGURATIONS + cls._UNARIE_CONFIGURATIONS:
+        for configuration in cls._OXIDE_CONFIGURATIONS + cls._UNARIE_CONFIGURATIONS + ["RE"]:
             spec.expose_outputs(DeltaWorkChain, namespace=configuration,
-                        namespace_options={'help': f'Delta calculation result of {configuration} EOS.'})
+                        namespace_options={
+                            'help': f'Delta calculation result of {configuration} EOS.',
+                            'required': False,
+                        })
 
         spec.output('output_parameters',
                     help='The summary output parameters of all delta measures to describe the accuracy of EOS compare '
@@ -109,7 +118,7 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         elif self.ctx.element in RARE_EARTH_ELEMENTS:
             # For lanthanides, oxides are verifid
             # TODO: add lanthanides nitrides
-            configuration_list = self._OXIDE_CONFIGURATIONS
+            configuration_list = self._OXIDE_CONFIGURATIONS + ["RE"]
         else:
             configuration_list = (
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
@@ -121,6 +130,19 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
                 prop="delta",
                 configuration=configuration,
             )
+
+    def is_rare_earth_element(self):
+        """Check if the element is rare earth"""
+        return self.ctx.element in RARE_EARTH_ELEMENTS
+
+    def extra_setup_for_rare_earth_element(self):
+        """Extra setup for rare earth element"""
+        (
+            self.ctx.pw_nitride_parameters,
+            self.ctx.pseudos_nitride,
+        ) = get_extra_parameters_and_pseudos_for_lanthanides(
+            self.ctx.element, pseudo_RE=self.inputs.pseudo
+        )
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -176,18 +198,28 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
             self.ctx.parallelization = {}
 
     def _get_inputs(self, structure, configuration):
-        if "O" in configuration:
+        if configuration in OXIDES_CONFIGURATIONS:
             # pseudos for oxides
             pseudos = self.ctx.pseudos_oxide
-        else:
+            pw_parameters = self.ctx.pw_parameters
+        if configuration in UNARIE_CONFIGURATIONS:
+            # pseudos for BCC, FCC, SC, Diamond
             pseudos = self.ctx.pseudos_elementary
+            pw_parameters = self.ctx.pw_parameters
+        if configuration == "RE":
+            # pseudos for nitrides
+            pseudos = self.ctx.pseudos_nitride
+            pw_parameters = update_dict(
+                self.ctx.pw_nitride_parameters, self.ctx.pw_parameters
+            )
+
         inputs = {
             "code": self.inputs.pw_code,
             "pseudos": pseudos,
             "structure": structure,
             "element": orm.Str(self.ctx.element),  # _base wf hold attribute `element`
             "configuration": orm.Str(configuration),
-            "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
+            "pw_base_parameters": orm.Dict(dict=pw_parameters),
             "ecutwfc": orm.Int(self.ctx.ecutwfc),
             "ecutrho": orm.Int(self.ctx.ecutrho),
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),

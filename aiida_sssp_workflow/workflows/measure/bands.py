@@ -19,7 +19,7 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
-    get_extra_parameters_and_pseudos_for_lanthanoid,
+    get_extra_parameters_and_pseudos_for_lanthanides,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
@@ -114,7 +114,7 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
         self.ctx.pw_parameters, self.ctx.pseudos = \
-            get_extra_parameters_and_pseudos_for_lanthanoid(
+            get_extra_parameters_and_pseudos_for_lanthanides(
                 self.ctx.element,
                 pseudo_RE=self.inputs.pseudo
             )
