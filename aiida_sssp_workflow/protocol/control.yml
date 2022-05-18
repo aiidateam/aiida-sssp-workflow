@@ -15,6 +15,14 @@ quick:
     nc_dual_scan: [3.0, 3.5, 4.0] # at fix wfc
     nonnc_dual_scan: [6.0, 7.0, 8.0, 10.0, 12.0, 16.0]
 
+ref_check:
+    description: run on 200 v.s 300 Ry wavefunction cutoff with fix dual to give sense whether 200 Ry enough
+
+    # max_wfc: 0 # Not used if run accuracy veri with this protocol, just raise exception.
+    wfc_scan: [30, 40] # at fix rho
+    nc_dual_scan: [] # set empty so rho test not run
+    nonnc_dual_scan: []
+
 test:
     description: test only
 
