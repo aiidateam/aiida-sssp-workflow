@@ -106,7 +106,7 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
             configuration_list = self._UNARIE_CONFIGURATIONS
-        elif self.ctx.element is RARE_EARTH_ELEMENTS:
+        elif self.ctx.element in RARE_EARTH_ELEMENTS:
             # For lanthanides, oxides are verifid
             # TODO: add lanthanides nitrides
             configuration_list = self._OXIDE_CONFIGURATIONS
