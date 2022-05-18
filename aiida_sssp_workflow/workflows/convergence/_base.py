@@ -160,8 +160,13 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
     def _is_run_rho_convergence_test(self):
         """If running charge density convergence test
         default True, override class attribute `_RUN_RHO_TEST` in
-        subclass to supress running it"""
-        return self._RUN_RHO_TEST
+        subclass to supress running it
+
+        Also if self.ctx.dual_scan_list is empty means it is not set
+        in control.yml protocol file. Most likely run the 200vs300_ref_check
+        protocol.
+        """
+        return self._RUN_RHO_TEST and (self.ctx.dual_scan_list)
 
     def init_setup(self):
         """
