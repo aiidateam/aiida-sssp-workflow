@@ -265,7 +265,7 @@ class VerificationWorkChain(WorkChain):
 
     def inspect_accuracy(self):
         """Inspect delta measure results"""
-        self._report_and_results(wname_list=["delta_measure", "bands_measure"])
+        return self._report_and_results(wname_list=["delta_measure", "bands_measure"])
 
     def is_verify_convergence(self):
         """Whether to run convergence test workflows"""
@@ -381,7 +381,7 @@ class VerificationWorkChain(WorkChain):
 
     def inspect_convergence(self):
         """inspect the convergence result"""
-        self._report_and_results(
+        return self._report_and_results(
             wname_list=[
                 "convergence_cohesive_energy",
                 "convergence_phonon_frequencies",
@@ -403,7 +403,7 @@ class VerificationWorkChain(WorkChain):
                     self.out(f"{wname}.{label}", workchain.outputs[label])
 
                 if not workchain.is_finished_ok:
-                    self.report(
+                    self.logger.warning(
                         f"The sub-workflow {wname} pk={workchain.pk} not finished ok."
                     )
                     not_finished_ok_wf[wname] = workchain.pk
@@ -476,7 +476,7 @@ class VerificationWorkChain(WorkChain):
             """clean node workdir"""
             cleaned_calcs_lst = []
             node.outputs.remote_folder._clean()  # pylint: disable=protected-access
-            cleaned_calcs.append(called_descendant.pk)
+            cleaned_calcs_lst.append(called_descendant.pk)
 
             return cleaned_calcs_lst
 
