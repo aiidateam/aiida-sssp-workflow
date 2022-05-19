@@ -20,7 +20,8 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
-    get_extra_parameters_and_pseudos_for_lanthanides,
+    get_extra_parameters_for_lanthanides,
+    get_pseudo_N,
 )
 
 UpfData = DataFactory('pseudo.upf')
@@ -106,7 +107,7 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         spec.exit_code(401, 'ERROR_REFERENCE_CALCULATION_FAILED',
             message='The reference calculation failed.')
-        spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED',
+        spec.exit_code(402, 'ERROR_SUB_PROCESS_FAILED',
             message='The sub process for `{label}` did not finish successfully.')
         # yapy: enable
 
@@ -240,11 +241,12 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         We use nitrdes configuration for the convergence verification of rare-earth elements.
         Otherwise it is hard to get converged in scf calculation.
         """
-        self.ctx.extra_pw_parameters, self.ctx.pseudos = \
-            get_extra_parameters_and_pseudos_for_lanthanides(
-                self.ctx.element,
-                pseudo_RE=self.inputs.pseudo
-            )
+        nbnd_factor = 1.5
+        pseudo_N = get_pseudo_N()
+        self.ctx.pseudos['N'] = pseudo_N
+        pseudo_RE = self.inputs.pseudo
+        nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
+        self.ctx.extra_pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
 
     def setup_code_parameters_from_protocol(self):
         """unzip and parse protocol parameters to context"""
@@ -379,7 +381,6 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         """
         run rho converge test on fix wfc cutoff
         """
-
         ecutwfc = self.ctx.wfc_cutoff
         # Only run rho test when ecutrho less than the max reference
         # otherwise meaningless for the exceeding cutoff test

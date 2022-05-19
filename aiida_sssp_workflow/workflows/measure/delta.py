@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-import importlib
 
 from aiida import orm
 from aiida.engine import if_
@@ -16,7 +15,9 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
-    get_extra_parameters_and_pseudos_for_lanthanides,
+    get_extra_parameters_for_lanthanides,
+    get_pseudo_N,
+    get_pseudo_O,
 )
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
@@ -88,12 +89,7 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         self.ctx.pseudo_type = pseudo_type
         self.ctx.pseudos_elementary = {element: self.inputs.pseudo}
 
-        # Import oxygen pseudopotential file and set the pseudos
-        import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.upf", "O.pbe-n-kjpaw_psl.0.1.upf"
-        )
-        with import_path as pp_path, open(pp_path, "rb") as stream:
-            pseudo_O = UpfData(stream)
+        pseudo_O = get_pseudo_O()
 
         self.ctx.pseudos_oxide = {
             element: self.inputs.pseudo,
@@ -109,16 +105,12 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         # common-workflow set from
         # https://github.com/aiidateam/commonwf-oxides-scripts/tree/main/0-preliminary-do-not-run/cifs-set2
 
-        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5
+        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE
         # parentatheses means not supported yet.
         self.ctx.structures = {}
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
             configuration_list = self._UNARIE_CONFIGURATIONS
-        elif self.ctx.element in RARE_EARTH_ELEMENTS:
-            # For lanthanides, oxides are verifid
-            # TODO: add lanthanides nitrides
-            configuration_list = self._OXIDE_CONFIGURATIONS + ["RE"]
         else:
             configuration_list = (
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
@@ -137,12 +129,23 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        (
-            self.ctx.pw_nitride_parameters,
-            self.ctx.pseudos_nitride,
-        ) = get_extra_parameters_and_pseudos_for_lanthanides(
-            self.ctx.element, pseudo_RE=self.inputs.pseudo
+        nbnd_factor = 1.5
+        pseudo_N = get_pseudo_N()
+        pseudo_RE = self.inputs.pseudo
+        self.ctx.pseudos_nitride = {"N": pseudo_N, self.ctx.element: pseudo_RE}
+        nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
+        self.ctx.pw_nitride_parameters = get_extra_parameters_for_lanthanides(
+            self.ctx.element, nbnd
         )
+
+        # set configuration list for rare earth
+        self.ctx.structures = {}
+        for configuration in self._OXIDE_CONFIGURATIONS + ["RE"]:
+            self.ctx.structures[configuration] = get_standard_structure(
+                self.ctx.element,
+                prop="delta",
+                configuration=configuration,
+            )
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -202,16 +205,26 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
             # pseudos for oxides
             pseudos = self.ctx.pseudos_oxide
             pw_parameters = self.ctx.pw_parameters
+            kpoints_distance = self.ctx.kpoints_distance
         if configuration in UNARIE_CONFIGURATIONS:
             # pseudos for BCC, FCC, SC, Diamond
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
+            kpoints_distance = self.ctx.kpoints_distance
         if configuration == "RE":
             # pseudos for nitrides
             pseudos = self.ctx.pseudos_nitride
-            pw_parameters = update_dict(
-                self.ctx.pw_nitride_parameters, self.ctx.pw_parameters
-            )
+
+            parameters = {
+                "SYSTEM": {
+                    "occupations": "tetrahedra",
+                },
+                "ELECTRONS": {
+                    "conv_thr": self._CONV_THR,
+                },
+            }
+            pw_parameters = update_dict(parameters, self.ctx.pw_nitride_parameters)
+            kpoints_distance = self.ctx.kpoints_distance + 1
 
         inputs = {
             "code": self.inputs.pw_code,
@@ -222,7 +235,7 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
             "pw_base_parameters": orm.Dict(dict=pw_parameters),
             "ecutwfc": orm.Int(self.ctx.ecutwfc),
             "ecutrho": orm.Int(self.ctx.ecutrho),
-            "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            "kpoints_distance": orm.Float(kpoints_distance),
             "scale_count": orm.Int(self.ctx.scale_count),
             "scale_increment": orm.Float(self.ctx.scale_increment),
             "options": orm.Dict(dict=self.ctx.options),

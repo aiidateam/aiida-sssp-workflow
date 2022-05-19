@@ -21,12 +21,12 @@ test:
     max_wfc: 40 # The max wfc cut for delta measure
     wfc_scan: [30, 35, 40] # at fix rho
     nc_dual_scan: [2.0, 4.0] # at fix wfc
-    nonnc_dual_scan: [8.0, 12.0]
+    nonnc_dual_scan: [6.0, 8.0]
 
 demo:
     description: demo only not too much high cutoff but still dense and enough points to show results
 
-    max_wfc: 80 # The max wfc cut for delta measure
-    wfc_scan: [30, 35, 40, 50, 65, 80] # at fix rho
+    max_wfc: 60 # The max wfc cut for delta measure
+    wfc_scan: [30, 35, 40, 50, 60] # at fix rho
     nc_dual_scan: [3.0, 3.5, 4.0] # at fix wfc
     nonnc_dual_scan: [6.0, 7.0, 8.0, 10.0]
