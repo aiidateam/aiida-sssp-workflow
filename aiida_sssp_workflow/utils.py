@@ -67,6 +67,8 @@ NONMETAL_ELEMENTS = [
     "Rn",
 ]
 
+HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
+
 OXIDES_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
 UNARIE_CONFIGURATIONS = ["BCC", "FCC", "SC", "Diamond"]
 
