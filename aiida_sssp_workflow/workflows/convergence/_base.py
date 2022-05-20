@@ -9,6 +9,7 @@ from aiida.engine import append_, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
+    HIGH_DUAL_ELEMENTS,
     MAGNETIC_ELEMENTS,
     RARE_EARTH_ELEMENTS,
     convergence_analysis,
@@ -102,7 +103,7 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
                     help='The output parameters include results of all wfc test calculations.')
         spec.output('output_parameters_rho_test', valid_type=orm.Dict, required=False,
                     help='The output parameters include results of all rho test calculations.')
-        spec.output('final_output_parameters', valid_type=orm.Dict, required=False,
+        spec.output('output_parameters', valid_type=orm.Dict, required=False,
                     help='The output parameters of two stage convergence test.')
 
         spec.exit_code(401, 'ERROR_REFERENCE_CALCULATION_FAILED',
@@ -201,17 +202,18 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
             self.ctx.dual = 4.0
             self.ctx.dual_scan_list = cutoff_control['nc_dual_scan']
         else:
-            # the initial dual set to 10 to make sure it is enough and converged
-            # In the follow up steps will converge on ecutrho
-            self.ctx.dual = 8.0
+            if self.ctx.element  in HIGH_DUAL_ELEMENTS:
+                self.ctx.dual = 18.0
+                self.ctx.dual_scan_list = cutoff_control['nonnc_high_dual_scan']
+            else:
+                # the initial dual set to 8 for most elements
+                self.ctx.dual = 8.0
 
-            # For the non-NC pseudos we should be careful that high charge density cutoff
-            # is needed.
-            # We recommond to set the scan wide range from to find the best
-            # charge density cutoff.
-            self.ctx.dual_scan_list = cutoff_control['nonnc_dual_scan']
-
-        # TODO: for extrem high dual elements: O Fe Hf etc.
+                # For the non-NC pseudos we should be careful that high charge density cutoff
+                # is needed.
+                # We recommond to set the scan wide range from to find the best
+                # charge density cutoff.
+                self.ctx.dual_scan_list = cutoff_control['nonnc_dual_scan']
 
         self.ctx.pseudos = {element: self.inputs.pseudo}
 
@@ -340,9 +342,10 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         """
         run on all other evaluation sample points
         """
-        self.ctx.max_ecutrho = ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
+        self.ctx.max_ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
 
         for ecutwfc in self.ctx.ecutwfc_list[:-1]: # The last one is reference
+            ecutrho = ecutwfc * self.ctx.dual
             ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
@@ -368,6 +371,70 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         self.out('output_parameters_wfc_test',
                  orm.Dict(dict=output_parameters).store())
+
+        # specificly for pre_check
+        # always using precision criteria.
+        # in this pre_check, we run test with pre-fix dualkand scan the cutoff pairs
+        # at ecutwfc equal to 150 Ry, 200 Ry and 300 Ry, with ecutwfc=300ry as reference.
+        # Whether or not to run the subsequent convergence test depent on this pre_check.
+        # There are following four possibilities, two will abort and wait for further input:
+        # 1. (Abort1: code=-300) Under 2 times strict criteria 200 ry not converged. Highest priority.
+        # 2. (Abort2: code=-150) Under normal criteria 150 not converged w.r.t 300.
+        # 3. (Good: code=200) All good as usual, 200 Ry used as reference.
+        # 4. (Better: code=150) Even better, under 2 times strict criteria 150 Ry converged. Means
+        # ecutwfc=150ry can be used as reference. But only give advice, in real run still use 200 Ry as
+        # reference. This condition will accelerate calcualtion and will be used in aiidalab-sssp.
+        if self.inputs.cutoff_control.value == 'pre_check':
+            precision_criteria = get_protocol(
+                category='criteria', name='precision'
+            )[self._PROPERTY_NAME]
+
+            x = output_parameters['ecutwfc']
+            # normal criteria
+            y = [i for i in output_parameters[self._MEASURE_OUT_PROPERTY]]
+            res_normal = convergence_analysis(orm.List(list=list(zip(x, y))),
+                                    orm.Dict(dict=precision_criteria))
+            # two time strict criteria
+            y = [i * 2 for i in output_parameters[self._MEASURE_OUT_PROPERTY]]
+            res_strict = convergence_analysis(orm.List(list=list(zip(x, y))),
+                                    orm.Dict(dict=precision_criteria))
+
+            if res_strict['cutoff'].value == 300:
+                # 200 ry not converged
+                self.ctx.output_parameters['pre_check'] = {
+                    'exit_status': -300,
+                    'message': f"Damn, Super hard pseudo. Under 2 times strict criteria 200 ry not converged.",
+                    'cutoff': res_strict['value'].value,
+                    'bounds': precision_criteria['bounds']
+                }
+
+            if res_strict['cutoff'].value == 200:
+                # converged at 200 ry.
+                self.ctx.output_parameters['pre_check'] = {
+                    'exit_status': 200,
+                    'message': 'Good, 200 Ry should be used as reference.',
+                    'cutoff': res_strict['value'].value,
+                    'bounds': precision_criteria['bounds']
+                }
+
+                if res_normal['cutoff'].value != 150:
+                    # 150 not converged
+                    self.ctx.output_parameters['pre_check'] = {
+                        'exit_status': -150,
+                        'message': 'Bad, hard pseudo, 150 Ry not converged yet.',
+                        'cutoff': res_normal['value'].value,
+                        'bounds': precision_criteria['bounds']
+                    }
+
+            if res_strict['cutoff'].value == 150:
+                # converged at 150 ry.
+                self.ctx.output_parameters['pre_check'] = {
+                    'exit_status': 150,
+                    'message': 'Better, 150 Ry can be used as reference.',
+                    'cutoff': res_strict['value'].value,
+                    'bounds': precision_criteria['bounds']
+                }
+
 
         # from the fix dual result find the converge wfc cutoff
         x = output_parameters['ecutwfc']
@@ -463,5 +530,5 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
 
     def finalize(self):
         # store output_parameters
-        self.out('final_output_parameters',
+        self.out('output_parameters',
                  orm.Dict(dict=self.ctx.output_parameters).store())

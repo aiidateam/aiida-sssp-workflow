@@ -80,11 +80,11 @@ class VerificationWorkChain(WorkChain):
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, required=True,
-                    help='The calculation protocol to use for the workchain.')
+                    help='The calculation protocol for the workchain.')
         spec.input('criteria', valid_type=orm.Str, required=True,
                     help='Criteria for convergence measurement to give recommend cutoff pair.')
         spec.input('cutoff_control', valid_type=orm.Str, required=True,
-                    help='The criteria protocol to use for the workchain.')
+                    help='The cutoff control protocol to use for the workchain.')
         spec.input('label', valid_type=orm.Str, required=False,
                     help='label store for display as extra attribut.')
         spec.input('properties_list', valid_type=orm.List,
