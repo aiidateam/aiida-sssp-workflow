@@ -105,24 +105,39 @@ def get_standard_structure(
 
     Args:
         element (str): element
-        configuration (str): BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5
+        configuration (str): BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE
 
     Returns:
         orm.StructureData: return a orm.StructureData
     """
     # If for delta measure workflow
+    base_cif_module = "aiida_sssp_workflow.statics.cif"
     if prop == "delta":
-        if "O" in configuration:
-            data_module = "aiida_sssp_workflow.statics.cif.oxides"
-        else:
-            data_module = "aiida_sssp_workflow.statics.cif.unaries"
+        if configuration == "RE":
+            assert element in RARE_EARTH_ELEMENTS
 
-        res_path = importlib.resources.path(
-            data_module, f"{element}_{configuration}.cif"
-        )
+            # use RE-nitrides of Wenzovich paper
+            # from typical cif folder
+            res_path = importlib.resources.path(
+                f"{base_cif_module}.typical", f"{element}N.cif"
+            )
+
+        if configuration in OXIDES_CONFIGURATIONS:
+            res_path = importlib.resources.path(
+                f"{base_cif_module}.oxides", f"{element}_{configuration}.cif"
+            )
+
+        if configuration in UNARIE_CONFIGURATIONS:
+            res_path = importlib.resources.path(
+                f"{base_cif_module}.unaries", f"{element}_{configuration}.cif"
+            )
 
     else:
         # If for bands measure or convergence workflow
+        # after some back-forward, most elements only use typical structure
+        # for bands and for convergence. But with the primitived structure.
+        # But for future maintainance, I keep the mapping.json for configuration
+        # mapping. Only At using unaries since it is not in typical.
         import_path = importlib.resources.path(
             "aiida_sssp_workflow.statics.cif", f"mapping.json"
         )
@@ -131,9 +146,7 @@ def get_standard_structure(
             mapping = json.load(handle)
 
         dir, fn = mapping[element][prop].split("/")
-        res_path = importlib.resources.path(
-            f"aiida_sssp_workflow.statics.cif.{dir}", fn
-        )
+        res_path = importlib.resources.path(f"{base_cif_module}.{dir}", fn)
 
     if element in MAGNETIC_ELEMENTS:
         primitive_cell = False
