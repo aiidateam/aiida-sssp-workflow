@@ -275,8 +275,6 @@ class VerificationWorkChain(WorkChain):
         # If the aiida config set pw caching off, then not caching any
         from aiida.manage.caching import get_use_cache
 
-        return False
-
         identifier = "aiida.calculations:quantumespresso.pw"
         if not get_use_cache(identifier=identifier):
             return False
@@ -394,14 +392,19 @@ class VerificationWorkChain(WorkChain):
                 phonon_convergence_workchain
                 and phonon_convergence_workchain.is_finished_ok
             ):
-                caching_workchain = self.ctx.verify_caching
-                cleaned_calcs = self._clean_workdir(caching_workchain)
+                try:
+                    caching_workchain = self.ctx.verify_caching
+                    cleaned_calcs = self._clean_workdir(caching_workchain)
 
-                for k, calcs in cleaned_calcs.items():
-                    self.report(
-                        f"cleaned remote folders of calculations {k} "
-                        f"[belong to finished_ok work chain _caching]: {' '.join(map(str, calcs))}"
-                    )
+                    for k, calcs in cleaned_calcs.items():
+                        self.report(
+                            f"cleaned remote folders of calculations {k} "
+                            f"[belong to finished_ok work chain _caching]: {' '.join(map(str, calcs))}"
+                        )
+                except AttributeError:
+                    # caching not run
+                    self.logger.warning("Caching is not running will not clean it.")
+
             else:
                 self.logger.warning(
                     "Convergence verification of phonon frequecies not run, don't clean caching."

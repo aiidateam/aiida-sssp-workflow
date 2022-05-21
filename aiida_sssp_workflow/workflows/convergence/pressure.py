@@ -101,6 +101,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         # yapf: disable
         spec.input('pw_code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
+        # yapf: enable
 
     def init_setup(self):
         super().init_setup()

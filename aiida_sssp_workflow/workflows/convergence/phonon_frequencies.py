@@ -63,11 +63,13 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.input(
-            "ph_code",
-            valid_type=orm.Code,
-            help="The `ph.x` code use for the `PhCalculation`.",
+        # yapf: disable
+        spec.input("pw_code", valid_type=orm.Code,
+            help="The `pw.x` code use for the `PwCalculation`.")
+        spec.input("ph_code",valid_type=orm.Code,
+            help="The `ph.x` code  use for the `PhCalculation`.",
         )
+        # yapf: enable
 
     def init_setup(self):
         super().init_setup()
@@ -112,9 +114,6 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
-        # self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-        #                                 self.ctx.extra_pw_parameters)
-
         self.ctx.ph_parameters = {
             "INPUTPH": {
                 "tr2_ph": self._PH_TR2_PH,
@@ -135,19 +134,71 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
+        pw_parameters = {
+            "SYSTEM": {
+                "ecutwfc": ecutwfc,
+                "ecutrho": ecutrho,
+            },
+        }
+        pw_parameters = update_dict(pw_parameters, self.ctx.pw_parameters)
+
+        qpoints = orm.KpointsData()
+        qpoints.set_cell_from_structure(self.ctx.structure)
+        qpoints.set_kpoints(self.ctx.qpoints_list)
+
+        # convert parallelization to CMDLINE for PH
+        # since ph calculation now doesn't support parallelization
+        cmdline_list = []
+        for key, value in self.ctx.parallelization.items():
+            cmdline_list.append(f"-{str(key)}")
+            cmdline_list.append(str(value))
+
+        # Sinec PH calculation always runs more time then the correspoding pw calculation
+        # set the walltime to 4 times as set in option.
+        ph_options = self.ctx.options.copy()
+        pw_max_walltime = self.ctx.options.get("max_wallclock_seconds", None)
+        if pw_max_walltime:
+            ph_options["max_wallclock_seconds"] = pw_max_walltime * 4
+
         inputs = {
-            "pw_code": self.inputs.pw_code,
-            "ph_code": self.inputs.ph_code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
-            "ph_base_parameters": orm.Dict(dict=self.ctx.ph_parameters),
-            "ecutwfc": orm.Int(ecutwfc),
-            "ecutrho": orm.Int(ecutrho),
-            "qpoints": orm.List(list=self.ctx.qpoints_list),
-            "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            "scf": {
+                "metadata": {"call_link_label": "SCF"},
+                "pw": {
+                    "structure": self.ctx.structure,
+                    "code": self.inputs.pw_code,
+                    "pseudos": self.ctx.pseudos,
+                    "parameters": orm.Dict(dict=pw_parameters),
+                    "metadata": {
+                        "options": self.ctx.options,
+                    },
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+                },
+                "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            },
+            "phonon": {
+                "metadata": {"call_link_label": "PH"},
+                "ph": {
+                    "code": self.inputs.ph_code,
+                    "qpoints": qpoints,
+                    "parameters": orm.Dict(dict=self.ctx.ph_parameters),
+                    "metadata": {
+                        "options": ph_options,
+                    },
+                    "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
+                },
+            }
+            # "pw_code": self.inputs.pw_code,
+            # "ph_code": self.inputs.ph_code,
+            # "pseudos": self.ctx.pseudos,
+            # "structure": self.ctx.structure,
+            # "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
+            # "ph_base_parameters": orm.Dict(dict=self.ctx.ph_parameters),
+            # "ecutwfc": orm.Int(ecutwfc),
+            # "ecutrho": orm.Int(ecutrho),
+            # "qpoints": orm.List(list=self.ctx.qpoints_list),
+            # "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            # "options": orm.Dict(dict=self.ctx.options),
+            # "parallelization": orm.Dict(dict=self.ctx.parallelization),
         }
 
         return inputs
