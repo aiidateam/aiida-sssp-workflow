@@ -70,6 +70,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
                     help='The cutoff control list to use for the workchain.')
         spec.input('criteria', valid_type=orm.Str, required=True,
                     help='Criteria for convergence measurement to give recommend cutoff pair.')
+        spec.input('preset_ecutwfc', valid_type=orm.Int, required=False,
+                    help='Preset wavefunction cutoff will be used and skip wavefunction test.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options`.')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -156,8 +158,18 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
     def _is_run_wfc_convergence_test(self):
         """If running wavefunction convergence test
         default True, override class attribute `_RUN_WFC_TEST`
-        in subclass to supress running it"""
-        return self._RUN_WFC_TEST
+        in subclass to supress running it
+
+        If 'preset_ecutwfc' is set in inputs will use that value and
+        skip the wavefunction cutoff test.
+        """
+        if 'preset_ecutwfc' in self.inputs:
+            self.ctx.wfc_cutoff = self.inputs.preset_ecutwfc.value
+            assert self.ctx.wfc_cutoff < self.ctx.reference_ecutwfc
+
+            return False
+        else:
+            return self._RUN_WFC_TEST
 
     def _is_run_rho_convergence_test(self):
         """If running charge density convergence test
@@ -321,6 +333,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         ecutrho = ecutwfc * self.ctx.dual
         inputs = self._get_inputs(ecutwfc=round(ecutwfc), ecutrho=round(ecutrho))
 
+        self.ctx.max_ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
+
         running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
         self.report(f'launching reference calculation: {running.process_label}<{running.pk}>')
 
@@ -342,8 +356,6 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         """
         run on all other evaluation sample points
         """
-        self.ctx.max_ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
-
         for ecutwfc in self.ctx.ecutwfc_list[:-1]: # The last one is reference
             ecutrho = ecutwfc * self.ctx.dual
             ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
@@ -458,8 +470,9 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         ecutwfc = self.ctx.wfc_cutoff
         # Only run rho test when ecutrho less than the max reference
         # otherwise meaningless for the exceeding cutoff test
-        for ecutrho in [dual * ecutwfc for dual in self.ctx.dual_scan_list if dual * ecutwfc < self.ctx.max_ecutrho]:
+        for ecutrho in [dual * ecutwfc for dual in self.ctx.dual_scan_list]:
             ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
+            # TODO check and assert that ecutrho should not exceed max_ecutrho
             inputs = self._get_inputs(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
             running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
