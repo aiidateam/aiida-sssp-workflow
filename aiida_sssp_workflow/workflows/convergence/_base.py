@@ -167,6 +167,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
             self.ctx.wfc_cutoff = self.inputs.preset_ecutwfc.value
             assert self.ctx.wfc_cutoff < self.ctx.reference_ecutwfc
 
+            self.ctx.output_parameters['wavefunction_cutoff'] = self.ctx.wfc_cutoff
+
             return False
         else:
             return self._RUN_WFC_TEST
@@ -305,9 +307,10 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
 
     def setup_criteria_parameters_from_protocol(self):
         """Input validation"""
-        self.ctx.criteria = get_protocol(
+        self.ctx.property_criteria = get_protocol(
             category='criteria', name=self.inputs.criteria.value
         )[self._PROPERTY_NAME]
+        self.ctx.output_parameters['used_criteria'] = self.inputs.criteria.value
 
     def setup_code_resource_options(self):
         """
@@ -450,18 +453,28 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
                 }
 
 
-        # from the fix dual result find the converge wfc cutoff
-        x = output_parameters['ecutwfc']
-        y = output_parameters[self._MEASURE_OUT_PROPERTY]
-        res = convergence_analysis(orm.List(list=list(zip(x, y))),
-                                   orm.Dict(dict=self.ctx.criteria))
+        criterias = get_protocol(category='criteria')
+        all_criteria_wavefunction_cutoff = {}
+        for name, criteria in criterias.items():
+            property_criteria = criteria[self._PROPERTY_NAME]
+            # from the fix dual result find the converge wfc cutoff
+            x = output_parameters['ecutwfc']
+            y = output_parameters[self._MEASURE_OUT_PROPERTY]
+            res = convergence_analysis(orm.List(list=list(zip(x, y))),
+                                    orm.Dict(dict=property_criteria))
 
-        self.ctx.wfc_cutoff, y_value = res['cutoff'].value, res['value'].value
-        self.ctx.output_parameters['wavefunction_cutoff'] = self.ctx.wfc_cutoff
+            all_criteria_wavefunction_cutoff[name] = res['cutoff'].value
 
-        self.logger.info(
-            f'The wfc convergence at {self.ctx.wfc_cutoff} with value={y_value}'
-        )
+            # specificly write output for set criteria
+            if name == self.inputs.criteria.value:
+                self.ctx.output_parameters['wavefunction_cutoff'] = self.ctx.wfc_cutoff= res['cutoff'].value
+
+                self.logger.info(
+                    f"The wfc convergence at {self.ctx.wfc_cutoff} with value={res['value'].value}"
+                )
+
+        # write output wavefunction cutoff in all criteria.
+        self.ctx.output_parameters['all_criteria_wavefunction_cutoff'] = all_criteria_wavefunction_cutoff
 
     def run_rho_convergence_test(self):
         """
@@ -502,7 +515,7 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
         x = output_parameters['ecutrho']
         y = output_parameters[self._MEASURE_OUT_PROPERTY]
         res = convergence_analysis(orm.List(list=list(zip(x, y))),
-                                    orm.Dict(dict=self.ctx.criteria))
+                                    orm.Dict(dict=self.ctx.property_criteria))
         self.ctx.rho_cutoff, y_value = res['cutoff'].value, res[
             'value'].value
         self.ctx.output_parameters['chargedensity_cutoff'] = self.ctx.rho_cutoff

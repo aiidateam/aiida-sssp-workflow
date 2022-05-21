@@ -13,8 +13,9 @@ from aiida.plugins import DataFactory
 UpfData = DataFactory("pseudo.upf")
 
 
-def get_protocol(category, name):
-    """Load and read protocol from faml file to a verbose dict"""
+def get_protocol(category, name=None):
+    """Load and read protocol from faml file to a verbose dict
+    if name not set, return whole protocol."""
     import_path = importlib.resources.path(
         "aiida_sssp_workflow.protocol", f"{category}.yml"
     )
@@ -23,7 +24,10 @@ def get_protocol(category, name):
             handle
         )  # pylint: disable=attribute-defined-outside-init
 
-    return protocol_dict[name]
+    if name:
+        return protocol_dict[name]
+    else:
+        return protocol_dict
 
 
 RARE_EARTH_ELEMENTS = [

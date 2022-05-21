@@ -1,5 +1,11 @@
 # aiida-sssp-workflow
 
+## Logic of convergence test on different criteria protocol
+
+The wavefunction cutoff scan list are same no matter which criteria protocol is used.
+Therefore, the running of wavefunction cutoff test write wavefunction cutoff recommendation for all criteria protocol.
+When switching to other criteria protocol, the wavefunction cutoff test can be skipped by setting `preset_ecutwfc`. It will then be used and only run charge density cutoff test.
+
 ## Lanthanides
 
 For lanthanides the delta measure is run on nitrides as Wentzcovitch paper and on oxides.

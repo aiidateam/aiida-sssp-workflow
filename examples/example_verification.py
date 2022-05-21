@@ -26,7 +26,6 @@ def run_verification(pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_L
         "protocol": orm.Str("test"),
         "criteria": orm.Str("efficiency"),
         "cutoff_control": orm.Str("test"),
-        "preset_ecutwfc": orm.Int(34),
         "properties_list": orm.List(list=properties_list),
         "options": orm.Dict(
             dict={
