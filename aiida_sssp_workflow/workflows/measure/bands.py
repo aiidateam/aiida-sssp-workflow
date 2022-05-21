@@ -164,7 +164,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         """
 
         inputs = {
-            'code': self.inputs.pw_code,
+            'code': self.inputs.code,
             'pseudos': pseudos,
             'structure': self.ctx.structure,
             'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),

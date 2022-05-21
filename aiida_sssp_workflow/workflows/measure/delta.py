@@ -198,7 +198,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             kpoints_distance = self.ctx.kpoints_distance + 1
 
         inputs = {
-            "code": self.inputs.pw_code,
+            "code": self.inputs.code,
             "pseudos": pseudos,
             "structure": structure,
             "element": orm.Str(self.ctx.element),  # _base wf hold attribute `element`

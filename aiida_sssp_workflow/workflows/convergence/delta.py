@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS
-from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 
 UpfData = DataFactory("pseudo.upf")
@@ -33,7 +33,7 @@ def helper_delta_difference(
     return orm.Dict(dict=res)
 
 
-class ConvergenceDeltaWorkChain(BaseConvergenceWorkChain):
+class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on delta factor of input structure"""
 
     # pylint: disable=too-many-instance-attributes

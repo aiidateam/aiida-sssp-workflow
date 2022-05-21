@@ -18,15 +18,25 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_static")
 
 
-def run_verification(pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_LIST):
+def run_verification(
+    pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_LIST, label=None
+):
     inputs = {
+        "accuracy": {
+            "protocol": orm.Str("test"),
+            "cutoff_control": orm.Str("test"),
+        },
+        "convergence": {
+            "protocol": orm.Str("test"),
+            "cutoff_control": orm.Str("test"),
+            "criteria": orm.Str("efficiency"),
+            # "preset_ecutwfc": orm.Int(60),
+        },
         "pw_code": pw_code,
         "ph_code": ph_code,
         "pseudo": upf,
-        "protocol": orm.Str("test"),
-        "criteria": orm.Str("efficiency"),
-        "cutoff_control": orm.Str("test"),
         "properties_list": orm.List(list=properties_list),
+        "label": orm.Str(label),
         "options": orm.Dict(
             dict={
                 "resources": {
@@ -37,7 +47,7 @@ def run_verification(pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_L
                 "withmpi": True,
             }
         ),
-        # 'parallelization': orm.Dict(dict={}),
+        "parallelization": orm.Dict(dict={}),
         "clean_workdir_level": orm.Int(1),
     }
 
@@ -81,6 +91,6 @@ if __name__ == "__main__":
     with open(pp_path, "rb") as stream:
         pseudo = UpfData(stream)
 
-    res, node = run_verification(pw_code, ph_code, pseudo, properties_list)
+    res, node = run_verification(pw_code, ph_code, pseudo, properties_list, pp_label)
     node.description = pp_label
     print(node)

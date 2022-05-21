@@ -1,12 +1,12 @@
 from aiida import orm
 from aiida.plugins import WorkflowFactory
 
-from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 
 
-class _CachingConvergenceWorkChain(BaseConvergenceWorkChain):
+class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
     """Convergence caching workflow
     this workflow will only run in verification workflow
     when there are at least two convergence workflows are order to run.

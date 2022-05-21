@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
 )
@@ -37,7 +37,7 @@ def helper_cohesive_energy_difference(
     return orm.Dict(dict=res)
 
 
-class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
+class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
 
     # pylint: disable=too-many-instance-attributes
