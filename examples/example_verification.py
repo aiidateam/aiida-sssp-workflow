@@ -30,7 +30,7 @@ def run_verification(
             "protocol": orm.Str("test"),
             "cutoff_control": orm.Str("test"),
             "criteria": orm.Str("efficiency"),
-            # "preset_ecutwfc": orm.Int(60),
+            # "preset_ecutwfc": orm.Int(31),
         },
         "pw_code": pw_code,
         "ph_code": ph_code,
