@@ -428,6 +428,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
 
             if res_strict['cutoff'].value == 150:
                 # converged at 150 ry.
+                # However, this case is rathe useless, since 200 Ry already run and cached
+                # using reference of 150 Ry has no improvement for the efficiency.
                 self.ctx.output_parameters['pre_check'] = {
                     'exit_status': 150,
                     'message': 'Better, 150 Ry can be used as reference.',

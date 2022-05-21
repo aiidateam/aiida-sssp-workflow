@@ -69,6 +69,8 @@ if __name__ == "__main__":
         pp_label = "psl/O.pbe-n-kjpaw_psl.1.0.0.UPF"
     elif element == "Er":
         pp_label = "Wentzcovitch/Er.GGA-PBE-paw-v1.0.UPF"
+    elif element == "La":
+        pp_label = "Wentzcovitch/La.GGA-PBE-paw-v1.0.UPF"
     elif element == "Hf":
         pp_label = "psl/Hf.pbe-spn-rrkjus_psl.1.0.0.UPF"
     else:
