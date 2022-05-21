@@ -95,6 +95,13 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
     _EVALUATE_WORKCHAIN = PressureWorkChain
     _MEASURE_OUT_PROPERTY = "relative_diff"
 
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        # yapf: disable
+        spec.input('pw_code', valid_type=orm.Code,
+                    help='The `pw.x` code use for the `PwCalculation`.')
+
     def init_setup(self):
         super().init_setup()
         self.ctx.pw_parameters = {}
@@ -120,9 +127,6 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
-        # self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-        #                                 self.ctx.extra_pw_parameters)
-
         self.ctx.kpoints_distance = self._KDISTANCE
 
         self.logger.info(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
@@ -132,16 +136,27 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": ecutwfc,
+                "ecutrho": ecutrho,
+            },
+        }
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
+
         inputs = {
-            "code": self.inputs.pw_code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
-            "ecutwfc": orm.Int(ecutwfc),
-            "ecutrho": orm.Int(ecutrho),
+            "pw": {
+                "code": self.inputs.pw_code,
+                "structure": self.ctx.structure,
+                "pseudos": self.ctx.pseudos,
+                "parameters": orm.Dict(dict=parameters),
+                "metadata": {
+                    "call_link_label": "pressure_SCF",
+                    "options": self.ctx.options,
+                },
+                "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            },
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
         }
 
         return inputs
@@ -161,11 +176,11 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         ecutrho = ecutwfc * self.ctx.dual
         parameters = {
             "SYSTEM": {
-                "ecutwfc": ecutwfc,
-                "ecutrho": ecutrho,
+                "ecutwfc": round(ecutwfc),
+                "ecutrho": round(ecutrho),
             },
         }
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         inputs = {
             "structure": self.ctx.structure,
@@ -177,7 +192,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 "pw": {
                     "code": self.inputs.pw_code,
                     "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=self.ctx.pw_parameters),
+                    "parameters": orm.Dict(dict=parameters),
                     "metadata": {"options": self.ctx.options},
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },

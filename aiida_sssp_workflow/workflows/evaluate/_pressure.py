@@ -7,8 +7,6 @@ from aiida import orm
 from aiida.engine import ToContext, WorkChain, calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
-from aiida_sssp_workflow.utils import update_dict
-
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 UpfData = DataFactory("pseudo.upf")
 
@@ -39,92 +37,26 @@ class PressureWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
-                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
-        spec.input('structure', valid_type=orm.StructureData,
-                    help='Ground state structure which the verification perform')
-        spec.input('pw_base_parameters', valid_type=orm.Dict,
-                    help='parameters for pwscf.')
-        spec.input('ecutwfc', valid_type=orm.Int,
-                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('ecutrho', valid_type=orm.Int,
-                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
-        spec.input('kpoints_distance', valid_type=orm.Float,
-                    help='Kpoints distance setting for bulk energy calculation.')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
+        spec.expose_inputs(PwBaseWorkflow, include=['pw', 'kpoints_distance'])
 
         spec.outline(
-            cls.setup_base_parameters,
-            cls.validate_structure,
-            cls.setup_code_resource_options,
             cls.run_scf,
             cls.inspect_scf,
+            cls.finalize,
         )
+        spec.output('ecutwfc', valid_type=orm.Int, required=True)
+        spec.output('ecutrho', valid_type=orm.Int, required=True)
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include pressure of the structure.')
         spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_SCF',
                     message='PwBaseWorkChain of pressure scf evaluation failed.')
         # yapf: enable
 
-    def setup_base_parameters(self):
-        """Input validation"""
-        pw_parameters = self.inputs.pw_base_parameters.get_dict()
-
-        parameters = {
-            "SYSTEM": {
-                "ecutwfc": self.inputs.ecutwfc.value,
-                "ecutrho": self.inputs.ecutrho.value,
-            },
-        }
-        pw_parameters = update_dict(pw_parameters, parameters)
-
-        self.ctx.pw_parameters = pw_parameters
-
-        self.ctx.kpoints_distance = self.inputs.kpoints_distance
-
-    def validate_structure(self):
-        """doc"""
-        self.ctx.pseudos = self.inputs.pseudos
-
-    def setup_code_resource_options(self):
-        """
-        setup resource options and parallelization for `PwCalculation` from inputs
-        """
-        if "options" in self.inputs:
-            self.ctx.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            self.ctx.options = get_default_options(with_mpi=True)
-
-        if "parallelization" in self.inputs:
-            self.ctx.parallelization = self.inputs.parallelization.get_dict()
-        else:
-            self.ctx.parallelization = {}
-
     def run_scf(self):
         """
         set the inputs and submit scf
         """
-        inputs = {
-            "metadata": {"call_link_label": "SCF"},
-            "pw": {
-                "structure": self.inputs.structure,
-                "code": self.inputs.code,
-                "pseudos": self.ctx.pseudos,
-                "parameters": orm.Dict(dict=self.ctx.pw_parameters),
-                "metadata": {
-                    "options": self.ctx.options,
-                },
-                "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            },
-            "kpoints_distance": self.ctx.kpoints_distance,
-        }
+        inputs = self.exposed_inputs(PwBaseWorkflow)
 
         running = self.submit(PwBaseWorkflow, **inputs)
         self.report(f"Running pw calculation pk={running.pk}")
@@ -147,4 +79,11 @@ class PressureWorkChain(WorkChain):
         output_parameters = helper_get_hydrostatic_stress(
             output_trajectory, output_parameters
         )
+        self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
+        self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
         self.out("output_parameters", output_parameters)
+
+    def finalize(self):
+        """set ecutwfc and ecutrho"""
+        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
+        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())

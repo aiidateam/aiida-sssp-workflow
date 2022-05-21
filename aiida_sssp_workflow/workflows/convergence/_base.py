@@ -60,8 +60,6 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, required=True,
@@ -539,8 +537,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             d_output_parameters[key] = value
 
         for child_node in success_children:
-            ecutwfc_list.append(child_node.inputs.ecutwfc.value)
-            ecutrho_list.append(child_node.inputs.ecutrho.value)
+            ecutwfc_list.append(child_node.outputs.ecutwfc.value)
+            ecutrho_list.append(child_node.outputs.ecutrho.value)
 
             res = self.helper_compare_result_extract_fun(child_node,
                                                     reference_node, **kwargs)

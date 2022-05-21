@@ -275,6 +275,8 @@ class VerificationWorkChain(WorkChain):
         # If the aiida config set pw caching off, then not caching any
         from aiida.manage.caching import get_use_cache
 
+        return False
+
         identifier = "aiida.calculations:quantumespresso.pw"
         if not get_use_cache(identifier=identifier):
             return False
