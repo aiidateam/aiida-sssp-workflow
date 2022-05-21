@@ -187,18 +187,6 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
                     "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
                 },
             }
-            # "pw_code": self.inputs.pw_code,
-            # "ph_code": self.inputs.ph_code,
-            # "pseudos": self.ctx.pseudos,
-            # "structure": self.ctx.structure,
-            # "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
-            # "ph_base_parameters": orm.Dict(dict=self.ctx.ph_parameters),
-            # "ecutwfc": orm.Int(ecutwfc),
-            # "ecutrho": orm.Int(ecutrho),
-            # "qpoints": orm.List(list=self.ctx.qpoints_list),
-            # "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
-            # "options": orm.Dict(dict=self.ctx.options),
-            # "parallelization": orm.Dict(dict=self.ctx.parallelization),
         }
 
         return inputs
