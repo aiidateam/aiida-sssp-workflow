@@ -90,6 +90,8 @@ class VerificationWorkChain(WorkChain):
         spec.input('properties_list', valid_type=orm.List,
                     default=lambda: orm.List(list=DEFAULT_PROPERTIES_LIST),
                     help='The preperties will be calculated, passed as a list.')
+        spec.input('preset_ecutwfc', valid_type=orm.Int, required=False,
+                    help='Preset wavefunction cutoff will be used and skip wavefunction test.')
         spec.input('options', valid_type=orm.Dict, required=False,
                     help='Optional `options`')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
@@ -190,6 +192,8 @@ class VerificationWorkChain(WorkChain):
 
         base_conv_inputs = base_inputs.copy()
         base_conv_inputs["criteria"] = self.inputs.criteria
+        if "preset_ecutwfc" in self.inputs:
+            base_conv_inputs["preset_ecutwfc"] = self.inputs.preset_ecutwfc
 
         # Properties list
         valid_list = self._VALID_ACCURACY_WF + self._VALID_CONGENCENCE_WF
