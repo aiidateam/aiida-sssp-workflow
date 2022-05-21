@@ -17,12 +17,12 @@ from aiida_sssp_workflow.utils import (
     reset_pseudos_for_magnetic,
     update_dict,
 )
-from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
     get_pseudo_N,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
+from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -35,7 +35,7 @@ def validate_input_pseudos(d_pseudos, _):
         return f'The pseudos corespond to different elements {element}.'
 
 
-class BandsMeasureWorkChain(SelfCleanWorkChain):
+class BandsMeasureWorkChain(_BaseMeasureWorkChain):
     """
     WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
@@ -45,20 +45,8 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
-        super().define(spec)
         # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo', valid_type=UpfData, required=True,
-                    help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, required=True,
-                    help='The protocol which define input calculation parameters.')
-        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('standard'),
-                    help='The control protocol where define max_wfc.')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
+        super().define(spec)
 
         spec.outline(
             cls.init_setup,
@@ -68,7 +56,6 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element, ),
             cls.setup_pw_parameters_from_protocol,
-            cls.setup_pw_resource_options,
             cls.run_bands_evaluation,
             cls.finalize,
         )
@@ -171,28 +158,10 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
 
-    def setup_pw_resource_options(self):
-        """
-        setup resource options and parallelization for `PwCalculation` from inputs
-        """
-        if "options" in self.inputs:
-            self.ctx.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            self.ctx.options = get_default_options(with_mpi=True)
-
-        if "parallelization" in self.inputs:
-            self.ctx.parallelization = self.inputs.parallelization.get_dict()
-        else:
-            self.ctx.parallelization = {}
-
     def _get_inputs(self, element, pseudos):
         """
         get inputs for the bands evaluation with given pseudo
         """
-        # if element in RARE_EARTH_ELEMENTS:
-        #     pseudos['N'] = self.ctx.pseudo_N
 
         inputs = {
             'code': self.inputs.pw_code,
@@ -207,8 +176,8 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
             'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
             'fermi_shift': orm.Float(self.ctx.fermi_shift),
             'should_run_bands_structure': orm.Bool(True),
-            'options': orm.Dict(dict=self.ctx.options),
-            'parallelization': orm.Dict(dict=self.ctx.parallelization),
+            'options': self.inputs.options,
+            'parallelization': self.inputs.parallelization,
         }
 
         return inputs
