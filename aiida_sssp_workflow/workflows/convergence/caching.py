@@ -27,7 +27,7 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
+        spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         # yapf: enable
 
@@ -79,7 +79,7 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
             "metadata": {"call_link_label": "SCF_for_cache"},
             "pw": {
                 "structure": self.ctx.structure,
-                "code": self.inputs.pw_code,
+                "code": self.inputs.code,
                 "pseudos": self.ctx.pseudos,
                 "parameters": orm.Dict(dict=pw_parameters),
                 "metadata": {

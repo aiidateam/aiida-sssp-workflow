@@ -64,7 +64,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.input("pw_code", valid_type=orm.Code,
+        spec.input("code", valid_type=orm.Code,
             help="The `pw.x` code use for the `PwCalculation`.")
         # yapf: enable
 
@@ -121,7 +121,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             "structure": self.ctx.structure,
             "scf": {
                 "pw": {
-                    "code": self.inputs.pw_code,
+                    "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,
                     "parameters": orm.Dict(dict=parameters),
                     "metadata": {
@@ -133,7 +133,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             },
             "bands": {
                 "pw": {
-                    "code": self.inputs.pw_code,
+                    "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,
                     "parameters": orm.Dict(dict=parameters_bands),
                     "metadata": {

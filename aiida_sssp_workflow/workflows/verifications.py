@@ -76,7 +76,7 @@ class VerificationWorkChain(WorkChain):
         spec.expose_inputs(_BaseMeasureWorkChain, namespace='accuracy',
                     exclude=['code', 'pseudo', 'options', 'parallelization'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
-                    exclude=['pw_code', 'pseudo', 'options', 'parallelization'])
+                    exclude=['pseudo', 'options', 'parallelization'])
         spec.input('pw_code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,
@@ -203,17 +203,19 @@ class VerificationWorkChain(WorkChain):
         convergence_inputs = self.exposed_inputs(
             _BaseConvergenceWorkChain, namespace="convergence"
         )
-        convergence_inputs["pw_code"] = self.inputs.pw_code
+        convergence_inputs["code"] = self.inputs.pw_code
         convergence_inputs["pseudo"] = self.inputs.pseudo
         convergence_inputs["options"] = self.inputs.options
         convergence_inputs["parallelization"] = self.inputs.parallelization
 
+        inputs_phonon_frequencies = convergence_inputs.copy()
+        inputs_phonon_frequencies.pop("code", None)
+        inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code
+        inputs_phonon_frequencies["ph_code"] = self.inputs.ph_code
+
         self.ctx.convergence_inputs = {
             "cohesive_energy": convergence_inputs.copy(),
-            "phonon_frequencies": {
-                **convergence_inputs.copy(),
-                "ph_code": self.inputs.ph_code,
-            },
+            "phonon_frequencies": inputs_phonon_frequencies,
             "pressure": convergence_inputs.copy(),
             "delta": convergence_inputs.copy(),
             "bands": convergence_inputs.copy(),

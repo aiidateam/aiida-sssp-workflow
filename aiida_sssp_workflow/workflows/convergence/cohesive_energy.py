@@ -50,7 +50,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
+        spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         # yapf: enable
 
@@ -173,7 +173,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             "bulk": {
                 "metadata": {"call_link_label": "bulk_scf"},
                 "pw": {
-                    "code": self.inputs.pw_code,
+                    "code": self.inputs.code,
                     "parameters": orm.Dict(dict=bulk_parameters),
                     "metadata": {
                         "options": self.ctx.options,
@@ -185,7 +185,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             "atom": {
                 "metadata": {"call_link_label": "atom_scf"},
                 "pw": {
-                    "code": self.inputs.pw_code,
+                    "code": self.inputs.code,
                     "parameters": orm.Dict(dict={}),
                     "metadata": {
                         "options": self.ctx.options,
