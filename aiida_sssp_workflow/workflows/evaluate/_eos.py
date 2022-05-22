@@ -1,38 +1,12 @@
 # -*- coding: utf-8 -*-
 """Equation of state workflow that can use any code plugin implementing the common relax workflow."""
+
 from aiida import orm
-from aiida.common import AttributeDict
 from aiida.engine import WorkChain, append_, calcfunction, run_get_node
 from aiida.plugins import CalculationFactory, WorkflowFactory
 
 PwBaseWorkChain = WorkflowFactory("quantumespresso.pw.base")
 birch_murnaghan_fit = CalculationFactory("sssp_workflow.birch_murnaghan_fit")
-
-
-def validate_inputs(value, _):
-    """Validate the entire input namespace."""
-    if "scale_factors" not in value and (
-        "scale_count" not in value and "scale_count" not in value
-    ):
-        return "neither `scale_factors` nor the pair of `scale_count` and `scale_increment` were defined."
-
-
-def validate_scale_factors(value, _):
-    """Validate the `validate_scale_factors` input."""
-    if value and len(value) < 3:
-        return "need at least 3 scaling factors."
-
-
-def validate_scale_count(value, _):
-    """Validate the `scale_count` input."""
-    if value is not None and value < 3:
-        return "need at least 3 scaling factors."
-
-
-def validate_scale_increment(value, _):
-    """Validate the `scale_increment` input."""
-    if value is not None and not 0 < value < 1:
-        return "scale increment needs to be between 0 and 1."
 
 
 @calcfunction
@@ -52,21 +26,18 @@ class _EquationOfStateWorkChain(WorkChain):
     def define(cls, spec):
         # yapf: disable
         super().define(spec)
-        spec.expose_inputs(PwBaseWorkChain, namespace='scf',
-            exclude=('clean_workdir', 'pw.structure', 'pw.kpoints', 'pw.kpoints_distance'),
-            namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.input('structure', valid_type=orm.StructureData, help='The structure at equilibrium volume.')
         spec.input('kpoints_distance', valid_type=orm.Float, required=True,
-            help='The kpoints distance used in generating the kmesh of '
-                'unscaled structure then for all scaled structures')
-        spec.input('scale_factors', valid_type=orm.List, required=False, validator=validate_scale_factors,
+            help='The kpoints distance used in generating the kmesh of unscaled structure then for all scaled structures')
+        spec.input('scale_factors', valid_type=orm.List, required=False,
             help='The list of scale factors at which the volume and total energy of the structure should be computed.')
-        spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7), validator=validate_scale_count,
+        spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7),
             help='The number of points to compute for the equation of state.')
         spec.input('scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
-            validator=validate_scale_increment,
             help='The relative difference between consecutive scaling factors.')
-        spec.inputs.validator = validate_inputs
+        spec.expose_inputs(PwBaseWorkChain,
+            exclude=('kpoints', 'pw.structure', 'pw.kpoints_distance'),
+            namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.outline(
             cls.run_init,
             cls.run_eos,
@@ -82,55 +53,50 @@ class _EquationOfStateWorkChain(WorkChain):
             message='The birch murnaghan fit failed with exit code={code}.')
         # yapf: enable
 
-    def get_scale_factors(self):
-        """Return the list of scale factors."""
+    def get_scale_factors(self) -> list[float]:
+        """Return the list of scale factors.
+        The points are averagely distributed from the minimal volume.
+        The scale equal to 1 will not returned.
+
+        Return: list
+        """
         if "scale_factors" in self.inputs:
-            return self.inputs.scale_factors
+            return self.inputs.scale_factors.get_list()
 
         count = self.inputs.scale_count.value
         increment = self.inputs.scale_increment.value
         return [
-            orm.Float(1 + i * increment - (count - 1) * increment / 2)
+            round(1 + (2 * i - count + 1) / 2 * increment, 3)
             for i in range(count)
+            if (2 * i - count + 1 != 0)
         ]
 
-    def get_sub_workchain_builder(self, scale_factor):
-        """Return the builder for the relax workchain."""
-        process_class = PwBaseWorkChain
-        structure = scale_structure(self.inputs.structure, scale_factor)
-        unscaled_structure = self.inputs.structure
+    def _get_inputs(self, scale_factor):
+        """Inputs for pw calculation of every scale increment."""
+        inputs = self.exposed_inputs(PwBaseWorkChain)
 
-        inputs = AttributeDict(self.exposed_inputs(PwBaseWorkChain, namespace="scf"))
-
-        parameters = inputs.pw.parameters.get_dict()
-        parameters.setdefault("CONTROL", {})["calculation"] = "scf"
-
+        # structure scaled may lead to kpoints mesh change if it is generated from kpoint distance,
+        # therefore the kpoints mesh is fixed for all scaled structures and from the unscaled one.
         kpoints = orm.KpointsData()
-        kpoints.set_cell_from_structure(unscaled_structure)
+        kpoints.set_cell_from_structure(self.inputs.structure)
         kpoints.set_kpoints_mesh_from_density(
             distance=self.inputs.kpoints_distance.value
         )
 
-        inputs.metadata.call_link_label = "scf"
-        inputs.kpoints = kpoints.store()
-        inputs.pw.structure = structure
-        inputs.pw.parameters = orm.Dict(dict=parameters)
+        inputs["metadata"] = {"call_link_label": "EOS_scf"}
+        inputs["kpoints"] = kpoints
+        inputs["pw"]["structure"] = scale_structure(
+            self.inputs.structure, orm.Float(scale_factor)
+        )
 
-        builder = process_class.get_builder()
-
-        builder.update(**inputs)
-
-        return builder
+        return inputs
 
     def run_init(self):
         """Run the first sub-workchain, if this failed the whole workchain break."""
-        scale_factor = self.get_scale_factors()[0]
-        builder = self.get_sub_workchain_builder(scale_factor)
-        self.report(
-            f"submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`"
-        )
-        self.ctx.previous_workchain = self.submit(builder)
-        self.to_context(children=append_(self.ctx.previous_workchain))
+        inputs = self._get_inputs(scale_factor=1)  # inputs for unscaled structure
+        self.report(f"submitting precheck calculation for unscaled structure.")
+        self.ctx.init_workchain = self.submit(PwBaseWorkChain, **inputs)
+        self.to_context(children=append_(self.ctx.init_workchain))
 
     def run_eos(self):
         """Run the sub process at each scale factor to compute the structure volume and total energy."""
@@ -142,35 +108,32 @@ class _EquationOfStateWorkChain(WorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=PwBaseWorkChain)
 
-        for scale_factor in self.get_scale_factors()[1:]:
-            builder = self.get_sub_workchain_builder(scale_factor)
-            self.logger.info(
-                f"submitting `{builder.process_class.__name__}` for scale_factor `{scale_factor}`"
-            )
-            self.to_context(children=append_(self.submit(builder)))
+        for scale_factor in self.get_scale_factors():
+            inputs = self._get_inputs(scale_factor)
+            self.report(f"submitting scale_factor=`{scale_factor}`")
+            self.to_context(children=append_(self.submit(PwBaseWorkChain, **inputs)))
 
     def inspect_eos(self):
         """Inspect all children workflows to make sure they finished successfully."""
         if any(not child.is_finished_ok for child in self.ctx.children):
-            process_class = PwBaseWorkChain
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=process_class)
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED.format(cls=PwBaseWorkChain)
 
         volume_energy = {
-            "volumes": {},
-            "energies": {},
             "num_of_atoms": sum(self.inputs.structure.get_composition().values()),
             "volume_unit": "A^3",
             "energy_unit": "eV",
         }
-        for index, child in enumerate(self.ctx.children):
-            volume = child.outputs.output_parameters["volume"]
-            energy = child.outputs.output_parameters[
-                "energy"
-            ]  # Already the free energy E-TS (metal)
-            num_of_atoms = child.outputs.output_parameters["number_of_atoms"]
-            self.logger.info(f"Image {index}: volume={volume}, total energy={energy}")
-            volume_energy["volumes"][index] = volume
-            volume_energy["energies"][index] = energy
+        volumes = []
+        energies = []
+        for child in self.ctx.children:
+            # free energy E-TS (metal)
+            energies.append(child.outputs.output_parameters["energy"])
+            volumes.append(child.outputs.output_parameters["volume"])
+
+        self.logger.info(f"volumes={volumes}, energies={energies}")
+
+        volume_energy["volumes"] = volumes
+        volume_energy["energies"] = energies
 
         output_volume_energy = orm.Dict(dict=volume_energy).store()
         self.out("output_volume_energy", output_volume_energy)

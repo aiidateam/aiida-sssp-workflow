@@ -197,20 +197,33 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             pw_parameters = update_dict(parameters, self.ctx.pw_nitride_parameters)
             kpoints_distance = self.ctx.kpoints_distance + 1
 
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": round(self.ctx.ecutwfc),
+                "ecutrho": round(self.ctx.ecutrho),
+            },
+        }
+        parameters = update_dict(parameters, pw_parameters)
+
         inputs = {
-            "code": self.inputs.code,
-            "pseudos": pseudos,
-            "structure": structure,
-            "element": orm.Str(self.ctx.element),  # _base wf hold attribute `element`
+            "eos": {
+                "metadata": {"call_link_label": "delta_EOS"},
+                "structure": structure,
+                "kpoints_distance": orm.Float(kpoints_distance),
+                "scale_count": orm.Int(self.ctx.scale_count),
+                "scale_increment": orm.Float(self.ctx.scale_increment),
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": pseudos,
+                    "parameters": orm.Dict(dict=parameters),
+                    "metadata": {
+                        "options": self.inputs.options.get_dict(),
+                    },
+                    "parallelization": self.inputs.parallelization,
+                },
+            },
+            "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(configuration),
-            "pw_base_parameters": orm.Dict(dict=pw_parameters),
-            "ecutwfc": orm.Int(self.ctx.ecutwfc),
-            "ecutrho": orm.Int(self.ctx.ecutrho),
-            "kpoints_distance": orm.Float(kpoints_distance),
-            "scale_count": orm.Int(self.ctx.scale_count),
-            "scale_increment": orm.Float(self.ctx.scale_increment),
-            "options": self.inputs.options,
-            "parallelization": self.inputs.parallelization,
         }
 
         return inputs

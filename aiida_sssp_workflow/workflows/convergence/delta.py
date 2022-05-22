@@ -7,7 +7,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS
+from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 
@@ -41,6 +41,14 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
     _PROPERTY_NAME = "delta"
     _EVALUATE_WORKCHAIN = DeltaWorkChain
     _MEASURE_OUT_PROPERTY = "relative_diff"
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        # yapf: disable
+        spec.input("pw_code", valid_type=orm.Code,
+            help="The `pw.x` code use for the `PwCalculation`.")
+        # yapf: enable
 
     def init_setup(self):
         super().init_setup()
@@ -88,20 +96,33 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
         get inputs for the evaluation DeltaWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": ecutwfc,
+                "ecutrho": ecutrho,
+            },
+        }
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
+
         inputs = {
-            "code": self.inputs.pw_code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "element": orm.Str(self.ctx.element),  # _base wf hold attribute `element`
+            "eos": {
+                "metadata": {"call_link_label": "delta_EOS"},
+                "structure": self.ctx.structure,
+                "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+                "scale_count": orm.Int(self.ctx.scale_count),
+                "scale_increment": orm.Float(self.ctx.scale_increment),
+                "pw": {
+                    "code": self.inputs.pw_code,
+                    "pseudos": self.ctx.pseudos,
+                    "parameters": orm.Dict(dict=parameters),
+                    "metadata": {
+                        "options": self.ctx.options,
+                    },
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+                },
+            },
+            "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(self.ctx.configuration),
-            "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
-            "ecutwfc": orm.Int(ecutwfc),
-            "ecutrho": orm.Int(ecutrho),
-            "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
-            "scale_count": orm.Int(self.ctx.scale_count),
-            "scale_increment": orm.Float(self.ctx.scale_increment),
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
         }
 
         return inputs
