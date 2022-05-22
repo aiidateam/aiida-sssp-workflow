@@ -6,6 +6,7 @@ from aiida.engine import if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
+    HIGH_DUAL_ELEMENTS,
     OXIDES_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
@@ -15,6 +16,7 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
+    get_pseudo_element_and_type,
     get_pseudo_N,
     get_pseudo_O,
 )
@@ -174,16 +176,26 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         self.logger.info(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
 
     def _get_inputs(self, structure, configuration):
+        element, pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
+
         if configuration in OXIDES_CONFIGURATIONS:
             # pseudos for oxides
             pseudos = self.ctx.pseudos_oxide
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
+            # Since non-NC oxygen pseudo is used
+            ecutrho = self.ctx.ecutwfc * 8  # FIXME: check 8 for O if enough
+
         if configuration in UNARIE_CONFIGURATIONS:
             # pseudos for BCC, FCC, SC, Diamond
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
+            if pseudo_type in ["NC", "SL"]:
+                ecutrho = self.ctx.ecutwfc * 4
+            else:
+                ecutrho = self.ctx.ecutwfc * 8
+
         if configuration == "RE":
             # pseudos for nitrides
             pseudos = self.ctx.pseudos_nitride
@@ -198,11 +210,16 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             }
             pw_parameters = update_dict(parameters, self.ctx.pw_nitride_parameters)
             kpoints_distance = self.ctx.kpoints_distance + 1
+            # Since non-NC nitrogen pseudo is used
+            ecutrho = self.ctx.ecutwfc * 8
+
+        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ["NC", "SL"]:
+            ecutrho = self.ctx.ecutwfc * 18
 
         parameters = {
             "SYSTEM": {
                 "ecutwfc": round(self.ctx.ecutwfc),
-                "ecutrho": round(self.ctx.ecutrho),
+                "ecutrho": round(ecutrho),
             },
         }
         parameters = update_dict(parameters, pw_parameters)

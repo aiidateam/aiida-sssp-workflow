@@ -8,6 +8,7 @@ from aiida.engine import ToContext, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
+    HIGH_DUAL_ELEMENTS,
     MAGNETIC_ELEMENTS,
     NONMETAL_ELEMENTS,
     RARE_EARTH_ELEMENTS,
@@ -19,6 +20,7 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
+    get_pseudo_element_and_type,
     get_pseudo_N,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
@@ -150,7 +152,6 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         }
 
         self.ctx.ecutwfc = self._ECUTWFC
-        self.ctx.ecutrho = self._ECUTWFC * 8
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
@@ -162,10 +163,22 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         """
         get inputs for the bands evaluation with given pseudo
         """
+        element, pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
+        if pseudo_type in ['NC', 'SL']:
+            ecutrho = self.ctx.ecutwfc * 4
+        else:
+            ecutrho = self.ctx.ecutwfc * 8
+
+        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ['NC', 'SL']:
+            ecutrho = self.ctx.ecutwfc * 18
+
+        if element in RARE_EARTH_ELEMENTS:
+            ecutrho = self.ctx.ecutrho * 8
+
         parameters = {
             "SYSTEM": {
                 "ecutwfc": round(self.ctx.ecutwfc),
-                "ecutrho": round(self.ctx.ecutrho),
+                "ecutrho": round(ecutrho),
             },
         }
         parameters = update_dict(parameters, self.ctx.pw_parameters)

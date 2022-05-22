@@ -22,6 +22,7 @@ from aiida_sssp_workflow.utils import (
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
+    get_pseudo_element_and_type,
     get_pseudo_N,
 )
 
@@ -189,9 +190,6 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         This step contains all preparation before actaul setup, e.g. set
         the context of element, base_structure, base pw_parameters and pseudos.
         """
-        # parse pseudo and output its header information
-        from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
-
         # init output_parameters to store output
         self.ctx.output_parameters = {}
 
@@ -204,11 +202,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         self.ctx.reference_ecutwfc = self._ECUTWFC_LIST[-1]
 
         self.ctx.extra_pw_parameters = {}
-        content = self.inputs.pseudo.get_content()
-        element = parse_element(content)
-        pseudo_type = parse_pseudo_type(content)
-        self.ctx.element = element
-        self.ctx.pseudo_type = pseudo_type
+        self.ctx.element, self.ctx.pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 10 for all other type of PP.
@@ -229,11 +223,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 # charge density cutoff.
                 self.ctx.dual_scan_list = cutoff_control['nonnc_dual_scan']
 
-        self.ctx.pseudos = {element: self.inputs.pseudo}
+        self.ctx.pseudos = {self.ctx.element: self.inputs.pseudo}
 
         # Please check README for what and why we use configuration set 'convergence'
         # for convergence verification.
-        self.ctx.structure = get_standard_structure(element, prop='convergence')
+        self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence')
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
