@@ -173,6 +173,8 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             ecutrho = self.ctx.ecutwfc * 18
 
         if element in RARE_EARTH_ELEMENTS:
+            # since nitrides is used, the pseudo of N is non-NC
+            # FIXME: after N verification
             ecutrho = self.ctx.ecutrho * 8
 
         parameters = {
