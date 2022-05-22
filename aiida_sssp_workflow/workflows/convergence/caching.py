@@ -23,14 +23,6 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
     _RUN_WFC_TEST = True
     _RUN_RHO_TEST = False  # will not run charge density cutoff test
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        # yapf: disable
-        spec.input('code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        # yapf: enable
-
     def inspect_wfc_convergence_test(self):
         """Override this step to do nothing to parse wavefunction
         cutoff test results but only run it."""

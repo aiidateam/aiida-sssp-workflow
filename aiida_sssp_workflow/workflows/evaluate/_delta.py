@@ -3,17 +3,18 @@
 WorkChain calculate the delta for certain pseudopotential
 """
 from aiida import orm
-from aiida.engine import WorkChain
 from aiida.plugins import DataFactory
 from plumpy import ToContext
 
 from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 
+from . import _BaseEvaluateWorkChain
+
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaWorkChain(WorkChain):
+class DeltaWorkChain(_BaseEvaluateWorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
 
     @classmethod
@@ -36,13 +37,10 @@ class DeltaWorkChain(WorkChain):
         spec.expose_outputs(_EquationOfStateWorkChain, namespace='eos',
                     namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from EOS.'})
 
-        spec.output('ecutwfc', valid_type=orm.Int, required=True)
-        spec.output('ecutrho', valid_type=orm.Int, required=True)
         spec.output('output_parameters', required=True,
                     help='The output of delta factor and other measures to describe the accuracy of EOS compare '
                         ' with the AE equation of state.')
-        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
-                    message='The `PwBandsWorkChain` sub process failed.')
+
         # yapf: enable
 
     def _get_inputs(self):

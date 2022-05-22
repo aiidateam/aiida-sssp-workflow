@@ -76,7 +76,7 @@ class VerificationWorkChain(WorkChain):
         spec.expose_inputs(_BaseMeasureWorkChain, namespace='accuracy',
                     exclude=['code', 'pseudo', 'options', 'parallelization'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
-                    exclude=['pseudo', 'options', 'parallelization'])
+                    exclude=['code', 'pseudo', 'options', 'parallelization'])
         spec.input('pw_code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,

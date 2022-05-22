@@ -64,6 +64,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
+        del spec.inputs['code'] # For this input code port set in base work chain need to be unset.
         spec.input("pw_code", valid_type=orm.Code,
             help="The `pw.x` code use for the `PwCalculation`.")
         spec.input("ph_code",valid_type=orm.Code,

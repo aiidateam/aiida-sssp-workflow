@@ -4,8 +4,10 @@ A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
 from aiida import orm
-from aiida.engine import WorkChain, append_, calcfunction
+from aiida.engine import append_, calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
+
+from . import _BaseEvaluateWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 UpfData = DataFactory("pseudo.upf")
@@ -37,7 +39,7 @@ def create_isolate_atom(
     return structure
 
 
-class CohesiveEnergyWorkChain(WorkChain):
+class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
     @classmethod
@@ -62,8 +64,7 @@ class CohesiveEnergyWorkChain(WorkChain):
             cls.inspect_energy,
             cls.finalize,
         )
-        spec.output('ecutwfc', valid_type=orm.Int, required=True)
-        spec.output('ecutrho', valid_type=orm.Int, required=True)
+
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include cohesive energy of the structure.')
         spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY',

@@ -95,14 +95,6 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
     _EVALUATE_WORKCHAIN = PressureWorkChain
     _MEASURE_OUT_PROPERTY = "relative_diff"
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        # yapf: enable
-
     def init_setup(self):
         super().init_setup()
         self.ctx.pw_parameters = {}
@@ -147,7 +139,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
 
         inputs = {
             "pw": {
-                "code": self.inputs.pw_code,
+                "code": self.inputs.code,
                 "structure": self.ctx.structure,
                 "pseudos": self.ctx.pseudos,
                 "parameters": orm.Dict(dict=parameters),
@@ -191,7 +183,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             "metadata": {"call_link_label": "EOS"},
             "scf": {
                 "pw": {
-                    "code": self.inputs.pw_code,
+                    "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,
                     "parameters": orm.Dict(dict=parameters),
                     "metadata": {"options": self.ctx.options},

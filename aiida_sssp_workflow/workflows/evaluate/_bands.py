@@ -4,8 +4,10 @@ WorkChain calculate the bands for certain pseudopotential
 """
 import numpy as np
 from aiida import orm
-from aiida.engine import ToContext, WorkChain, calcfunction, if_, while_
+from aiida.engine import ToContext, calcfunction, if_, while_
 from aiida.plugins import DataFactory, WorkflowFactory
+
+from . import _BaseEvaluateWorkChain
 
 PwBandsWorkChain = WorkflowFactory("quantumespresso.pw.bands")
 UpfData = DataFactory("pseudo.upf")
@@ -57,7 +59,7 @@ def validate_inputs(inputs, ctx=None):
         )
 
 
-class BandsWorkChain(WorkChain):
+class BandsWorkChain(_BaseEvaluateWorkChain):
     """WorkChain calculate the bands for certain pseudopotential
     Can choose only run bands or only on bandstructure"""
 
@@ -98,8 +100,7 @@ class BandsWorkChain(WorkChain):
             ),
             cls.finalize,
         )
-        spec.output('ecutwfc', valid_type=orm.Int, required=True)
-        spec.output('ecutrho', valid_type=orm.Int, required=True)
+
         spec.expose_outputs(PwBandsWorkChain, namespace='band_structure',
                             namespace_options={'dynamic': True, 'required': False})
         spec.expose_outputs(PwBandsWorkChain, namespace='bands')

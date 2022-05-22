@@ -4,8 +4,10 @@ A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
 from aiida import orm
-from aiida.engine import ToContext, WorkChain, calcfunction
+from aiida.engine import ToContext, calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
+
+from . import _BaseEvaluateWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 UpfData = DataFactory("pseudo.upf")
@@ -29,7 +31,7 @@ def helper_get_hydrostatic_stress(output_trajectory, output_parameters):
     )
 
 
-class PressureWorkChain(WorkChain):
+class PressureWorkChain(_BaseEvaluateWorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
     @classmethod
@@ -44,12 +46,9 @@ class PressureWorkChain(WorkChain):
             cls.inspect_scf,
             cls.finalize,
         )
-        spec.output('ecutwfc', valid_type=orm.Int, required=True)
-        spec.output('ecutrho', valid_type=orm.Int, required=True)
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include pressure of the structure.')
-        spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_SCF',
-                    message='PwBaseWorkChain of pressure scf evaluation failed.')
+
         # yapf: enable
 
     def run_scf(self):

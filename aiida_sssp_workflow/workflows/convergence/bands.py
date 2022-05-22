@@ -60,14 +60,6 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
     _EVALUATE_WORKCHAIN = BandsWorkChain
     _MEASURE_OUT_PROPERTY = "eta_c"
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        # yapf: disable
-        spec.input("code", valid_type=orm.Code,
-            help="The `pw.x` code use for the `PwCalculation`.")
-        # yapf: enable
-
     def init_setup(self):
         super().init_setup()
         self.ctx.extra_pw_parameters = {}

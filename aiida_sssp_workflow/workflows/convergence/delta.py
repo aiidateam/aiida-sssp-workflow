@@ -42,14 +42,6 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
     _EVALUATE_WORKCHAIN = DeltaWorkChain
     _MEASURE_OUT_PROPERTY = "relative_diff"
 
-    @classmethod
-    def define(cls, spec):
-        super().define(spec)
-        # yapf: disable
-        spec.input("pw_code", valid_type=orm.Code,
-            help="The `pw.x` code use for the `PwCalculation`.")
-        # yapf: enable
-
     def init_setup(self):
         super().init_setup()
         self.ctx.extra_pw_parameters = {}
@@ -112,7 +104,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
                 "scale_count": orm.Int(self.ctx.scale_count),
                 "scale_increment": orm.Float(self.ctx.scale_increment),
                 "pw": {
-                    "code": self.inputs.pw_code,
+                    "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,
                     "parameters": orm.Dict(dict=parameters),
                     "metadata": {

@@ -4,15 +4,17 @@ WorkChain calculate phonon frequencies at Gamma
 """
 from aiida import orm
 from aiida.common import NotExistentAttributeError
-from aiida.engine import ToContext, WorkChain, while_
+from aiida.engine import ToContext, while_
 from aiida.plugins import DataFactory, WorkflowFactory
+
+from . import _BaseEvaluateWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 PhBaseWorkflow = WorkflowFactory("quantumespresso.ph.base")
 UpfData = DataFactory("pseudo.upf")
 
 
-class PhononFrequenciesWorkChain(WorkChain):
+class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
     @classmethod
@@ -33,12 +35,8 @@ class PhononFrequenciesWorkChain(WorkChain):
             cls.inspect_ph,
             cls.finalize,
         )
-        spec.output('ecutwfc', valid_type=orm.Int, required=True)
-        spec.output('ecutrho', valid_type=orm.Int, required=True)
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include phonon frequencies.')
-        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_SCF',
-                    message='The `PwBaseWorkChain` sub process failed.')
         spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER',
                     message='The remote folder node not exist')
         spec.exit_code(202, 'ERROR_SUB_PROCESS_FAILED_PH',
