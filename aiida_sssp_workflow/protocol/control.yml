@@ -1,5 +1,5 @@
 ---
-pre_check:
+precheck:
     description: run on 150 v.s 200 v.s 300 Ry wavefunction cutoff with fix dual to give sense whether 200 Ry enough
 
     # max_wfc: 0 # Not used if run accuracy veri with this protocol, just raise exception.

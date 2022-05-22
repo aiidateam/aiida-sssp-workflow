@@ -381,11 +381,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         self.out('output_parameters_wfc_test',
                  orm.Dict(dict=output_parameters).store())
 
-        # specificly for pre_check
+        # specificly for precheck
         # always using precision criteria.
-        # in this pre_check, we run test with pre-fix dualkand scan the cutoff pairs
+        # in this precheck, we run test with pre-fix dualkand scan the cutoff pairs
         # at ecutwfc equal to 150 Ry, 200 Ry and 300 Ry, with ecutwfc=300ry as reference.
-        # Whether or not to run the subsequent convergence test depent on this pre_check.
+        # Whether or not to run the subsequent convergence test depent on this precheck.
         # There are following four possibilities, two will abort and wait for further input:
         # 1. (Abort1: code=-300) Under 2 times strict criteria 200 ry not converged. Highest priority.
         # 2. (Abort2: code=-150) Under normal criteria 150 not converged w.r.t 300.
@@ -393,7 +393,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         # 4. (Better: code=150) Even better, under 2 times strict criteria 150 Ry converged. Means
         # ecutwfc=150ry can be used as reference. But only give advice, in real run still use 200 Ry as
         # reference. This condition will accelerate calcualtion and will be used in aiidalab-sssp.
-        if self.inputs.cutoff_control.value == 'pre_check':
+        if self.inputs.cutoff_control.value == 'precheck':
             precision_criteria = get_protocol(
                 category='criteria', name='precision'
             )[self._PROPERTY_NAME]
@@ -410,7 +410,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
             if res_strict['cutoff'].value == 300:
                 # 200 ry not converged
-                self.ctx.output_parameters['pre_check'] = {
+                self.ctx.output_parameters['precheck'] = {
                     'exit_status': -300,
                     'message': f"Damn, Super hard pseudo. Under 2 times strict criteria 200 ry not converged.",
                     'cutoff': res_strict['value'].value,
@@ -419,7 +419,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
             if res_strict['cutoff'].value == 200:
                 # converged at 200 ry.
-                self.ctx.output_parameters['pre_check'] = {
+                self.ctx.output_parameters['precheck'] = {
                     'exit_status': 200,
                     'message': 'Good, 200 Ry should be used as reference.',
                     'cutoff': res_strict['value'].value,
@@ -428,7 +428,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
                 if res_normal['cutoff'].value != 150:
                     # 150 not converged
-                    self.ctx.output_parameters['pre_check'] = {
+                    self.ctx.output_parameters['precheck'] = {
                         'exit_status': -150,
                         'message': 'Bad, hard pseudo, 150 Ry not converged yet.',
                         'cutoff': res_normal['value'].value,
@@ -439,7 +439,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 # converged at 150 ry.
                 # However, this case is rathe useless, since 200 Ry already run and cached
                 # using reference of 150 Ry has no improvement for the efficiency.
-                self.ctx.output_parameters['pre_check'] = {
+                self.ctx.output_parameters['precheck'] = {
                     'exit_status': 150,
                     'message': 'Better, 150 Ry can be used as reference.',
                     'cutoff': res_strict['value'].value,
