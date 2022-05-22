@@ -93,7 +93,7 @@ if __name__ == "__main__":
     elif element == "Hf":
         pp_label = "psl/Hf.pbe-spn-rrkjus_psl.1.0.0.UPF"
     else:
-        pp_label = "psl/Si.pbe-n-rrkjus_psl.1.0.0.UPF"
+        pp_label = "sg15/Si_ONCV_PBE-1.2.upf"
 
     pp_name = pp_label.split("/")[1]
     pp_path = os.path.join(STATIC_DIR, pp_name)
