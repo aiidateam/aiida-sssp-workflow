@@ -106,8 +106,9 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.pseudos['N'] = pseudo_N
         pseudo_RE = self.inputs.pseudo
         nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
-        self.ctx.extra_pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
+        pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
 
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, pw_parameters)
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -148,7 +149,6 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             },
         }
 
-        # TBD: Always use dual=8 since pseudo_O here is non-NC
         self.ctx.ecutwfc = self._ECUTWFC
         self.ctx.ecutrho = self._ECUTWFC * 8
 
@@ -158,33 +158,59 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
 
-    def _get_inputs(self, element, pseudos):
+    def _get_inputs(self, pseudos):
         """
         get inputs for the bands evaluation with given pseudo
         """
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": round(self.ctx.ecutwfc),
+                "ecutrho": round(self.ctx.ecutrho),
+            },
+        }
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
+
+        parameters_bands = parameters.copy()
+        parameters_bands["SYSTEM"]["nosym"] = True    # TODO: to be removed
+        parameters_bands["SYSTEM"].pop("nbnd", None)
 
         inputs = {
-            'code': self.inputs.code,
-            'pseudos': pseudos,
-            'structure': self.ctx.structure,
-            'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
-            'ecutwfc': orm.Int(self.ctx.ecutwfc),
-            'ecutrho': orm.Int(self.ctx.ecutrho),
-            'kpoints_distance_scf': orm.Float(self.ctx.kpoints_distance_scf),
-            'kpoints_distance_bands': orm.Float(self.ctx.kpoints_distance_bands),
-            'kpoints_distance_band_structure': orm.Float(self.ctx.kpoints_distance_band_structure),
-            'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
-            'fermi_shift': orm.Float(self.ctx.fermi_shift),
-            'should_run_bands_structure': orm.Bool(True),
-            'options': self.inputs.options,
-            'parallelization': self.inputs.parallelization,
+            "structure": self.ctx.structure,
+            "scf": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": pseudos,
+                    "parameters": orm.Dict(dict=parameters),
+                    "metadata": {
+                        "options": self.inputs.options.get_dict(),
+                    },
+                    "parallelization": self.inputs.parallelization,
+                },
+                "kpoints_distance": orm.Float(self.ctx.kpoints_distance_scf),
+            },
+            "bands": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": pseudos,
+                    "parameters": orm.Dict(dict=parameters_bands),
+                    "metadata": {
+                        "options": self.inputs.options.get_dict(),
+                    },
+                    "parallelization": self.inputs.parallelization,
+                },
+            },
+            "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
+            "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
+            "fermi_shift": orm.Float(self.ctx.fermi_shift),
+            "run_bands_structure": orm.Bool(True),
+            "kpoints_distance_band_structure": orm.Float(self.ctx.kpoints_distance_band_structure),
         }
 
         return inputs
 
     def run_bands_evaluation(self):
         """run bands evaluation of psp in inputs list"""
-        inputs = self._get_inputs(self.ctx.element, self.ctx.pseudos)
+        inputs = self._get_inputs(self.ctx.pseudos)
 
         running = self.submit(BandsWorkChain, **inputs)
 
