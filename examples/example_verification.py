@@ -74,6 +74,9 @@ if __name__ == "__main__":
         if property in sys.argv[2:]:
             properties_list.append(property)
 
+    if not sys.argv[2:]:
+        properties_list = DEFAULT_PROPERTIES_LIST
+
     pw_code = load_code("pw-6.7@localhost")
     ph_code = load_code("ph-6.7@localhost")
 

@@ -176,19 +176,19 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         inputs = {
+            "metadata": {"call_link_label": "pressure_ref_EOS"},
             "structure": self.ctx.structure,
             "kpoints_distance": orm.Float(self._KDISTANCE),
             "scale_count": orm.Int(self._EOS_SCALE_COUNT),
             "scale_increment": orm.Float(self._EOS_SCALE_INCREMENT),
-            "metadata": {"call_link_label": "EOS"},
-            "scf": {
-                "pw": {
-                    "code": self.inputs.code,
-                    "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=parameters),
-                    "metadata": {"options": self.ctx.options},
-                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            "pw": {
+                "code": self.inputs.code,
+                "pseudos": self.ctx.pseudos,
+                "parameters": orm.Dict(dict=parameters),
+                "metadata": {
+                    "options": self.ctx.options
                 },
+                "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
         }
 

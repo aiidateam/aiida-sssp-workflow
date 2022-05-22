@@ -94,16 +94,17 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
         # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE
         # parentatheses means not supported yet.
-        self.ctx.structures = {}
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
-            configuration_list = self._UNARIE_CONFIGURATIONS
+            self.ctx.configuration_list = self._UNARIE_CONFIGURATIONS
         else:
-            configuration_list = (
+            self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
             )
 
-        for configuration in configuration_list:
+        # set structures
+        self.ctx.structures = {}
+        for configuration in self.ctx.configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
                 element,
                 prop="delta",
@@ -127,7 +128,8 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
         # set configuration list for rare earth
         self.ctx.structures = {}
-        for configuration in self._OXIDE_CONFIGURATIONS + ["RE"]:
+        self.ctx.configuration_list = self._OXIDE_CONFIGURATIONS + ["RE"]
+        for configuration in self.ctx.configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
                 self.ctx.element,
                 prop="delta",
@@ -269,9 +271,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         """calculate the delta factor"""
         output_parameters = {}
 
-        for configuration in (
-            self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS + ["RE"]
-        ):
+        for configuration in self.ctx.configuration_list:
             try:
                 output = self.outputs[configuration].get("output_parameters")
             except KeyError:
