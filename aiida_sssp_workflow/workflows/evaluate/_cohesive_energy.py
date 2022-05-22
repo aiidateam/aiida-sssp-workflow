@@ -4,10 +4,10 @@ A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
 from aiida import orm
-from aiida.engine import WorkChain, append_, calcfunction
+from aiida.engine import append_, calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
-from aiida_sssp_workflow.utils import update_dict
+from . import _BaseEvaluateWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 UpfData = DataFactory("pseudo.upf")
@@ -39,7 +39,7 @@ def create_isolate_atom(
     return structure
 
 
-class CohesiveEnergyWorkChain(WorkChain):
+class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
     @classmethod
@@ -47,37 +47,24 @@ class CohesiveEnergyWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
-                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('structure', valid_type=orm.StructureData,
                     help='Ground state structure which the verification perform')
-        spec.input('bulk_parameters', valid_type=orm.Dict,
-                    help='parameters for pwscf of bulk calculation.')
+        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
+                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
         spec.input('atom_parameters', valid_type=orm.Dict,
                     help='parameters for pwscf of atom calculation for each element in structure.')
-        spec.input('ecutwfc', valid_type=orm.Int,
-                    help='The ecutwfc set for both atom and bulk calculation. Please also set ecutrho if ecutwfc is set.')
-        spec.input('ecutrho', valid_type=orm.Int,
-                    help='The ecutrho set for both atom and bulk calculation.  Please also set ecutwfc if ecutrho is set.')
-        spec.input('kpoints_distance', valid_type=orm.Float,
-                    help='Kpoints distance setting for bulk energy calculation.')
         spec.input('vacuum_length', valid_type=orm.Float,
                     help='The length of cubic cell in isolate atom calculation.')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
+        spec.expose_inputs(PwBaseWorkflow, namespace="bulk", exclude=["pw.structure", "pw.pseudos"])
+        spec.expose_inputs(PwBaseWorkflow, namespace="atom", exclude=["pw.structure", "pw.pseudos"])
 
         spec.outline(
-            cls.setup_base_parameters,
             cls.validate_structure,
-            cls.setup_code_resource_options,
             cls.run_energy,
             cls.inspect_energy,
             cls.finalize,
         )
+
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include cohesive energy of the structure.')
         spec.exit_code(211, 'ERROR_SUB_PROCESS_FAILED_ATOM_ENERGY',
@@ -85,26 +72,6 @@ class CohesiveEnergyWorkChain(WorkChain):
         spec.exit_code(212, 'ERROR_SUB_PROCESS_FAILED_BULK_ENERGY',
                     message='PwBaseWorkChain of bulk structure energy evaluation failed with exit status.')
         # yapf: enable
-
-    def setup_base_parameters(self):
-        """Input validation"""
-        bulk_parameters = self.inputs.bulk_parameters.get_dict()
-        atom_parameters = self.inputs.atom_parameters.get_dict()
-
-        parameters = {
-            "SYSTEM": {
-                "ecutwfc": self.inputs.ecutwfc.value,
-                "ecutrho": self.inputs.ecutrho.value,
-            },
-        }
-        bulk_parameters = update_dict(bulk_parameters, parameters)
-        for key in atom_parameters.keys():
-            atom_parameters[key] = update_dict(atom_parameters[key], parameters)
-
-        self.ctx.bulk_parameters = bulk_parameters
-        self.ctx.atom_parameters = atom_parameters
-
-        self.ctx.kpoints_distance = self.inputs.kpoints_distance
 
     def validate_structure(self):
         """Create isolate atom and validate structure"""
@@ -127,30 +94,6 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.ctx.d_element_structure = dict_element_and_structure
         self.ctx.d_element_count = dict_element_and_count
 
-    def setup_code_resource_options(self):
-        """
-        setup resource options and parallelization for `PwCalculation` from inputs
-        """
-        if "options" in self.inputs:
-            self.ctx.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            self.ctx.options = get_default_options(with_mpi=True)
-
-        if "parallelization" in self.inputs:
-            self.ctx.parallelization = self.inputs.parallelization.get_dict()
-            self.ctx.atomic_parallelization = self.inputs.parallelization.get_dict()
-        else:
-            self.ctx.atomic_parallelization = self.ctx.parallelization = {}
-
-        # atomic parallelization always set npool to 1 since only one kpoints
-        # requires no k parallel
-        self.ctx.atomic_parallelization.update({"npool": 1})
-
-        self.logger.info(f"resource options set to {self.ctx.options}")
-        self.logger.info(f"parallelization options set to {self.ctx.parallelization}")
-
     @staticmethod
     def _get_pseudo(element, pseudos):
         """
@@ -168,20 +111,9 @@ class CohesiveEnergyWorkChain(WorkChain):
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
-        bulk_inputs = {
-            "metadata": {"call_link_label": "bulk_scf"},
-            "pw": {
-                "structure": self.inputs.structure,
-                "code": self.inputs.code,
-                "pseudos": self.ctx.pseudos,
-                "parameters": orm.Dict(dict=self.ctx.bulk_parameters),
-                "metadata": {
-                    "options": self.ctx.options,
-                },
-                "parallelization": orm.Dict(dict=self.ctx.parallelization),
-            },
-            "kpoints_distance": self.ctx.kpoints_distance,
-        }
+        bulk_inputs = self.exposed_inputs(PwBaseWorkflow, namespace="bulk")
+        bulk_inputs["pw"]["structure"] = self.inputs.structure
+        bulk_inputs["pw"]["pseudos"] = self.inputs.pseudos
 
         running_bulk_energy = self.submit(PwBaseWorkflow, **bulk_inputs)
         self.report(
@@ -190,25 +122,15 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.to_context(workchain_bulk_energy=running_bulk_energy)
 
         for element, structure in self.ctx.d_element_structure.items():
-            atom_kpoints = orm.KpointsData()
-            atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
-            atom_inputs = {
-                "metadata": {"call_link_label": "atom_scf"},
-                "pw": {
-                    "structure": structure,
-                    "code": self.inputs.code,
-                    "pseudos": {
-                        element: self._get_pseudo(element, self.inputs.pseudos),
-                    },
-                    "parameters": orm.Dict(dict=self.ctx.atom_parameters[element]),
-                    "metadata": {
-                        "options": self.ctx.options,
-                    },
-                    "parallelization": orm.Dict(dict=self.ctx.atomic_parallelization),
-                },
-                "kpoints": atom_kpoints,
+            atom_inputs = self.exposed_inputs(PwBaseWorkflow, namespace="atom")
+            atom_inputs["pw"]["structure"] = structure
+            atom_inputs["pw"]["pseudos"] = {
+                element: self._get_pseudo(element, self.inputs.pseudos),
             }
+            atom_inputs["pw"]["parameters"] = orm.Dict(
+                dict=self.inputs.atom_parameters[element]
+            )
 
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.logger.info(f"Submit atomic SCF of {element}.")
@@ -227,6 +149,13 @@ class CohesiveEnergyWorkChain(WorkChain):
 
         self.ctx.bulk_energy = workchain_bulk_energy.outputs.output_parameters["energy"]
         calc_time = workchain_bulk_energy.outputs.output_parameters["wall_time_seconds"]
+
+        self.ctx.ecutwfc = workchain_bulk_energy.inputs.pw.parameters["SYSTEM"][
+            "ecutwfc"
+        ]
+        self.ctx.ecutrho = workchain_bulk_energy.inputs.pw.parameters["SYSTEM"][
+            "ecutrho"
+        ]
 
         element_energy = {}
         for child in self.ctx.workchain_atom_children:
@@ -250,7 +179,6 @@ class CohesiveEnergyWorkChain(WorkChain):
         self.ctx.element_energy = element_energy
 
     def finalize(self):
-        """result"""
         num_of_atoms = sum(self.ctx.d_element_count.values())
         cohesive_energy = self.ctx.bulk_energy
         element_energy = {}  # dict to be output for every element isolate energy
@@ -274,3 +202,5 @@ class CohesiveEnergyWorkChain(WorkChain):
         output_parameters = orm.Dict(dict=parameters_dict)
 
         self.out("output_parameters", output_parameters.store())
+        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
+        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())

@@ -8,8 +8,8 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
-from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS
-from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
+from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, update_dict
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
 UpfData = DataFactory("pseudo.upf")
@@ -49,7 +49,7 @@ def helper_bands_distence_difference(
     )
 
 
-class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
+class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -81,7 +81,7 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         self.ctx.kpoints_distance_bands = protocol["kpoints_distance_bands"]
 
         # Set context parameters
-        self.ctx.parameters = super()._get_pw_base_parameters(
+        self.ctx.pw_parameters = super()._get_pw_base_parameters(
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
@@ -89,29 +89,57 @@ class ConvergenceBandsWorkChain(BaseConvergenceWorkChain):
         self.ctx.init_nbands_factor = protocol["init_nbands_factor"]
         self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
 
-        self.logger.info(f"The atom parameters for convergence is: {self.ctx.parameters}")
+        self.logger.info(f"The parameters for convergence is: {self.ctx.pw_parameters}")
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": ecutwfc,
+                "ecutrho": ecutrho,
+            },
+        }
+
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
+
+        parameters_bands = parameters.copy()
+        parameters_bands["SYSTEM"]["nosym"] = True    # TODO:
+        parameters_bands["SYSTEM"].pop("nbnd", None)
+
         inputs = {
-            "code": self.inputs.pw_code,
-            "pseudos": self.ctx.pseudos,
             "structure": self.ctx.structure,
-            "pw_base_parameters": orm.Dict(dict=self.ctx.parameters),
-            "ecutwfc": orm.Int(ecutwfc),
-            "ecutrho": orm.Int(ecutrho),
-            "kpoints_distance_scf": orm.Float(self.ctx.kpoints_distance_scf),
+            "scf": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": self.ctx.pseudos,
+                    "parameters": orm.Dict(dict=parameters),
+                    "metadata": {
+                        "options": self.ctx.options,
+                    },
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+                },
+                "kpoints_distance": orm.Float(self.ctx.kpoints_distance_scf),
+            },
+            "bands": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": self.ctx.pseudos,
+                    "parameters": orm.Dict(dict=parameters_bands),
+                    "metadata": {
+                        "options": self.ctx.options,
+                    },
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+                },
+            },
             "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
             "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
             "fermi_shift": orm.Float(self.ctx.fermi_shift),
-            "should_run_bands_structure": orm.Bool(
+            "run_bands_structure": orm.Bool(
                 False
-            ),  # for convergence no band structure evaluate
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            ),  # for convergence with no band structure evaluate
         }
 
         return inputs

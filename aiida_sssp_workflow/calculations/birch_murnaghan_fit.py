@@ -16,8 +16,8 @@ def birch_murnaghan_fit(volume_energy: orm.Dict):
     # pylint: disable=invalid-name
     import numpy as np
 
-    volumes = np.array(list(volume_energy["volumes"].values()))
-    energies = np.array(list(volume_energy["energies"].values()))
+    volumes = np.array(volume_energy["volumes"])
+    energies = np.array(volume_energy["energies"])
     num_of_atoms = volume_energy["num_of_atoms"]
     fitdata = np.polyfit(volumes ** (-2.0 / 3.0), energies, 3, full=True)
 

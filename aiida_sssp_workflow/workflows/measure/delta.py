@@ -13,19 +13,19 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
     update_dict,
 )
-from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
     get_pseudo_N,
     get_pseudo_O,
 )
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
+from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaMeasureWorkChain(SelfCleanWorkChain):
+class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
     # pylint: disable=too-many-instance-attributes
@@ -38,25 +38,12 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('pw_code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo', valid_type=UpfData, required=True,
-                    help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, required=True,
-                    help='The protocol which define input calculation parameters.')
-        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('standard'),
-                    help='The control protocol where define max_wfc.')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
 
         spec.outline(
             cls.init_setup,
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element, ),
             cls.setup_pw_parameters_from_protocol,
-            cls.setup_pw_resource_options,
             cls.run_delta,
             cls.inspect_delta,
             cls.finalize,
@@ -107,16 +94,17 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
 
         # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE
         # parentatheses means not supported yet.
-        self.ctx.structures = {}
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
-            configuration_list = self._UNARIE_CONFIGURATIONS
+            self.ctx.configuration_list = self._UNARIE_CONFIGURATIONS
         else:
-            configuration_list = (
+            self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
             )
 
-        for configuration in configuration_list:
+        # set structures
+        self.ctx.structures = {}
+        for configuration in self.ctx.configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
                 element,
                 prop="delta",
@@ -140,7 +128,8 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
 
         # set configuration list for rare earth
         self.ctx.structures = {}
-        for configuration in self._OXIDE_CONFIGURATIONS + ["RE"]:
+        self.ctx.configuration_list = self._OXIDE_CONFIGURATIONS + ["RE"]
+        for configuration in self.ctx.configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
                 self.ctx.element,
                 prop="delta",
@@ -184,22 +173,6 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
 
         self.logger.info(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
 
-    def setup_pw_resource_options(self):
-        """
-        setup resource options and parallelization for `PwCalculation` from inputs
-        """
-        if "options" in self.inputs:
-            self.ctx.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            self.ctx.options = get_default_options(with_mpi=True)
-
-        if "parallelization" in self.inputs:
-            self.ctx.parallelization = self.inputs.parallelization.get_dict()
-        else:
-            self.ctx.parallelization = {}
-
     def _get_inputs(self, structure, configuration):
         if configuration in OXIDES_CONFIGURATIONS:
             # pseudos for oxides
@@ -226,20 +199,33 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
             pw_parameters = update_dict(parameters, self.ctx.pw_nitride_parameters)
             kpoints_distance = self.ctx.kpoints_distance + 1
 
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": round(self.ctx.ecutwfc),
+                "ecutrho": round(self.ctx.ecutrho),
+            },
+        }
+        parameters = update_dict(parameters, pw_parameters)
+
         inputs = {
-            "code": self.inputs.pw_code,
-            "pseudos": pseudos,
-            "structure": structure,
-            "element": orm.Str(self.ctx.element),  # _base wf hold attribute `element`
+            "eos": {
+                "metadata": {"call_link_label": "delta_EOS"},
+                "structure": structure,
+                "kpoints_distance": orm.Float(kpoints_distance),
+                "scale_count": orm.Int(self.ctx.scale_count),
+                "scale_increment": orm.Float(self.ctx.scale_increment),
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": pseudos,
+                    "parameters": orm.Dict(dict=parameters),
+                    "metadata": {
+                        "options": self.inputs.options.get_dict(),
+                    },
+                    "parallelization": self.inputs.parallelization,
+                },
+            },
+            "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(configuration),
-            "pw_base_parameters": orm.Dict(dict=pw_parameters),
-            "ecutwfc": orm.Int(self.ctx.ecutwfc),
-            "ecutrho": orm.Int(self.ctx.ecutrho),
-            "kpoints_distance": orm.Float(kpoints_distance),
-            "scale_count": orm.Int(self.ctx.scale_count),
-            "scale_increment": orm.Float(self.ctx.scale_increment),
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
         }
 
         return inputs
@@ -285,9 +271,7 @@ class DeltaMeasureWorkChain(SelfCleanWorkChain):
         """calculate the delta factor"""
         output_parameters = {}
 
-        for configuration in (
-            self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS + ["RE"]
-        ):
+        for configuration in self.ctx.configuration_list:
             try:
                 output = self.outputs[configuration].get("output_parameters")
             except KeyError:

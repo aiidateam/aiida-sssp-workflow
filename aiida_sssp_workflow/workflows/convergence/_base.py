@@ -43,7 +43,7 @@ class abstract_attribute(object):
             '%s does not set the abstract attribute <unknown>', type.__name__)
 
 
-class BaseConvergenceWorkChain(SelfCleanWorkChain):
+class _BaseConvergenceWorkChain(SelfCleanWorkChain):
     """Base legacy workchain"""
     # pylint: disable=too-many-instance-attributes
     __metaclass__ = ABCMeta
@@ -60,7 +60,7 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
+        spec.input('code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
@@ -539,8 +539,8 @@ class BaseConvergenceWorkChain(SelfCleanWorkChain):
             d_output_parameters[key] = value
 
         for child_node in success_children:
-            ecutwfc_list.append(child_node.inputs.ecutwfc.value)
-            ecutrho_list.append(child_node.inputs.ecutrho.value)
+            ecutwfc_list.append(child_node.outputs.ecutwfc.value)
+            ecutrho_list.append(child_node.outputs.ecutrho.value)
 
             res = self.helper_compare_result_extract_fun(child_node,
                                                     reference_node, **kwargs)

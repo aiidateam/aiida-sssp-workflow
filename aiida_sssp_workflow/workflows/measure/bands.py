@@ -17,12 +17,12 @@ from aiida_sssp_workflow.utils import (
     reset_pseudos_for_magnetic,
     update_dict,
 )
-from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
     get_pseudo_N,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
+from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
 
 UpfData = DataFactory('pseudo.upf')
 
@@ -35,7 +35,7 @@ def validate_input_pseudos(d_pseudos, _):
         return f'The pseudos corespond to different elements {element}.'
 
 
-class BandsMeasureWorkChain(SelfCleanWorkChain):
+class BandsMeasureWorkChain(_BaseMeasureWorkChain):
     """
     WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
@@ -45,20 +45,8 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
-        super().define(spec)
         # yapf: disable
-        spec.input('pw_code', valid_type=orm.Code,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('pseudo', valid_type=UpfData, required=True,
-                    help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str, required=True,
-                    help='The protocol which define input calculation parameters.')
-        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('standard'),
-                    help='The control protocol where define max_wfc.')
-        spec.input('options', valid_type=orm.Dict, required=False,
-                    help='Optional `options` to use for the `PwCalculations`.')
-        spec.input('parallelization', valid_type=orm.Dict, required=False,
-                    help='Parallelization options for the `PwCalculations`.')
+        super().define(spec)
 
         spec.outline(
             cls.init_setup,
@@ -68,7 +56,6 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element, ),
             cls.setup_pw_parameters_from_protocol,
-            cls.setup_pw_resource_options,
             cls.run_bands_evaluation,
             cls.finalize,
         )
@@ -119,8 +106,9 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
         self.ctx.pseudos['N'] = pseudo_N
         pseudo_RE = self.inputs.pseudo
         nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
-        self.ctx.extra_pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
+        pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
 
+        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, pw_parameters)
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -161,7 +149,6 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
             },
         }
 
-        # TBD: Always use dual=8 since pseudo_O here is non-NC
         self.ctx.ecutwfc = self._ECUTWFC
         self.ctx.ecutrho = self._ECUTWFC * 8
 
@@ -171,51 +158,59 @@ class BandsMeasureWorkChain(SelfCleanWorkChain):
             f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
         )
 
-    def setup_pw_resource_options(self):
-        """
-        setup resource options and parallelization for `PwCalculation` from inputs
-        """
-        if "options" in self.inputs:
-            self.ctx.options = self.inputs.options.get_dict()
-        else:
-            from aiida_sssp_workflow.utils import get_default_options
-
-            self.ctx.options = get_default_options(with_mpi=True)
-
-        if "parallelization" in self.inputs:
-            self.ctx.parallelization = self.inputs.parallelization.get_dict()
-        else:
-            self.ctx.parallelization = {}
-
-    def _get_inputs(self, element, pseudos):
+    def _get_inputs(self, pseudos):
         """
         get inputs for the bands evaluation with given pseudo
         """
-        # if element in RARE_EARTH_ELEMENTS:
-        #     pseudos['N'] = self.ctx.pseudo_N
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": round(self.ctx.ecutwfc),
+                "ecutrho": round(self.ctx.ecutrho),
+            },
+        }
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
+
+        parameters_bands = parameters.copy()
+        parameters_bands["SYSTEM"]["nosym"] = True    # TODO: to be removed
+        parameters_bands["SYSTEM"].pop("nbnd", None)
 
         inputs = {
-            'code': self.inputs.pw_code,
-            'pseudos': pseudos,
-            'structure': self.ctx.structure,
-            'pw_base_parameters': orm.Dict(dict=self.ctx.pw_parameters),
-            'ecutwfc': orm.Int(self.ctx.ecutwfc),
-            'ecutrho': orm.Int(self.ctx.ecutrho),
-            'kpoints_distance_scf': orm.Float(self.ctx.kpoints_distance_scf),
-            'kpoints_distance_bands': orm.Float(self.ctx.kpoints_distance_bands),
-            'kpoints_distance_band_structure': orm.Float(self.ctx.kpoints_distance_band_structure),
-            'init_nbands_factor': orm.Float(self.ctx.init_nbands_factor),
-            'fermi_shift': orm.Float(self.ctx.fermi_shift),
-            'should_run_bands_structure': orm.Bool(True),
-            'options': orm.Dict(dict=self.ctx.options),
-            'parallelization': orm.Dict(dict=self.ctx.parallelization),
+            "structure": self.ctx.structure,
+            "scf": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": pseudos,
+                    "parameters": orm.Dict(dict=parameters),
+                    "metadata": {
+                        "options": self.inputs.options.get_dict(),
+                    },
+                    "parallelization": self.inputs.parallelization,
+                },
+                "kpoints_distance": orm.Float(self.ctx.kpoints_distance_scf),
+            },
+            "bands": {
+                "pw": {
+                    "code": self.inputs.code,
+                    "pseudos": pseudos,
+                    "parameters": orm.Dict(dict=parameters_bands),
+                    "metadata": {
+                        "options": self.inputs.options.get_dict(),
+                    },
+                    "parallelization": self.inputs.parallelization,
+                },
+            },
+            "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
+            "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
+            "fermi_shift": orm.Float(self.ctx.fermi_shift),
+            "run_bands_structure": orm.Bool(True),
+            "kpoints_distance_band_structure": orm.Float(self.ctx.kpoints_distance_band_structure),
         }
 
         return inputs
 
     def run_bands_evaluation(self):
         """run bands evaluation of psp in inputs list"""
-        inputs = self._get_inputs(self.ctx.element, self.ctx.pseudos)
+        inputs = self._get_inputs(self.ctx.pseudos)
 
         running = self.submit(BandsWorkChain, **inputs)
 

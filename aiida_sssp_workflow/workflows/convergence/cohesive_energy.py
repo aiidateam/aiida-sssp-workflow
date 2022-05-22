@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
 )
@@ -37,7 +37,7 @@ def helper_cohesive_energy_difference(
     return orm.Dict(dict=res)
 
 
-class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
+class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on cohisive energy of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -137,18 +137,55 @@ class ConvergenceCohesiveEnergyWorkChain(BaseConvergenceWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
+        update_parameters = {
+            "SYSTEM": {
+                "ecutwfc": ecutwfc,
+                "ecutrho": ecutrho,
+            }
+        }
+        bulk_parameters = update_dict(self.ctx.bulk_parameters, update_parameters)
+
+        atom_kpoints = orm.KpointsData()
+        atom_kpoints.set_kpoints_mesh([1, 1, 1])
+
+        # atomic parallelization always set npool to 1 since only one kpoints
+        # requires no k parallel
+        atomic_parallelization = update_dict({"npool": 1}, self.ctx.parallelization)
+
+        # atom_parameters update with ecutwfc and ecutrho
+        atom_parameters = self.ctx.atom_parameters.copy()
+        for element in atom_parameters.keys():
+            atom_parameters[element] = update_dict(atom_parameters[element], update_parameters)
+
         inputs = {
-            "code": self.inputs.pw_code,
             "pseudos": self.ctx.pseudos,
             "structure": self.ctx.structure,
-            "bulk_parameters": orm.Dict(dict=self.ctx.bulk_parameters),
-            "atom_parameters": orm.Dict(dict=self.ctx.atom_parameters),
-            "ecutwfc": orm.Int(ecutwfc),
-            "ecutrho": orm.Int(ecutrho),
-            "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            "atom_parameters": orm.Dict(dict=atom_parameters),
             "vacuum_length": orm.Float(self.ctx.vacuum_length),
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            "bulk": {
+                "metadata": {"call_link_label": "bulk_scf"},
+                "pw": {
+                    "code": self.inputs.code,
+                    "parameters": orm.Dict(dict=bulk_parameters),
+                    "metadata": {
+                        "options": self.ctx.options,
+                    },
+                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+                },
+                "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            },
+            "atom": {
+                "metadata": {"call_link_label": "atom_scf"},
+                "pw": {
+                    "code": self.inputs.code,
+                    "parameters": orm.Dict(dict={}),
+                    "metadata": {
+                        "options": self.ctx.options,
+                    },
+                    "parallelization": orm.Dict(dict=atomic_parallelization),
+                },
+                "kpoints": atom_kpoints,
+            },
         }
 
         return inputs

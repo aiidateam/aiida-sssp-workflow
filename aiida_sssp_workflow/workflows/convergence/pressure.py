@@ -7,7 +7,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import update_dict
-from aiida_sssp_workflow.workflows.convergence._base import BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
 
@@ -86,7 +86,7 @@ def helper_pressure_difference(
     )
 
 
-class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
+class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on pressure of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -120,9 +120,6 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
-        # self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters,
-        #                                 self.ctx.extra_pw_parameters)
-
         self.ctx.kpoints_distance = self._KDISTANCE
 
         self.logger.info(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
@@ -132,16 +129,27 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
         get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
+        parameters = {
+            "SYSTEM": {
+                "ecutwfc": ecutwfc,
+                "ecutrho": ecutrho,
+            },
+        }
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
+
         inputs = {
-            "code": self.inputs.pw_code,
-            "pseudos": self.ctx.pseudos,
-            "structure": self.ctx.structure,
-            "pw_base_parameters": orm.Dict(dict=self.ctx.pw_parameters),
-            "ecutwfc": orm.Int(ecutwfc),
-            "ecutrho": orm.Int(ecutrho),
+            "pw": {
+                "code": self.inputs.code,
+                "structure": self.ctx.structure,
+                "pseudos": self.ctx.pseudos,
+                "parameters": orm.Dict(dict=parameters),
+                "metadata": {
+                    "call_link_label": "pressure_SCF",
+                    "options": self.ctx.options,
+                },
+                "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            },
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
-            "options": orm.Dict(dict=self.ctx.options),
-            "parallelization": orm.Dict(dict=self.ctx.parallelization),
         }
 
         return inputs
@@ -161,26 +169,26 @@ class ConvergencePressureWorkChain(BaseConvergenceWorkChain):
         ecutrho = ecutwfc * self.ctx.dual
         parameters = {
             "SYSTEM": {
-                "ecutwfc": ecutwfc,
-                "ecutrho": ecutrho,
+                "ecutwfc": round(ecutwfc),
+                "ecutrho": round(ecutrho),
             },
         }
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
+        parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         inputs = {
+            "metadata": {"call_link_label": "pressure_ref_EOS"},
             "structure": self.ctx.structure,
             "kpoints_distance": orm.Float(self._KDISTANCE),
             "scale_count": orm.Int(self._EOS_SCALE_COUNT),
             "scale_increment": orm.Float(self._EOS_SCALE_INCREMENT),
-            "metadata": {"call_link_label": "EOS"},
-            "scf": {
-                "pw": {
-                    "code": self.inputs.pw_code,
-                    "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=self.ctx.pw_parameters),
-                    "metadata": {"options": self.ctx.options},
-                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
+            "pw": {
+                "code": self.inputs.code,
+                "pseudos": self.ctx.pseudos,
+                "parameters": orm.Dict(dict=parameters),
+                "metadata": {
+                    "options": self.ctx.options
                 },
+                "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
         }
 

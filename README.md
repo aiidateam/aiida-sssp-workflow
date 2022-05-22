@@ -5,6 +5,7 @@
 The wavefunction cutoff scan list are same no matter which criteria protocol is used.
 Therefore, the running of wavefunction cutoff test write wavefunction cutoff recommendation for all criteria protocol.
 When switching to other criteria protocol, the wavefunction cutoff test can be skipped by setting `preset_ecutwfc`. It will then be used and only run charge density cutoff test.
+This is not conflict with the caching workflow, since caching workflow will only run on wfc test the results is that for caching workflow when `preset_ecutwfc` is set, only reference calculation is run.
 
 ## Lanthanides
 
