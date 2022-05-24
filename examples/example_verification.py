@@ -47,13 +47,13 @@ def run_verification(
             dict={
                 "resources": {
                     "num_machines": 1,
-                    "num_mpiprocs_per_machine": 1,
+                    "num_mpiprocs_per_machine": 2,
                 },
                 "max_wallclock_seconds": 1800 * 3,
                 "withmpi": True,
             }
         ),
-        "parallelization": orm.Dict(dict={}),
+        "parallelization": orm.Dict(dict={"npool": 2}),
         "clean_workdir_level": orm.Int(clean_level),
     }
 
