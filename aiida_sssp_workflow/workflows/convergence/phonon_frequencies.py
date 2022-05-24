@@ -21,7 +21,8 @@ def helper_phonon_frequencies_difference(
     input_parameters: orm.Dict, ref_parameters: orm.Dict
 ) -> orm.Dict:
     """
-    doc
+    The phonon frequencies are calculated at BZ boundary qpoint (1/2, 1/2, 1/2).
+    The difference between the test cutoff and reference cutoff are compared.
     """
     import numpy as np
 
@@ -35,8 +36,8 @@ def helper_phonon_frequencies_difference(
     absolute_diff = np.mean(diffs)
     absolute_max_diff = np.amax(diffs)
 
-    relative_diff = np.sqrt(np.mean((diffs / weights) ** 2)) * 100
-    relative_max_diff = np.amax(diffs / weights) * 100
+    relative_diff = np.sqrt(np.mean((diffs / weights) ** 2))
+    relative_max_diff = np.amax(diffs / weights)
 
     return orm.Dict(
         dict={
