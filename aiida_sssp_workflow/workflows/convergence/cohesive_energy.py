@@ -152,7 +152,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         # requires no k parallel
         atomic_parallelization = self.ctx.parallelization.copy()
         atomic_parallelization.pop("npool", None)
+        atomic_parallelization.pop("ndiag", None)
         atomic_parallelization = update_dict(atomic_parallelization, {"npool": 1})
+        atomic_parallelization = update_dict(atomic_parallelization, {"ndiag": 1})
 
         # atom_parameters update with ecutwfc and ecutrho
         atom_parameters = self.ctx.atom_parameters.copy()

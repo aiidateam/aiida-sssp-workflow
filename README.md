@@ -70,7 +70,13 @@ The following extra parameters are added for the calculation:
 },
 ```
 
-## Resource options and parallelzation
+## Resource options and parallelization
+
+## parallelization for atomic calculation
+
+In case of atomic calculation running on a machine with too many CPUs,
+the `npool` and `ndiag` is explicitly set to 1 for atomic calculation.
+Since there is only one kpoint in atomic case, there is no efficient lost of this parallelization setting.
 
 ### Walltime settings
 
