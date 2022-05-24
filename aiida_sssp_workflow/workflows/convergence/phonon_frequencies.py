@@ -18,15 +18,38 @@ UpfData = DataFactory("pseudo.upf")
 
 @calcfunction
 def helper_phonon_frequencies_difference(
-    input_parameters: orm.Dict, ref_parameters: orm.Dict
+    element: orm.Str, input_parameters: orm.Dict, ref_parameters: orm.Dict
 ) -> orm.Dict:
     """
-    doc
+    The phonon frequencies are calculated at BZ boundary qpoint (1/2, 1/2, 1/2).
+    The difference between the test cutoff and reference cutoff are compared.
+
+    For some elements, we have neglected the first n frequencies in the summation above,
+    because the frequencies are negative and/or with strong oscillations as
+    function of the cutoff for all the considered pseudos).
+    We have neglected the first 4 frequencies for H and I, 12 for N and Cl,
+    6 for O and ??SiF4 (which replaces F)??.
     """
     import numpy as np
 
     input_frequencies = input_parameters["dynamical_matrix_0"]["frequencies"]
     ref_frequencies = ref_parameters["dynamical_matrix_0"]["frequencies"]
+
+    # set strat_idx the idx of frequencies start to count
+    element = element.value
+    if element == 'N' or element == 'Cl':
+        start_idx = 12
+    elif element == 'H' or element == 'I':
+        start_idx = 4
+    elif element == 'O':
+        start_idx = 6
+    else:
+        start_idx = 0
+
+    input_frequencies = input_frequencies[start_idx:]
+    ref_frequencies = ref_frequencies[start_idx:]
+
+    # calculate the diff
     diffs = np.array(input_frequencies) - np.array(ref_frequencies)
     weights = np.array(ref_frequencies)
 
@@ -35,8 +58,8 @@ def helper_phonon_frequencies_difference(
     absolute_diff = np.mean(diffs)
     absolute_max_diff = np.amax(diffs)
 
-    relative_diff = np.sqrt(np.mean((diffs / weights) ** 2)) * 100
-    relative_max_diff = np.amax(diffs / weights) * 100
+    relative_diff = np.sqrt(np.mean((diffs / weights) ** 2))
+    relative_max_diff = np.amax(diffs / weights)
 
     return orm.Dict(
         dict={
@@ -204,5 +227,5 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         reference_output = reference_node.outputs.output_parameters
 
         return helper_phonon_frequencies_difference(
-            sample_output, reference_output
+            orm.Str(self.ctx.element), sample_output, reference_output
         ).get_dict()

@@ -27,7 +27,10 @@ Since the magnitude of pressure (P = 1/3 Tr(sigma)) directly output from DFT cal
 We convert it into an equivalent volume.
 This what we call it residual volume is therefore a stiffness-agnostic value that can be used to set criteria for all elements.
 
-## bands distance compare specitication
+## Phonon frequencies specification
+
+For some elements, we have neglected the first n frequencies in the summation above, because the frequencies are negative and/or with strong oscillations as function of the cutoff for all the considered pseudos). We have neglected the first 4 frequencies for H and I, 12 for N and Cl, 6 for O and ??SiF4 (which replaces F)??.
+## bands distance compare specification
 
 ### bands distance of magnetic structures
 

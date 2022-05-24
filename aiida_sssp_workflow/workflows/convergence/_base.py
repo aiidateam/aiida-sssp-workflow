@@ -413,7 +413,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 self.ctx.output_parameters['precheck'] = {
                     'exit_status': -300,
                     'message': f"Damn, Super hard pseudo. Under 2 times strict criteria 200 ry not converged.",
-                    'cutoff': res_strict['value'].value,
+                    'value': res_strict['value'].value,
                     'bounds': precision_criteria['bounds']
                 }
 
@@ -422,7 +422,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 self.ctx.output_parameters['precheck'] = {
                     'exit_status': 200,
                     'message': 'Good, 200 Ry should be used as reference.',
-                    'cutoff': res_strict['value'].value,
+                    'value': res_strict['value'].value,
                     'bounds': precision_criteria['bounds']
                 }
 
@@ -431,7 +431,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                     self.ctx.output_parameters['precheck'] = {
                         'exit_status': -150,
                         'message': 'Bad, hard pseudo, 150 Ry not converged yet.',
-                        'cutoff': res_normal['value'].value,
+                        'value': res_normal['value'].value,
                         'bounds': precision_criteria['bounds']
                     }
 
@@ -442,7 +442,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 self.ctx.output_parameters['precheck'] = {
                     'exit_status': 150,
                     'message': 'Better, 150 Ry can be used as reference.',
-                    'cutoff': res_strict['value'].value,
+                    'value': res_strict['value'].value,
                     'bounds': precision_criteria['bounds']
                 }
 
