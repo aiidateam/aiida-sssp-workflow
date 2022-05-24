@@ -150,7 +150,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
 
         # atomic parallelization always set npool to 1 since only one kpoints
         # requires no k parallel
-        atomic_parallelization = update_dict({"npool": 1}, self.ctx.parallelization)
+        atomic_parallelization = self.ctx.parallelization.copy()
+        atomic_parallelization.pop("npool", None)
+        atomic_parallelization = update_dict(atomic_parallelization, {"npool": 1})
 
         # atom_parameters update with ecutwfc and ecutrho
         atom_parameters = self.ctx.atom_parameters.copy()
