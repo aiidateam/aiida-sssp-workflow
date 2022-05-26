@@ -42,7 +42,7 @@ merge eigenvalues (sorted) of the same kpoints.
 
 There are three kinds of kpoint distance (`kpoints_distance_scf`, `kpoints_distance_bands` and `kpoints_distance_band_strcuture` respectively) for bands measure workflow and two for bands distance convergence workflow where the band structure is not calculated in convergence verification.
 
-In the production protocol, the `kpoints_distance_bands` is set to `0.1`.
+In the production protocol, `kpoints_distance_scf` and `kpoints_distance_bands` are set to `0.15`.
 We choose a uniform k-grid for bands distance comparison,
 in the full Brillouin zone and with symmetry reduction which not implemented in previous version.
 After applying symmetry reduction, it is able to compute with more dense grids.
