@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Reuse the pure python translate from Nicola's F77 code
-Copy and paste from Austin's repository:
+Adapt from Austin's repository:
 https://github.com/zooks97/bieFermi/tree/main/bieFermi/py
 """
 

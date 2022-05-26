@@ -17,20 +17,29 @@ UpfData = DataFactory("pseudo.upf")
 
 @calcfunction
 def helper_bands_distence_difference(
-    bands_structure_a: orm.BandsData,
-    bands_parameters_a: orm.Dict,
-    bands_structure_b: orm.BandsData,
-    bands_parameters_b: orm.Dict,
+    band_structure_a: orm.BandsData,
+    band_parameters_a: orm.Dict,
+    band_structure_b: orm.BandsData,
+    band_parameters_b: orm.Dict,
     smearing: orm.Float,
     fermi_shift: orm.Float,
     do_smearing: orm.Bool,
 ):
     """doc"""
+    # `get_bands_distance` require the less electrons results pass
+    # to inputs of label 'a', do swap a and b if not.
+    num_electrons_a = band_parameters_a["number_of_electrons"]
+    num_electrons_b = band_parameters_b["number_of_electrons"]
+
+    if num_electrons_a > num_electrons_b:
+        band_parameters_a, band_parameters_b = band_parameters_b, band_parameters_a
+        band_structure_a, band_structure_b = band_structure_b, band_structure_a
+
     res = get_bands_distance(
-        bands_structure_a,
-        bands_structure_b,
-        bands_parameters_a,
-        bands_parameters_b,
+        band_structure_a,
+        band_structure_b,
+        band_parameters_a,
+        band_parameters_b,
         smearing.value,
         fermi_shift.value,
         do_smearing.value,
@@ -106,7 +115,6 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         parameters_bands = parameters.copy()
-        parameters_bands["SYSTEM"]["nosym"] = True    # TODO:
         parameters_bands["SYSTEM"].pop("nbnd", None)
 
         inputs = {
@@ -146,18 +154,18 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
     def helper_compare_result_extract_fun(self, sample_node, reference_node, **kwargs):
         """implement"""
-        sample_bands_output = sample_node.outputs["bands"].band_parameters
-        reference_bands_output = reference_node.outputs["bands"].band_parameters
+        sample_band_parameters = sample_node.outputs["bands"].band_parameters
+        reference_band_parameters = reference_node.outputs["bands"].band_parameters
 
-        sample_bands_structure = sample_node.outputs["bands"].band_structure
-        reference_bands_structure = reference_node.outputs["bands"].band_structure
+        sample_band_structure = sample_node.outputs["bands"].band_structure
+        reference_band_structure = reference_node.outputs["bands"].band_structure
 
         # Always process smearing to find fermi level even for non-metal elements.
         res = helper_bands_distence_difference(
-            sample_bands_structure,
-            sample_bands_output,
-            reference_bands_structure,
-            reference_bands_output,
+            sample_band_structure,
+            sample_band_parameters,
+            reference_band_structure,
+            reference_band_parameters,
             smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
             fermi_shift=orm.Float(self.ctx.fermi_shift),
             do_smearing=orm.Bool(True),
