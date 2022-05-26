@@ -71,6 +71,7 @@ def retrieve_bands(
         nelectrons = num_electrons
         bands = np.asfortranarray(bands)
         meth = 2  # firmi-dirac smearing
+        print(sum(weights), nelectrons)
 
         output_efermi = find_efermi(bands, weights, nelectrons, smearing, meth)
         print(output_efermi)
@@ -128,8 +129,8 @@ def calculate_eta_and_max_diff(
 
     def fun_shift(occ, bands_diff, shift):
         # import ipdb; ipdb.set_trace()
-        nominator = np.multiply(weight[:, None], (occ * (bands_diff + shift) ** 2))
-        denominator = np.multiply(weight[:, None], occ)
+        nominator = np.multiply(1 / weight[:, None], (occ * (bands_diff + shift) ** 2))
+        denominator = np.multiply(1 / weight[:, None], occ)
         return np.sqrt(np.sum(nominator) / np.sum(denominator))
 
     # Compute eta
