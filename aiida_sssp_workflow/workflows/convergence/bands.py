@@ -115,8 +115,6 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         parameters_bands = parameters.copy()
-        # parameters_bands["SYSTEM"]["nosym"] = True    # TODO:
-        # parameters_bands["SYSTEM"]["noinv"] = True    # TODO:
         parameters_bands["SYSTEM"].pop("nbnd", None)
 
         inputs = {

@@ -8,7 +8,7 @@ acwf:
     smearing: fd
     electron_conv_thr: 1.0e-10
     kpoints_distance_scf: 0.10
-    kpoints_distance_bands: 0.25
+    kpoints_distance_bands: 0.10
     kpoints_distance_band_structure: 0.10
 
     init_nbands_factor: 3

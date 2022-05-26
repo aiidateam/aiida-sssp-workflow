@@ -42,15 +42,15 @@ merge eigenvalues (sorted) of the same kpoints.
 
 There are three kinds of kpoint distance (`kpoints_distance_scf`, `kpoints_distance_bands` and `kpoints_distance_band_strcuture` respectively) for bands measure workflow and two for bands distance convergence workflow where the band structure is not calculated in convergence verification.
 
-In the production protocol, the `kpoints_distance_bands` is set to `0.25` which is not so dense as scf calculation since in the bands nscf calculation the symmetry is not applied (as discussed following.) which lead to the calculation very time consuming if the number of kpoints are enourmous.
-
+In the production protocol, the `kpoints_distance_bands` is set to `0.1`.
 We choose a uniform k-grid for bands distance comparison,
-in the full Brillouin zone and with no symmetry reduction.
+in the full Brillouin zone and with symmetry reduction which not implemented in previous version.
+After applying symmetry reduction, it is able to compute with more dense grids.
 Because, choosing a high-symmetry path could result in an unsatisfactory arbitrary choice,
 as different recipes for the standardisation of paths have been introduced in the recent literature and interesting features of the band structure may occur far from the high-symmetry lines (such as Weyl points).
 A uniform mesh is also more appropriate from the point of view of electron’s nearsightedness
 if the energy eigenvalues are known on a sufficiently fine uniform k-points mesh,
-it is possible to get an exact real-space representation of the Hamiltonian in a Wannier function basis32 and then interpolate to an arbitrary fine mesh.
+it is possible to get an exact real-space representation of the Hamiltonian in a Wannier function basis and then interpolate to an arbitrary fine mesh.
 
 ## Parameters of protocol
 

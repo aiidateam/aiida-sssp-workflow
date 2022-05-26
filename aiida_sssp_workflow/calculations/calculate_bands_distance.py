@@ -71,10 +71,8 @@ def retrieve_bands(
         nelectrons = num_electrons
         bands = np.asfortranarray(bands)
         meth = 2  # firmi-dirac smearing
-        print(sum(weights), nelectrons)
 
         output_efermi = find_efermi(bands, weights, nelectrons, smearing, meth)
-        print(output_efermi)
 
     else:
         # easy to spot the efermi energy only used for non-metals of typical configurations
@@ -97,7 +95,7 @@ def calculate_eta_and_max_diff(
     smearing,
 ):
     """
-    docstring
+    calculate the difference of two bands, weight is supported
     """
     from functools import partial
 
@@ -128,7 +126,7 @@ def calculate_eta_and_max_diff(
     bands_diff = bands_a - bands_b
 
     def fun_shift(occ, bands_diff, shift):
-        # import ipdb; ipdb.set_trace()
+        # 1/w ~ degeneracy of the kpoints
         nominator = np.multiply(1 / weight[:, None], (occ * (bands_diff + shift) ** 2))
         denominator = np.multiply(1 / weight[:, None], occ)
         return np.sqrt(np.sum(nominator) / np.sum(denominator))
@@ -165,7 +163,7 @@ def get_bands_distance(
     do_smearing: bool,
 ):
     """
-    TODO docstring
+    First aligh the number of two bands, e.g tranctrate the overceed nubmer of bands
     """
     num_electrons_a = band_parameters_a["number_of_electrons"]
     num_electrons_b = band_parameters_b["number_of_electrons"]
@@ -196,7 +194,6 @@ def get_bands_distance(
     else:
         smearing_v = 0
 
-    # import ipdb; ipdb.set_trace()
     outputs = calculate_eta_and_max_diff(
         bands_a, bands_b, efermi_a, efermi_b, fermi_shift_v, smearing_v
     )
