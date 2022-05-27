@@ -7,7 +7,7 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     HIGH_DUAL_ELEMENTS,
-    OXIDES_CONFIGURATIONS,
+    OXIDE_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
     get_protocol,
@@ -32,7 +32,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
     # pylint: disable=too-many-instance-attributes
 
-    _OXIDE_CONFIGURATIONS = OXIDES_CONFIGURATIONS
+    _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
     _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["TYPICAL"]
 
     @classmethod
@@ -178,7 +178,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
     def _get_inputs(self, structure, configuration):
         element, pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
 
-        if configuration in OXIDES_CONFIGURATIONS:
+        if configuration in self._OXIDE_CONFIGURATIONS:
             # pseudos for oxides
             pseudos = self.ctx.pseudos_oxide
             pw_parameters = self.ctx.pw_parameters
@@ -186,7 +186,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             # Since non-NC oxygen pseudo is used
             ecutrho = self.ctx.ecutwfc * 8  # FIXME: check 8 for O if enough
 
-        if configuration in UNARIE_CONFIGURATIONS:
+        if configuration in self._UNARIE_CONFIGURATIONS:
             # pseudos for BCC, FCC, SC, Diamond
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters

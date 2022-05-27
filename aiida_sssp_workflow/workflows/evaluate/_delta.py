@@ -82,7 +82,7 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
         output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
 
         V0 = orm.Float(output_bmf["volume0"])
-        num_of_atoms = output_bmf["num_of_atoms"]
+        natoms = output_bmf["num_of_atoms"]
 
         inputs = {
             "element": self.inputs.element,
@@ -90,6 +90,7 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
             "V0": V0,
             "B0": orm.Float(output_bmf["bulk_modulus0"]),
             "B1": orm.Float(output_bmf["bulk_deriv0"]),
+            "natoms": orm.Int(natoms),
         }
 
         # set ecutwfc and ecutrho

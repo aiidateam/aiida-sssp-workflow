@@ -13,7 +13,7 @@ from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 from aiida_sssp_workflow.utils import (
-    OXIDES_CONFIGURATIONS,
+    OXIDE_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
 )
@@ -96,7 +96,7 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         ref_json = "WIEN2K_UNARIES.json"
         conf_key = f"{element}-X/{configuration}"
 
-    if configuration in OXIDES_CONFIGURATIONS:
+    if configuration in OXIDE_CONFIGURATIONS:
         ref_json = "WIEN2K_OXIDES.json"
         conf_key = f"{element}-{configuration}"
 
