@@ -13,7 +13,7 @@ from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 from aiida_sssp_workflow.utils import (
-    OXIDES_CONFIGURATIONS,
+    OXIDE_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
 )
@@ -53,7 +53,7 @@ def helper_get_v0_b0_b1(element: str, structure: str):
 
 
 @calcfunction
-def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
+def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
@@ -81,6 +81,7 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     V0 = V0.value
     B0 = B0.value
     B1 = B1.value
+    natoms = natoms.value
     if configuration == "RE":
         assert element in RARE_EARTH_ELEMENTS
 
@@ -95,7 +96,7 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
         ref_json = "WIEN2K_UNARIES.json"
         conf_key = f"{element}-X/{configuration}"
 
-    if configuration in OXIDES_CONFIGURATIONS:
+    if configuration in OXIDE_CONFIGURATIONS:
         ref_json = "WIEN2K_OXIDES.json"
         conf_key = f"{element}-{configuration}"
 
@@ -113,9 +114,9 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     )
 
     # Delta computation
-    Delta, Deltarel, Delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
+    delta, deltarel, delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
 
-    nicola_measure = rel_errors_vec_length(
+    nu_measure = rel_errors_vec_length(
         ref_V0,
         ref_B0,
         ref_B1,
@@ -130,15 +131,18 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
 
     return orm.Dict(
         dict={
-            "delta": Delta,
-            "delta1": Delta1,
+            "delta": delta,
+            "delta1": delta1,
             "delta_unit": "meV/atom",
-            "delta_relative": Deltarel,
+            "delta_relative": deltarel,
             "delta_relative_unit": "%",
+            "natoms": natoms,
+            "delta/natoms": delta / natoms,
             "birch_murnaghan_results": [V0, B0, B1],
             "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
             "V0_B0_B1_units_info": "eV/A^3 for B0",
-            "rel_errors_vec_length": nicola_measure,
+            "rel_errors_vec_length": nu_measure,
+            "nu/atoms": nu_measure / natoms,
         }
     )
 

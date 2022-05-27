@@ -27,6 +27,13 @@ Since the magnitude of pressure (P = 1/3 Tr(sigma)) directly output from DFT cal
 We convert it into an equivalent volume.
 This what we call it residual volume is therefore a stiffness-agnostic value that can be used to set criteria for all elements.
 
+## Delta & nu factor in accuracy and convergence verificaiton
+
+In convergence delta factor calculation, the typical configurations from Cottiner's paper are used.
+To have a uniform sence of accuracy through looking at delta factor, the value is defined as delta factor per atom.
+However, since it is hard to define delta per/atom for oxides, ACWF does not use per/atom value to represent results.
+To compatible with it, the accuracy delta verification also use the structure delta.
+
 ## Phonon frequencies specification
 
 For some elements, we have neglected the first n frequencies in the summation above, because the frequencies are negative and/or with strong oscillations as function of the cutoff for all the considered pseudos). We have neglected the first 4 frequencies for H and I, 12 for N and Cl, 6 for O and ??SiF4 (which replaces F)??.

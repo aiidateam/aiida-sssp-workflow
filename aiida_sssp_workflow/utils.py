@@ -73,7 +73,7 @@ NONMETAL_ELEMENTS = [
 
 HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
 
-OXIDES_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
+OXIDE_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
 UNARIE_CONFIGURATIONS = ["BCC", "FCC", "SC", "Diamond"]
 
 
@@ -128,7 +128,12 @@ def get_standard_structure(
                 f"{base_cif_module}.typical", f"{element}N.cif"
             )
 
-        if configuration in OXIDES_CONFIGURATIONS:
+        if configuration == "TYPICAL":
+            res_path = importlib.resources.path(
+                f"{base_cif_module}.typical", f"{element}.cif"
+            )
+
+        if configuration in OXIDE_CONFIGURATIONS:
             res_path = importlib.resources.path(
                 f"{base_cif_module}.oxides", f"{element}_{configuration}.cif"
             )
