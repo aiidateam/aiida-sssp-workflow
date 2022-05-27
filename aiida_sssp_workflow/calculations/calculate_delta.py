@@ -142,7 +142,7 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
             "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
             "V0_B0_B1_units_info": "eV/A^3 for B0",
             "rel_errors_vec_length": nu_measure,
-            "nu/atoms": nu_measure / natoms,
+            "nu/natoms": nu_measure / natoms,
         }
     )
 

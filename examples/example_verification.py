@@ -54,7 +54,7 @@ def run_verification(
             }
         ),
         "parallelization": orm.Dict(dict={"npool": 2}),
-        "clean_workdir_level": orm.Int(clean_level),
+        "clean_workdir_level": orm.Int(1),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)

@@ -369,10 +369,6 @@ class VerificationWorkChain(WorkChain):
                     f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
                 )
 
-        elif clean_workdir_level == 0:
-            self.report("remote folders will not be cleaned")
-            return
-
         elif clean_workdir_level == 1:
             skip_workchains = [
                 "convergence.phonon_frequencies",
@@ -433,6 +429,11 @@ class VerificationWorkChain(WorkChain):
                 self.logger.warning(
                     "Convergence verification of phonon frequecies not run, don't clean caching."
                 )
+
+        else:
+            # clean level = 0
+            self.report("remote folders will not be cleaned")
+            return
 
     @staticmethod
     def _clean_workdir(wfnode, include_caching=True):
