@@ -187,7 +187,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             ecutrho = self.ctx.ecutwfc * 8  # FIXME: check 8 for O if enough
 
         if configuration in self._UNARIE_CONFIGURATIONS:
-            # pseudos for BCC, FCC, SC, Diamond
+            # pseudos for BCC, FCC, SC, Diamond and TYPYCAL configurations
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
@@ -299,7 +299,9 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
             output_parameters[configuration] = {
                 "delta": output["delta"],
+                "delta/natoms": output["delta/natoms"],
                 "nu": output["rel_errors_vec_length"],
+                "nu/natoms": output["nu/natoms"],
             }
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())

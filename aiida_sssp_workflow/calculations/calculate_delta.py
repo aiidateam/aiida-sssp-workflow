@@ -114,9 +114,9 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
     )
 
     # Delta computation
-    Delta, Deltarel, Delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
+    delta, deltarel, delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
 
-    nicola_measure = rel_errors_vec_length(
+    nu_measure = rel_errors_vec_length(
         ref_V0,
         ref_B0,
         ref_B1,
@@ -131,17 +131,18 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
 
     return orm.Dict(
         dict={
-            "delta": Delta,
-            "delta1": Delta1,
+            "delta": delta,
+            "delta1": delta1,
             "delta_unit": "meV/atom",
-            "delta_relative": Deltarel,
+            "delta_relative": deltarel,
             "delta_relative_unit": "%",
             "natoms": natoms,
-            "delta/natoms": Delta / natoms,
+            "delta/natoms": delta / natoms,
             "birch_murnaghan_results": [V0, B0, B1],
             "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
             "V0_B0_B1_units_info": "eV/A^3 for B0",
-            "rel_errors_vec_length": nicola_measure,
+            "rel_errors_vec_length": nu_measure,
+            "nu/atoms": nu_measure / natoms,
         }
     )
 
