@@ -86,6 +86,14 @@ def parse_pseudo_type(content: str) -> str:
         match = regex.search(content)
 
         if match:
-            return match.group("pseudo_type")
+            raw_type = match.group("pseudo_type")
+            if "US" in raw_type:
+                return "us"
+            elif "NC" in raw_type:
+                return "nc"
+            elif "PAW" in raw_type:
+                return "paw"
+            else:
+                return raw_type
 
     raise ValueError(f"could not parse the pseudo_type from the UPF content: {content}")

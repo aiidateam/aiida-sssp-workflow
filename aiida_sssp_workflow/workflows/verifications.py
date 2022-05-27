@@ -150,7 +150,7 @@ class VerificationWorkChain(WorkChain):
         pp_type = pseudo_info["pp_type"]
         z_valence = pseudo_info["z_valence"]
 
-        return f"{element}/z={z_valence}/{pp_type}"
+        return f"{element}.{pp_type}.z_{z_valence}"
 
     def parse_pseudo(self):
         """parse pseudo"""
