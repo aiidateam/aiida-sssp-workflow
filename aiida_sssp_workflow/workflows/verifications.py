@@ -91,7 +91,10 @@ class VerificationWorkChain(WorkChain):
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options')
         spec.input('clean_workdir_level', valid_type=orm.Int, default=lambda: orm.Int(1),
-                    help='0 for not clean; 1 for clean finished ok workchain; 9 for clean all.')
+                    help='0 for not clean; '
+                    '1 for precheck clean finished ok workchain except bands related wf; '
+                    '2 for standard clean all finished ok workchains, but phonon will depend; '
+                    '9 for clean all.')
 
         spec.outline(
             cls.setup_code_resource_options,
@@ -371,18 +374,39 @@ class VerificationWorkChain(WorkChain):
             return
 
         elif clean_workdir_level == 1:
+            skip_workchains = [
+                "convergence.phonon_frequencies",
+                "accuracy.bands",
+                "convergence.bands",
+            ]
+            for wname, pk in self.ctx.finished_ok_wf.items():
+                if wname not in skip_workchains:
+                    node = orm.load_node(pk)
+                    cleaned_calcs = self._clean_workdir(node)
+
+                    self.report(
+                        f"These workchains are skipped to clean: {skip_workchains}"
+                    )
+
+                    for k, calcs in cleaned_calcs.items():
+                        self.report(
+                            f"cleaned remote folders of calculations {k} "
+                            f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
+                        )
+
+        elif clean_workdir_level == 2:
             # only clean finished ok work chain
-            from aiida.orm import load_node
 
             for wname, pk in self.ctx.finished_ok_wf.items():
-                node = load_node(pk)
-                cleaned_calcs = self._clean_workdir(node)
+                if wname not in ["convergence.phonon_frequencies"]:
+                    node = orm.load_node(pk)
+                    cleaned_calcs = self._clean_workdir(node)
 
-                for k, calcs in cleaned_calcs.items():
-                    self.report(
-                        f"cleaned remote folders of calculations {k} "
-                        f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
-                    )
+                    for k, calcs in cleaned_calcs.items():
+                        self.report(
+                            f"cleaned remote folders of calculations {k} "
+                            f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
+                        )
 
             # clean the caching workdir only when phonon_frequencies sub-workflow is finished_ok
             phonon_convergence_workchain = self.ctx.workchains.get(
