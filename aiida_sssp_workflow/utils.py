@@ -128,6 +128,11 @@ def get_standard_structure(
                 f"{base_cif_module}.typical", f"{element}N.cif"
             )
 
+        if configuration == "TYPICAL":
+            res_path = importlib.resources.path(
+                f"{base_cif_module}.typical", f"{element}.cif"
+            )
+
         if configuration in OXIDES_CONFIGURATIONS:
             res_path = importlib.resources.path(
                 f"{base_cif_module}.oxides", f"{element}_{configuration}.cif"

@@ -33,7 +33,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
     # pylint: disable=too-many-instance-attributes
 
     _OXIDE_CONFIGURATIONS = OXIDES_CONFIGURATIONS
-    _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS
+    _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["TYPICAL"]
 
     @classmethod
     def define(cls, spec):
