@@ -53,7 +53,7 @@ def helper_get_v0_b0_b1(element: str, structure: str):
 
 
 @calcfunction
-def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
+def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
     """
     The calcfunction calculate the delta factor.
     return delta factor with unit (eV/atom)
@@ -81,6 +81,7 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
     V0 = V0.value
     B0 = B0.value
     B1 = B1.value
+    natoms = natoms.value
     if configuration == "RE":
         assert element in RARE_EARTH_ELEMENTS
 
@@ -135,6 +136,8 @@ def delta_analyze(element, configuration, V0, B0, B1) -> orm.Dict:
             "delta_unit": "meV/atom",
             "delta_relative": Deltarel,
             "delta_relative_unit": "%",
+            "natoms": natoms,
+            "delta/natoms": Delta / natoms,
             "birch_murnaghan_results": [V0, B0, B1],
             "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
             "V0_B0_B1_units_info": "eV/A^3 for B0",

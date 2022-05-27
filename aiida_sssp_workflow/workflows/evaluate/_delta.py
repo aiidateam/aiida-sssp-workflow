@@ -82,6 +82,7 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
         output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
 
         V0 = orm.Float(output_bmf["volume0"])
+        num_of_atoms = output_bmf["num_of_atoms"]
 
         inputs = {
             "element": self.inputs.element,
