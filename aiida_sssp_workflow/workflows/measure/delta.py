@@ -7,11 +7,14 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     HIGH_DUAL_ELEMENTS,
+    MAGNETIC_ELEMENTS,
     OXIDE_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
+    get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
+    reset_pseudos_for_magnetic,
     update_dict,
 )
 from aiida_sssp_workflow.workflows.common import (
@@ -43,8 +46,12 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
         spec.outline(
             cls.init_setup,
+            if_(cls.is_magnetic_element)(
+                cls.extra_setup_for_magnetic_element,
+            ),
             if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element, ),
+                cls.extra_setup_for_rare_earth_element,
+            ),
             cls.setup_pw_parameters_from_protocol,
             cls.run_delta,
             cls.inspect_delta,
@@ -112,6 +119,26 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 prop="delta",
                 configuration=configuration,
             )
+
+    def is_magnetic_element(self):
+        """Check if the element is magnetic"""
+        return self.ctx.element in MAGNETIC_ELEMENTS
+
+    def extra_setup_for_magnetic_element(self):
+        """
+        Extra setup for magnetic element, set starting magnetization
+        and reset pseudos to correspont elements name.
+        """
+        (
+            self.ctx.structures["TYPICAL"],
+            self.ctx.pw_magnetic_parameters,
+        ) = get_magnetic_inputs(self.ctx.structures["TYPICAL"])
+
+        # override pseudos setting
+        # required for O, Mn, Cr where the kind names varies for sites
+        self.ctx.pseudos_magnetic = reset_pseudos_for_magnetic(
+            self.inputs.pseudo, self.ctx.structures["TYPICAL"]
+        )
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
@@ -186,7 +213,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             # Since non-NC oxygen pseudo is used
             ecutrho = self.ctx.ecutwfc * 8  # FIXME: check 8 for O if enough
 
-        if configuration in self._UNARIE_CONFIGURATIONS:
+        if configuration in self._UNARIE_CONFIGURATIONS:  # include regular 'TYPICAL'
             # pseudos for BCC, FCC, SC, Diamond and TYPYCAL configurations
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
@@ -195,6 +222,18 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 ecutrho = self.ctx.ecutwfc * 4
             else:
                 ecutrho = self.ctx.ecutwfc * 8
+
+        if configuration == "TYPICAL" and self.ctx.element in MAGNETIC_ELEMENTS:
+            # specific setting for magnetic elements typical since mag on
+            pseudos = self.ctx.pseudos_magnetic
+            pw_parameters = update_dict(
+                self.ctx.pw_parameters, self.ctx.pw_magnetic_parameters
+            )
+            ### the folloing already set by branch above
+            # if pseudo_type in ["NC", "SL"]:
+            #     ecutrho = self.ctx.ecutwfc * 4
+            # else:
+            #     ecutrho = self.ctx.ecutwfc * 8
 
         if configuration == "RE":
             # pseudos for nitrides
@@ -209,7 +248,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 },
             }
             pw_parameters = update_dict(parameters, self.ctx.pw_nitride_parameters)
-            kpoints_distance = self.ctx.kpoints_distance + 1
+            kpoints_distance = self.ctx.kpoints_distance + 0.1
             # Since non-NC nitrogen pseudo is used
             ecutrho = self.ctx.ecutwfc * 8
 
