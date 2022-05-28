@@ -128,10 +128,17 @@ Maybe the flourine (F) still have thekproblem mentioned in legacy SSSP that hard
 
 It is very delegate of how to set the remote folder clean in pseudopotential verification, since the verification consist of workflows with lots of sub processes and create huge amount of remote files, although the single calculations are small and resource non-stringent.
 If the work chains are not cleaned, the number of remote files will increase rapidly and disk quota in remote machine will soon being run out.
-But if clean too early would make caching machanism not used and therefore waste resource for same calculations.
-To trait off above to controdiction, the clean policy is:
-- set to the accuracy measures are cleaned right after its workchain are finished, the clean also include remove the node to be used for further caching.
-- set `_caching` work chain to be cleaned only by calling from verefication work chain rather than do itself. For other convergence work chain, they used nodes cached from `_caching` workchain and will clean them self right after it is finished. The nodes from convergence work chain never used for furthur caching except for testing mode.
+On the contrast, if clean too early would make caching machanism not used and therefore waste resource for same calculations.
+To trait off above two side of contradiction, the clean policy is designed as:
+- set to the accuracy measures are cleaned right after its workchain are finished.
+- set calcjob nodes of `_caching` work chain to be cleaned only by calling from verefication work chain in its terminate step rather than do itself.
+For other convergence work chain, they used nodes cached from `_caching` workchain and will clean themself right after it is finished.
+The nodes create from other cached nodes (which have `_aiida_cached_from` extra attributes) from convergence work chain never used for furthur caching except for testing mode.
+
+This partially solve the caching issue of bands calculation ([issue #138](https://github.com/aiidateam/aiida-sssp-workflow/issues/138).
+But same as ph.x calculation, is subsequent step failed and previous step cleaned, it will still failed to continue.
+In phonon, the workaround is to check if the remote folder is empty.
+This has the expense of even the ph.x calculation finished ok, the previous step clean will force the scf prepare calculation to run again so to sure the ph.x get its parent_folder not empty.
 
 The clean policy of big verification work chain is controlled by `test_mode`.
 It will do clean as described above or do not clean anything so it can be checked afterwards.

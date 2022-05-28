@@ -3,7 +3,6 @@
 All in one verification workchain
 """
 # pylint: disable=cyclic-import
-from copy import deepcopy
 
 from aiida import orm
 from aiida.engine import ToContext, WorkChain, if_
@@ -193,8 +192,8 @@ class VerificationWorkChain(WorkChain):
             accurary_inputs["clean_workdir"] = orm.Bool(False)
 
         self.ctx.accuracy_inputs = {
-            "delta": deepcopy(accurary_inputs),
-            "bands": deepcopy(accurary_inputs),
+            "delta": accurary_inputs.copy(),
+            "bands": accurary_inputs.copy(),
         }
 
         # Convergence inputs setting, the properties of convergence test are:
@@ -212,22 +211,22 @@ class VerificationWorkChain(WorkChain):
         convergence_inputs["parallelization"] = self.inputs.parallelization
 
         if self.inputs.test_mode:
-            accurary_inputs["clean_workdir"] = orm.Bool(False)
+            convergence_inputs["clean_workdir"] = orm.Bool(False)
 
-        inputs_phonon_frequencies = deepcopy(convergence_inputs)
+        inputs_phonon_frequencies = convergence_inputs.copy()
         inputs_phonon_frequencies.pop("code", None)
         inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code
         inputs_phonon_frequencies["ph_code"] = self.inputs.ph_code
 
         self.ctx.convergence_inputs = {
-            "cohesive_energy": deepcopy(convergence_inputs),
+            "cohesive_energy": convergence_inputs.copy(),
             "phonon_frequencies": inputs_phonon_frequencies,
-            "pressure": deepcopy(convergence_inputs),
-            "delta": deepcopy(convergence_inputs),
+            "pressure": convergence_inputs.copy(),
+            "delta": convergence_inputs.copy(),
             "bands": convergence_inputs.copy(),
         }
 
-        self.ctx.caching_inputs = deepcopy(convergence_inputs)
+        self.ctx.caching_inputs = convergence_inputs.copy()
         self.ctx.caching_inputs["clean_workdir"] = orm.Bool(
             False
         )  # shouldn't clean until last
