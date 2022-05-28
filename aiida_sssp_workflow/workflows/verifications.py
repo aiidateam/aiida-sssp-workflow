@@ -366,7 +366,7 @@ class VerificationWorkChain(WorkChain):
             )
 
     def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
+        """Clean the working directories of all child calculations if `test_mode=True` in the inputs."""
         super().on_terminated()
 
         if self.inputs.test_mode.value:

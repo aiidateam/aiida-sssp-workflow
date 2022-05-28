@@ -95,6 +95,9 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             },
         }
         parameters = update_dict(parameters, self.ctx.pw_parameters)
+        parameters["CONTROL"].pop(
+            "tstress", None
+        )  # this will rule this work chain out from caching
 
         inputs = {
             "eos": {
