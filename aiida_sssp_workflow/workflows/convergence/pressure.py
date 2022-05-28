@@ -174,6 +174,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             },
         }
         parameters = update_dict(parameters, self.ctx.pw_parameters)
+        parameters["CONTROL"].pop("tstress", None)
 
         inputs = {
             "metadata": {"call_link_label": "pressure_ref_EOS"},

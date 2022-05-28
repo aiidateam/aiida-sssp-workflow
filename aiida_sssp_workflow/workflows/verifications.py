@@ -3,13 +3,14 @@
 All in one verification workchain
 """
 # pylint: disable=cyclic-import
+
 from aiida import orm
-from aiida.engine import WorkChain, if_
+from aiida.engine import ToContext, WorkChain, if_
 from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
-from plumpy import ToContext
 
+from aiida_sssp_workflow.workflows.common import clean_workdir
 from aiida_sssp_workflow.workflows.convergence import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
@@ -90,11 +91,8 @@ class VerificationWorkChain(WorkChain):
                     help='Optional `options`')
         spec.input('parallelization', valid_type=orm.Dict, required=False,
                     help='Parallelization options')
-        spec.input('clean_workdir_level', valid_type=orm.Int, default=lambda: orm.Int(1),
-                    help='0 for not clean; '
-                    '1 for precheck clean finished ok workchain except bands related wf; '
-                    '2 for standard clean all finished ok workchains, but phonon will depend; '
-                    '9 for clean all.')
+        spec.input('test_mode', valid_type=orm.Bool, default=lambda: orm.Bool(False),
+                    help='If `True`, do not clean workdir of any step.')
 
         spec.outline(
             cls.setup_code_resource_options,
@@ -190,6 +188,9 @@ class VerificationWorkChain(WorkChain):
         accurary_inputs["options"] = self.inputs.options
         accurary_inputs["parallelization"] = self.inputs.parallelization
 
+        if self.inputs.test_mode:
+            accurary_inputs["clean_workdir"] = orm.Bool(False)
+
         self.ctx.accuracy_inputs = {
             "delta": accurary_inputs.copy(),
             "bands": accurary_inputs.copy(),
@@ -209,6 +210,12 @@ class VerificationWorkChain(WorkChain):
         convergence_inputs["options"] = self.inputs.options
         convergence_inputs["parallelization"] = self.inputs.parallelization
 
+        if self.inputs.test_mode:
+            convergence_inputs["clean_workdir"] = orm.Bool(False)
+
+        # Here, the shallow copy can be used since the type of convergence_inputs
+        # is AttributesDict.
+        # The deepcopy can't be used, since it will create new data node.
         inputs_phonon_frequencies = convergence_inputs.copy()
         inputs_phonon_frequencies.pop("code", None)
         inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code
@@ -223,6 +230,9 @@ class VerificationWorkChain(WorkChain):
         }
 
         self.ctx.caching_inputs = convergence_inputs.copy()
+        self.ctx.caching_inputs["clean_workdir"] = orm.Bool(
+            False
+        )  # shouldn't clean until last
 
         # to collect workchains in a dict
         self.ctx.workchains = {}
@@ -356,119 +366,19 @@ class VerificationWorkChain(WorkChain):
             )
 
     def on_terminated(self):
-        """Clean the working directories of all child calculations if `clean_workdir=True` in the inputs."""
+        """Clean the working directories of all child calculations if `test_mode=True` in the inputs."""
         super().on_terminated()
 
-        clean_workdir_level = self.inputs.clean_workdir_level.value
-        if clean_workdir_level == 9:
-            # extermination all all!!
-            cleaned_calcs = self._clean_workdir(self.node)
+        if self.inputs.test_mode.value:
+            # Do not clean anything
+            self.report("In test mode: no remote folders will not be cleaned.")
+            return
+        else:
+            cleaned_calcs = clean_workdir(
+                self.node, all_same_nodes=True, invalid_caching=True
+            )
 
             if cleaned_calcs:
                 self.report(
                     f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
                 )
-
-        elif clean_workdir_level == 1:
-            skip_workchains = [
-                "convergence.phonon_frequencies",
-                "accuracy.bands",
-                "convergence.bands",
-            ]
-            for wname, pk in self.ctx.finished_ok_wf.items():
-                if wname not in skip_workchains:
-                    node = orm.load_node(pk)
-                    cleaned_calcs = self._clean_workdir(node)
-
-                    self.report(
-                        f"These workchains are skipped to clean: {skip_workchains}"
-                    )
-
-                    for k, calcs in cleaned_calcs.items():
-                        self.report(
-                            f"cleaned remote folders of calculations {k} "
-                            f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
-                        )
-
-        elif clean_workdir_level == 2:
-            # only clean finished ok work chain
-
-            for wname, pk in self.ctx.finished_ok_wf.items():
-                if wname not in ["convergence.phonon_frequencies"]:
-                    node = orm.load_node(pk)
-                    cleaned_calcs = self._clean_workdir(node)
-
-                    for k, calcs in cleaned_calcs.items():
-                        self.report(
-                            f"cleaned remote folders of calculations {k} "
-                            f"[belong to finished_ok work chain {wname}]: {' '.join(map(str, calcs))}"
-                        )
-
-            # clean the caching workdir only when phonon_frequencies sub-workflow is finished_ok
-            phonon_convergence_workchain = self.ctx.workchains.get(
-                "convergence.phonon_frequencies", None
-            )
-            if (
-                phonon_convergence_workchain
-                and phonon_convergence_workchain.is_finished_ok
-            ):
-                try:
-                    caching_workchain = self.ctx.verify_caching
-                    cleaned_calcs = self._clean_workdir(caching_workchain)
-
-                    for k, calcs in cleaned_calcs.items():
-                        self.report(
-                            f"cleaned remote folders of calculations {k} "
-                            f"[belong to finished_ok work chain _caching]: {' '.join(map(str, calcs))}"
-                        )
-                except AttributeError:
-                    # caching not run
-                    self.logger.warning("Caching is not running will not clean it.")
-
-            else:
-                self.logger.warning(
-                    "Convergence verification of phonon frequecies not run, don't clean caching."
-                )
-
-        else:
-            # clean level = 0
-            self.report("remote folders will not be cleaned")
-            return
-
-    @staticmethod
-    def _clean_workdir(wfnode, include_caching=True):
-        """clean the remote folder of all calculation in the workchain node
-        return the node pk of cleaned calculation.
-        """
-
-        def clean(node: orm.CalcJobNode):
-            """clean node workdir"""
-            cleaned_calcs_lst = []
-            node.outputs.remote_folder._clean()  # pylint: disable=protected-access
-            cleaned_calcs_lst.append(called_descendant.pk)
-
-            return cleaned_calcs_lst
-
-        cleaned_calcs = {}
-        for called_descendant in wfnode.called_descendants:
-            if isinstance(called_descendant, orm.CalcJobNode):
-                try:
-                    calcs = clean(called_descendant)
-                    cleaned_calcs[
-                        "menon"
-                    ] = calcs  # menon for noumenon for not cached but real one
-
-                    # clean caching node
-                    if include_caching:
-                        caching_nodes = called_descendant.get_all_same_nodes()
-                        if len(caching_nodes) > 1:  # since it always contain the menon
-                            for node in caching_nodes:
-                                cached_calcs = clean(node)
-                                cleaned_calcs["cached"] = cached_calcs
-
-                except (IOError, OSError, KeyError) as exc:
-                    raise RuntimeError(
-                        "Failed to clean working dirctory of calcjob"
-                    ) from exc
-
-        return cleaned_calcs

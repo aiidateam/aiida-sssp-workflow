@@ -287,9 +287,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 'conv_thr': conv_thr,
             },
             'CONTROL': {
-                'calculation': 'scf',
-                'wf_collect': True,
-                'tstress': True,
+                # 'calculation': 'scf', NOT EXPLICITLY SET. `scf` is default if not override.
+                'tstress': True,    # for pressue to use _caching node directly.
             },
         }
 

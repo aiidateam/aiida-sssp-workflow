@@ -1,6 +1,7 @@
 from aiida import orm
 from aiida.plugins import WorkflowFactory
 
+from aiida_sssp_workflow.utils import update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
@@ -22,6 +23,16 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
 
     _RUN_WFC_TEST = True
     _RUN_RHO_TEST = False  # will not run charge density cutoff test
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        spec.input(
+            "clean_workdir",
+            valid_type=orm.Bool,
+            default=lambda: orm.Bool(False),
+            help="If `True`, work directories of all called calculation will be cleaned at the end of execution.",
+        )
 
     def inspect_wfc_convergence_test(self):
         """Override this step to do nothing to parse wavefunction
@@ -63,7 +74,7 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
 
     def _get_inputs(self, ecutwfc, ecutrho) -> dict:
         """inputs for running a dummy SCF for caching"""
-        pw_parameters = self.ctx.pw_base_parameters.copy()
+        pw_parameters = update_dict(self.ctx.pw_base_parameters, {})
         pw_parameters["SYSTEM"]["ecutwfc"] = ecutwfc
         pw_parameters["SYSTEM"]["ecutrho"] = ecutrho
 

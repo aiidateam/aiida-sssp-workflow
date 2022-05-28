@@ -21,12 +21,10 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_static")
 def run_verification(
     pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_LIST, label=None
 ):
-    # if phonon, not clean, since empty remote folder will always trigger rerun.
-    if "convergence.phonon_frequencies" in properties_list:
-        clean_level = 0
+    if properties_list == DEFAULT_PROPERTIES_LIST:
+        test_mode = False
     else:
-        clean_level = 1
-
+        test_mode = True
     inputs = {
         "accuracy": {
             "protocol": orm.Str("test"),
@@ -54,7 +52,7 @@ def run_verification(
             }
         ),
         "parallelization": orm.Dict(dict={"npool": 2}),
-        "clean_workdir_level": orm.Int(1),
+        "test_mode": orm.Bool(test_mode),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)
