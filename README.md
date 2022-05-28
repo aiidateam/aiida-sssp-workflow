@@ -88,6 +88,9 @@ In case of atomic calculation running on a machine with too many CPUs,
 the `npool` and `ndiag` is explicitly set to 1 for atomic calculation.
 Since there is only one kpoint in atomic case, there is no efficient lost of this parallelization setting.
 
+Because using too many `mpiprocs` (128 in EIGER) in atomic calculation would cause spurious issue the calculation terminate and not being handled.
+The maximum number of mpiprocs is set to `32`.
+
 ### Walltime settings
 
 The max wallclock seconds are set from the `options` input parameters from verification workflow.
@@ -121,6 +124,17 @@ The lanthanides still using the nitrides from Wenzovitch paper.
 We keep on using typical nature configuration from Cottiner's paper, but convert them to primitive with pymatgen (for magnetic elements, no primitive convert process but still refine with `pymatgen`).
 Maybe the flourine (F) still have thekproblem mentioned in legacy SSSP that hard to convergence (SCF convergence), will rollback to use SiF4 for it.
 
+## Work chains clean policy
+
+It is very delegate of how to set the remote folder clean in pseudopotential verification, since the verification consist of workflows with lots of sub processes and create huge amount of remote files, although the single calculations are small and resource non-stringent.
+If the work chains are not cleaned, the number of remote files will increase rapidly and disk quota in remote machine will soon being run out.
+But if clean too early would make caching machanism not used and therefore waste resource for same calculations.
+To trait off above to controdiction, the clean policy is:
+- set to the accuracy measures are cleaned right after its workchain are finished, the clean also include remove the node to be used for further caching.
+- set `_caching` work chain to be cleaned only by calling from verefication work chain rather than do itself. For other convergence work chain, they used nodes cached from `_caching` workchain and will clean them self right after it is finished. The nodes from convergence work chain never used for furthur caching except for testing mode.
+
+The clean policy of big verification work chain is controlled by `test_mode`.
+It will do clean as described above or do not clean anything so it can be checked afterwards.
 
 ## For maintainers
 

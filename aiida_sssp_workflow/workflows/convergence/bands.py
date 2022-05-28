@@ -116,6 +116,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
         parameters_bands = parameters.copy()
         parameters_bands["SYSTEM"].pop("nbnd", None)
+        parameters_bands["CONTROL"].pop("tstress", None)
 
         inputs = {
             "structure": self.ctx.structure,
