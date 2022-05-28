@@ -156,6 +156,13 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         atomic_parallelization = update_dict(atomic_parallelization, {"npool": 1})
         atomic_parallelization = update_dict(atomic_parallelization, {"ndiag": 1})
 
+        # atomic option if mpiprocs too many confine it too no larger than 32 procs
+        atomic_options = self.ctx.options.copy()
+        if atomic_options["resources"]["num_mpiprocs_per_machine"] > 32:
+            # copy is a shallow copy, so using update_dict.
+            # if simply assign the value will change also the original dict
+            atomic_options = update_dict(atomic_options, {"resources": {"num_mpiprocs_per_machine": 32}})
+
         # atom_parameters update with ecutwfc and ecutrho
         atom_parameters = self.ctx.atom_parameters.copy()
         for element in atom_parameters.keys():
@@ -184,7 +191,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                     "code": self.inputs.code,
                     "parameters": orm.Dict(dict={}),
                     "metadata": {
-                        "options": self.ctx.options,
+                        "options": atomic_options,
                     },
                     "parallelization": orm.Dict(dict=atomic_parallelization),
                 },
