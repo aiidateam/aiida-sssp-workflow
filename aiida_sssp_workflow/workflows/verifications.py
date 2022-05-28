@@ -213,6 +213,9 @@ class VerificationWorkChain(WorkChain):
         if self.inputs.test_mode:
             convergence_inputs["clean_workdir"] = orm.Bool(False)
 
+        # Here, the shallow copy can be used since the type of convergence_inputs
+        # is AttributesDict.
+        # The deepcopy can't be used, since it will create new data node.
         inputs_phonon_frequencies = convergence_inputs.copy()
         inputs_phonon_frequencies.pop("code", None)
         inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code

@@ -179,7 +179,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
 
         # Sinec PH calculation always runs more time then the correspoding pw calculation
         # set the walltime to 4 times as set in option.
-        ph_options = self.ctx.options.copy()
+        ph_options = update_dict(self.ctx.options, {})
         pw_max_walltime = self.ctx.options.get("max_wallclock_seconds", None)
         if pw_max_walltime:
             ph_options["max_wallclock_seconds"] = pw_max_walltime * 4
