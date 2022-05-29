@@ -89,7 +89,7 @@ def parse_pseudo_type(content: str) -> str:
             raw_type = match.group("pseudo_type")
             if "US" in raw_type:
                 return "us"
-            elif "NC" in raw_type:
+            elif "NC" in raw_type or "SL" in raw_type:
                 return "nc"
             elif "PAW" in raw_type:
                 return "paw"
