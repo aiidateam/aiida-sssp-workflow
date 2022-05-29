@@ -36,7 +36,7 @@ class _EquationOfStateWorkChain(WorkChain):
         spec.input('scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
             help='The relative difference between consecutive scaling factors.')
         spec.expose_inputs(PwBaseWorkChain,
-            exclude=('kpoints', 'pw.structure', 'pw.kpoints_distance'),
+            exclude=('kpoints', 'pw.structure', 'pw.kpoints_distance', 'clean_workdir'),
             namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.outline(
             cls.run_init,
