@@ -1,10 +1,11 @@
 from abc import abstractmethod
 
 from aiida import orm
-from aiida.engine import WorkChain
+
+from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 
 
-class _BaseEvaluateWorkChain(WorkChain):
+class _BaseEvaluateWorkChain(SelfCleanWorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
     @classmethod
@@ -12,7 +13,6 @@ class _BaseEvaluateWorkChain(WorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-
         spec.output('ecutwfc', valid_type=orm.Int, required=True)
         spec.output('ecutrho', valid_type=orm.Int, required=True)
 
