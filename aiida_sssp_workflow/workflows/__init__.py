@@ -48,5 +48,5 @@ class SelfCleanWorkChain(WorkChain):
             )
         if cache_invalid_calcs:
             self.report(
-                f"Invalid as cache of cached calculations: {' '.join(map(str, cache_invalid_calcs))}"
+                f"Invalid cache of cached calculations: {' '.join(map(str, cache_invalid_calcs))}"
             )

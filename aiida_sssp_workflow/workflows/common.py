@@ -83,17 +83,17 @@ def clean_workdir(node: orm.CalcJobNode) -> Optional[int]:
 
 def invalid_cache(node: orm.CalcJobNode) -> Optional[int]:
     """invalid cache of cached calcjob, so it will not be used for further caching"""
-    if "_aiida_cached_from" not in node.extras:
-        if "_aiida_cached_from" in node.extras and "_aiida_hash" in node.extras:
-            # It is implemented in aiida 2.0.0, by setting the is_valid_cache.
-            # set the it to disable the caching to precisely control extras.
-            # here in order that the correct node is cleaned and caching controlled
-            # I only invalid_caching if this node is cached from other node, otherwise
-            # that node (should be the node from `_caching` workflow) will not be invalid
-            # caching.
-            # This ensure that if the calcjob is identically running, it will still be used for
-            # further calculation.
-            node.delete_extra("_aiida_hash")
+
+    if "_aiida_cached_from" in node.extras and "_aiida_hash" in node.extras:
+        # It is implemented in aiida 2.0.0, by setting the is_valid_cache.
+        # set the it to disable the caching to precisely control extras.
+        # here in order that the correct node is cleaned and caching controlled
+        # I only invalid_caching if this node is cached from other node, otherwise
+        # that node (should be the node from `_caching` workflow) will not be invalid
+        # caching.
+        # This ensure that if the calcjob is identically running, it will still be used for
+        # further calculation.
+        node.delete_extra("_aiida_hash")
         return node.pk
     else:
         return None

@@ -22,9 +22,9 @@ def run_verification(
     pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_LIST, label=None
 ):
     if properties_list == DEFAULT_PROPERTIES_LIST:
-        test_mode = False
+        clean_workchain = True
     else:
-        test_mode = True
+        clean_workchain = False
     inputs = {
         "accuracy": {
             "protocol": orm.Str("test"),
@@ -52,7 +52,7 @@ def run_verification(
             }
         ),
         "parallelization": orm.Dict(dict={"npool": 2}),
-        "test_mode": orm.Bool(True),
+        "clean_workchain": orm.Bool(True),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)
