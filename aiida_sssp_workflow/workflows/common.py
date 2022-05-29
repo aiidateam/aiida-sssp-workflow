@@ -1,4 +1,5 @@
 import importlib
+from typing import Optional
 
 from aiida import orm
 from aiida.plugins import DataFactory
@@ -66,25 +67,24 @@ def get_pseudo_O():
     return pseudo_O
 
 
-def clean_workdir(wfnode, all_same_nodes=False, invalid_caching=True):
-    """clean the remote folder of all calculation in the workchain node
-    return the node pk of cleaned calculation.
-
-    :param wfnode: workflow node to clean its descendat calcjob nodes
-    :param all_same_nodes: If `True`, fetch all same node and process the clean. BE CAREFUL!
-    :param invalid_caching: If `True`, disable caching the calcjob cleaned, so ph, bands
-        not failed because of cleaned node is used as parent scf calculation.
-    :return: return the list of nodes pk being cleaned
-    """
-
-    def clean(node: orm.CalcJobNode, _invalid_caching=True):
-        """clean node workdir"""
+def clean_workdir(node: orm.CalcJobNode) -> Optional[int]:
+    """clean remote workdir of nonmenon calcjob"""
+    # I have to do only clean nonmenon calcjob since I regard it as a bug that
+    # the workdir of cached node point to the identical remote path of nomenon calcjob node.
+    # It is like a soft link or shallow copy in caching. This lead to clean the remote path
+    # of cached node also destroy the remote path of nonmenon node that may still be used for
+    # other subsequent calcjob as `parent_folder`, i.e PH calculation.
+    if "_aiida_cached_from" not in node.extras:
         node.outputs.remote_folder._clean()  # pylint: disable=protected-access
-        if (
-            _invalid_caching
-            and "_aiida_cached_from" in node.extras
-            and "_aiida_hash" in node.extras
-        ):
+        return node.pk
+    else:
+        return None
+
+
+def invalid_cache(node: orm.CalcJobNode) -> Optional[int]:
+    """invalid cache of cached calcjob, so it will not be used for further caching"""
+    if "_aiida_cached_from" not in node.extras:
+        if "_aiida_cached_from" in node.extras and "_aiida_hash" in node.extras:
             # It is implemented in aiida 2.0.0, by setting the is_valid_cache.
             # set the it to disable the caching to precisely control extras.
             # here in order that the correct node is cleaned and caching controlled
@@ -94,23 +94,33 @@ def clean_workdir(wfnode, all_same_nodes=False, invalid_caching=True):
             # This ensure that if the calcjob is identically running, it will still be used for
             # further calculation.
             node.delete_extra("_aiida_hash")
-
         return node.pk
+    else:
+        return None
+
+
+def operate_calcjobs(wnode, operator, all_same_nodes=False):
+    """iterate over desendant calcjob nodes of given workflow node and apply operator.
+
+    :param wnode: workflow node to operating on its descendat calcjob nodes
+    :param operator: a function operate to the descendants calcjob node
+    :param all_same_nodes: If `True`, fetch all same node and process the operation. BE CAREFUL!
+    :return: return the list of nodes pk being cleaned
+    """
 
     cleaned_calcs = []
-    for descendant_node in wfnode.called_descendants:
+    for descendant_node in wnode.called_descendants:
         if isinstance(descendant_node, orm.CalcJobNode):
-            same_nodes = descendant_node.get_all_same_nodes()
+            # the nodes waid for operated.
+            nodes = descendant_node.get_all_same_nodes()
             try:
-                if all_same_nodes:
-                    # clean all same nodes
-                    for n in same_nodes:
-                        calc_pk = clean(n, invalid_caching)
-                        cleaned_calcs.append(calc_pk)
-                else:
-                    # clean only this node
-                    calc_pk = clean(descendant_node, invalid_caching)
-                    cleaned_calcs.append(calc_pk)
+                if not all_same_nodes:
+                    # only operated on this node
+                    nodes = [descendant_node]
+
+                for n in nodes:
+                    pk = operator(n)
+                    cleaned_calcs += [pk] if pk else []
 
             except (IOError, OSError, KeyError) as exc:
                 raise RuntimeError(

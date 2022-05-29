@@ -52,7 +52,7 @@ def run_verification(
             }
         ),
         "parallelization": orm.Dict(dict={"npool": 2}),
-        "test_mode": orm.Bool(test_mode),
+        "test_mode": orm.Bool(True),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)
