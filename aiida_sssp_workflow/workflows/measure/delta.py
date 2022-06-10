@@ -111,14 +111,16 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
             )
 
-        # set structures
-        self.ctx.structures = {}
-        for configuration in self.ctx.configuration_list:
-            self.ctx.structures[configuration] = get_standard_structure(
-                element,
-                prop="delta",
-                configuration=configuration,
-            )
+        # set structures except RARE earth element with will be set independently
+        # in sepecific step
+        if self.ctx.element not in RARE_EARTH_ELEMENTS:
+            self.ctx.structures = {}
+            for configuration in self.ctx.configuration_list:
+                self.ctx.structures[configuration] = get_standard_structure(
+                    element,
+                    prop="delta",
+                    configuration=configuration,
+                )
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
