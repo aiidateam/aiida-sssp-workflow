@@ -48,7 +48,7 @@ def get_extra_parameters_for_lanthanides(element, nbnd) -> dict:
 def get_pseudo_N():
     """Return pseudo of nitrogen for lanthanide nitrides"""
     import_path = importlib.resources.path(
-        "aiida_sssp_workflow.statics.upf", "N.pbe-n-radius_5.upf"
+        "aiida_sssp_workflow.statics.upf", "N.us.z_5.ld1.theose.v0.upf"
     )
     with import_path as psp_path, open(psp_path, "rb") as stream:
         pseudo_N = UpfData(stream)
@@ -59,7 +59,7 @@ def get_pseudo_N():
 def get_pseudo_O():
     """Return pseudo of oxygen for oxides"""
     import_path = importlib.resources.path(
-        "aiida_sssp_workflow.statics.upf", "O.pbe-n-kjpaw_psl.0.1.upf"
+        "aiida_sssp_workflow.statics.upf", "O.paw.z_6.ld1.psl.v0.1.upf"
     )
     with import_path as psp_path, open(psp_path, "rb") as stream:
         pseudo_O = UpfData(stream)

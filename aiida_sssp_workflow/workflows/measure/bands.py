@@ -174,8 +174,8 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
         if element in RARE_EARTH_ELEMENTS:
             # since nitrides is used, the pseudo of N is non-NC
-            # FIXME: after N verification
-            ecutrho = self.ctx.ecutrho * 8
+            # The N.us.z_5.ld1.theose.v0 is used so set dual equal to 8
+            ecutrho = self.ctx.ecutwfc * 8
 
         parameters = {
             "SYSTEM": {

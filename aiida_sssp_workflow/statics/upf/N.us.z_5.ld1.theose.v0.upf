@@ -35,7 +35,7 @@
  /
  &amp;inputp
    pseudotype=3,
-   file_pseudopw='N.pbe-n-radius_5.upf',
+   file_pseudopw='N.pbe-n-radius_5.UPF',
    author='ivca',
    which_augfun='PSQ',
    rmatch_augfun=1.0,
