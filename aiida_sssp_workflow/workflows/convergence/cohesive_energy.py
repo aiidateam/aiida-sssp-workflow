@@ -197,6 +197,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 },
                 "kpoints": atom_kpoints,
             },
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         return inputs

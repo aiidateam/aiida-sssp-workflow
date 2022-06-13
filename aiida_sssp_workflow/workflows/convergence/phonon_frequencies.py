@@ -210,7 +210,8 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
                     },
                     "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
                 },
-            }
+            },
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         return inputs
