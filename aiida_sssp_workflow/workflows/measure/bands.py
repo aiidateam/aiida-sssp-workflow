@@ -218,6 +218,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             "fermi_shift": orm.Float(self.ctx.fermi_shift),
             "run_bands_structure": orm.Bool(True),
             "kpoints_distance_band_structure": orm.Float(self.ctx.kpoints_distance_band_structure),
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         return inputs

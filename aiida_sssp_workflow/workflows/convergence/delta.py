@@ -118,6 +118,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             },
             "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(self.ctx.configuration),
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         return inputs

@@ -76,9 +76,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
         super().define(spec)
         # yapf: disable
         spec.expose_inputs(_BaseMeasureWorkChain, namespace='accuracy',
-                    exclude=['code', 'pseudo', 'options', 'parallelization'])
+                    exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
-                    exclude=['code', 'pseudo', 'options', 'parallelization'])
+                    exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
         spec.input('pw_code', valid_type=orm.Code,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.Code,

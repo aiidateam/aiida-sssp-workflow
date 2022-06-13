@@ -51,8 +51,8 @@ def run_verification(
                 "withmpi": True,
             }
         ),
-        "parallelization": orm.Dict(dict={"npool": 2}),
-        "clean_workchain": orm.Bool(True),
+        "parallelization": orm.Dict(dict={"npool": 1}),
+        "clean_workchain": orm.Bool(clean_workchain),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)

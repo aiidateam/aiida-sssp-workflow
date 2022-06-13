@@ -150,6 +150,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         return inputs

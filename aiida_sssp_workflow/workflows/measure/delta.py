@@ -284,6 +284,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             },
             "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(configuration),
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         return inputs
