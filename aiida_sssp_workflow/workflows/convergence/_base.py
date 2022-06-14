@@ -57,6 +57,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
     _RUN_WFC_TEST = True
     _RUN_RHO_TEST = True
 
+    _NBANDS_FACTOR_FOR_REN = 1.5
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
@@ -256,7 +258,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         We use nitrdes configuration for the convergence verification of rare-earth elements.
         Otherwise it is hard to get converged in scf calculation.
         """
-        nbnd_factor = 1.5
+        nbnd_factor = self._NBANDS_FACTOR_FOR_REN
         pseudo_N = get_pseudo_N()
         self.ctx.pseudos['N'] = pseudo_N
         pseudo_RE = self.inputs.pseudo

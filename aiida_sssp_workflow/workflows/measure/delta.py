@@ -38,6 +38,8 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
     _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
     _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["TYPICAL"]
 
+    _NBANDS_FACTOR_FOR_REN = 1.5
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -148,7 +150,8 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
-        nbnd_factor = 1.5
+        nbnd_factor = self._NBANDS_FACTOR_FOR_REN
+
         pseudo_N = get_pseudo_N()
         pseudo_RE = self.inputs.pseudo
         self.ctx.pseudos_nitride = {"N": pseudo_N, self.ctx.element: pseudo_RE}
@@ -204,6 +207,35 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
         self.logger.info(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
 
+    @staticmethod
+    def _compute_nelectrons_of_oxide(configuration, z_O, z_X):
+        """Will return the number of electrons of oxide configurations with pseudos
+        z_O is the number of electrons of oxygen pseudo
+        z_X is the number of electrons of X pseudo
+        """
+        if configuration == "XO":
+            return z_X + z_O
+
+        elif configuration == "XO2":
+            return z_X + z_O * 2
+
+        elif configuration == "XO3":
+            return z_X + z_O * 3
+
+        elif configuration == "X2O":
+            return z_X * 2 + z_O
+
+        elif configuration == "X2O3":
+            return z_X * 4 + z_O * 6
+
+        elif configuration == "X2O5":
+            return z_X * 4 + z_O * 10
+
+        else:
+            raise ValueError(
+                f"Cannot compute the number electrons of configuration {configuration} with z_O={z_O} and z_X={z_X}."
+            )
+
     def _get_inputs(self, structure, configuration):
         element, pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
 
@@ -213,7 +245,26 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
             # Since non-NC oxygen pseudo is used
-            ecutrho = self.ctx.ecutwfc * 8  # FIXME: check 8 for O if enough
+            ecutrho = self.ctx.ecutwfc * 8
+
+            # need also increase nbands for Rare-earth oxides.
+            # See https://github.com/aiidateam/aiida-sssp-workflow/issues/161
+            # This is not easy to be set in the rare-earth step since it will
+            # finally act on here
+            if self.ctx.element in RARE_EARTH_ELEMENTS:
+                nbnd_factor = self._NBANDS_FACTOR_FOR_REN
+                pseudo_O = get_pseudo_O()
+                pseudo_RE = self.inputs.pseudo
+                nbnd = (
+                    nbnd_factor
+                    * int(
+                        self._compute_nelectrons_of_oxide(
+                            configuration, pseudo_O.z_valence, pseudo_RE.z_valence
+                        )
+                    )
+                    // 2
+                )
+                pw_parameters["SYSTEM"]["nbnd"] = int(nbnd)
 
         if configuration in self._UNARIE_CONFIGURATIONS:  # include regular 'TYPICAL'
             # pseudos for BCC, FCC, SC, Diamond and TYPYCAL configurations
@@ -231,11 +282,6 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             pw_parameters = update_dict(
                 self.ctx.pw_parameters, self.ctx.pw_magnetic_parameters
             )
-            ### the folloing already set by branch above
-            # if pseudo_type in ["NC", "SL"]:
-            #     ecutrho = self.ctx.ecutwfc * 4
-            # else:
-            #     ecutrho = self.ctx.ecutwfc * 8
 
         if configuration == "RE":
             # pseudos for nitrides
