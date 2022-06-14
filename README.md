@@ -20,6 +20,7 @@ The nitrogen pseudopotential is the one from first run on pseudopotentials verif
 The lanthanides have convergence issue if mixing is too large or number of bands is not enough.
 For bands measure, the `nbnd_factor` is set to `2.0` while for delta measure and convergence the factor is set to `1.5`.
 The mixing is set to 0.5 (default is 0.7 for non-lanthanides), and even smaller for atomic calculation of lanthanides elements which set to 0.3.
+The `nbnd` set for lanthanides oxides are set to `1.5` times of the default number of bands since it also has issue that highest bands partially occupied and often retrigger the error handler to restart the calculation.
 
 ## Criteria and protocol of pressure convergence
 
@@ -108,7 +109,8 @@ The `options` dict has the format of:
 }
 
 ```
-where the `max_wallclock_seconds` is exactly used for pw calculation while for ph calculation the value is set to 4 time of value since the ph calculation roughly estimated to elapse 4 times slower that pw calculation of the corresponding pw calculation to finish.
+where the `max_wallclock_seconds` is exactly used for pw calculation while for ph calculation the value is set to 4 times of value since the ph calculation roughly estimated to elapse 4 times slower that pw calculation of the corresponding pw calculation to finish.
+For atomic calculation in cohesive energy evaluation of lanthanides, the `max_wallclock_seconds` also set to 4 times otherwise it may not finished after 5 times of restart.
 
 
 ## Configurations
