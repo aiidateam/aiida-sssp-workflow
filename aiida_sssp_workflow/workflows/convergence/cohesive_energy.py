@@ -7,7 +7,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
@@ -162,6 +162,12 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             # copy is a shallow copy, so using update_dict.
             # if simply assign the value will change also the original dict
             atomic_options = update_dict(atomic_options, {"resources": {"num_mpiprocs_per_machine": 32}})
+
+        # atomic calculation for lanthanides require more time to finish.
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
+            pw_max_walltime = self.ctx.options.get("max_wallclock_seconds", None)
+            if pw_max_walltime:
+                atomic_options["max_wallclock_seconds"] = pw_max_walltime * 4
 
         # atom_parameters update with ecutwfc and ecutrho
         atom_parameters = update_dict(self.ctx.atom_parameters, {})
