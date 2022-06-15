@@ -99,6 +99,13 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             "tstress", None
         )  # this will rule this work chain out from caching
 
+        # sparse kpoints and tetrahedra occupation in EOS reference calculation
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
+            self.ctx.kpoints_distance = self._KDISTANCE + 0.05
+            parameters["SYSTEM"].pop("smearing", None)
+            parameters["SYSTEM"].pop("degauss", None)
+            parameters["SYSTEM"]["occupations"] = "tetrahedra"
+
         inputs = {
             "eos": {
                 "metadata": {"call_link_label": "delta_EOS"},
