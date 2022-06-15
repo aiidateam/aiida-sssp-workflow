@@ -13,7 +13,7 @@ For lanthanides the delta measure is run on nitrides as Wentzcovitch paper and o
 The unaries are not run for delta since it is know that the oxidation state of lanthanides pseudopotentials is not zero.
 Only for lanthanide nitrides the magnatization is on.
 It is mostly because the reference of RE-N (Wentzcovitch) and RE-O (ACWF) is run with/without magnatization.
-The kpoint distance of lanthanide nitrides is hard code to `0.2` (implemented as `+ 0.1` from acwf value) using the tetrahedron method rather than as acwf protocol where kpoint distance is `0.10` with fermi-dirac smearing, in order to compatible with Wentzcovitch paper results.
+The kpoint distance of lanthanide nitrides is hard code to `0.2` (both for accuracy delta measure, for delta convergence and first EOS reference calculation of pressure convergence test as well. implemented as `+ 0.1` of accuracy protocol and `+ 0.05` of convergence protocol from acwf value) using the tetrahedron method rather than as acwf protocol where kpoint distance is `0.10` with fermi-dirac smearing, in order to compatible with Wentzcovitch paper results.
 Lanthanide nitrides such as ErN, in equation of state calculation, large (0.06) volume change lead to supurious energy.
 To mitigate the issue, the `scale_increment` is set to 0.01 (??? probably only for Er?) to make sure the volume change is in the parabolic range.
 The nitrogen pseudopotential is the one from first run on pseudopotentials verifications on nitrigen on libraries include Pslibrary 0.1, Pslibrary 1.0.0, pseudo-dojo, ONCVPSP with legacy sg15 inputs... (Run and check)
