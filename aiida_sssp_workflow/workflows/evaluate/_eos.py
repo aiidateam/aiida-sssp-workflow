@@ -88,6 +88,7 @@ class _EquationOfStateWorkChain(WorkChain):
         inputs["pw"]["structure"] = scale_structure(
             self.inputs.structure, orm.Float(scale_factor)
         )
+        inputs.pop("kpoints_distance", None)
 
         return inputs
 

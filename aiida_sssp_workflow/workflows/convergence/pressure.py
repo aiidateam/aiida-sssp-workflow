@@ -6,7 +6,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import update_dict
+from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
@@ -177,10 +177,20 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
         parameters["CONTROL"].pop("tstress", None)
 
+        kpoints_distance = self._KDISTANCE
+
+        # sparse kpoints and tetrahedra occupation in EOS reference calculation
+        if self.ctx.element in RARE_EARTH_ELEMENTS:
+            self.ctx.kpoints_distance = self._KDISTANCE + 0.05
+            parameters["SYSTEM"].pop("smearing", None)
+            parameters["SYSTEM"].pop("degauss", None)
+            parameters["SYSTEM"]["occupations"] = "tetrahedra"
+
+
         inputs = {
             "metadata": {"call_link_label": "pressure_ref_EOS"},
             "structure": self.ctx.structure,
-            "kpoints_distance": orm.Float(self._KDISTANCE),
+            "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
             "scale_count": orm.Int(self._EOS_SCALE_COUNT),
             "scale_increment": orm.Float(self._EOS_SCALE_INCREMENT),
             "pw": {
