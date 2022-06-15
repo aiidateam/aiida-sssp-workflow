@@ -177,8 +177,6 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
         parameters["CONTROL"].pop("tstress", None)
 
-        kpoints_distance = self._KDISTANCE
-
         # sparse kpoints and tetrahedra occupation in EOS reference calculation
         if self.ctx.element in RARE_EARTH_ELEMENTS:
             self.ctx.kpoints_distance = self._KDISTANCE + 0.05
