@@ -81,7 +81,7 @@ test:
         kpoints_distance: 0.5
 
     cohesive_energy:
-        atom_smearing: gaussian
+        atom_smearing: cold
         vacuum_length: 12.0
 
     phonon_frequencies:
@@ -98,41 +98,6 @@ test:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
         kpoints_distance_scf: 0.5
-        kpoints_distance_bands: 0.25
-
-    delta:
-        scale_count: 5
-        scale_increment: 0.02
-
-demo:
-    name: demo-only
-    description: Protocol to run test of workflow.
-
-    base:   # base parameters is inherit by other process
-        occupations: smearing
-        degauss: 0.0045
-        smearing: cold
-        electron_conv_thr: 1.0e-8
-        kpoints_distance: 0.25
-
-    cohesive_energy:
-        atom_smearing: gaussian
-        vacuum_length: 12.0
-
-    phonon_frequencies:
-        qpoints_list:
-            - [0.5, 0.5, 0.5]
-        epsilon: false
-        tr2_ph: 1.0e-9
-
-    pressure:
-        scale_count: 5
-        scale_increment: 0.02
-
-    bands:
-        init_nbands_factor: 3.0
-        fermi_shift: 10.0
-        kpoints_distance_scf: 0.25
         kpoints_distance_bands: 0.25
 
     delta:

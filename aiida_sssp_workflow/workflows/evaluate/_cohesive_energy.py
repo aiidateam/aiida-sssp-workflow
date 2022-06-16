@@ -173,7 +173,7 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
             if output_parameters["smearing_type"] in ["gaussian", "fd"]:
                 # need to interplate to T=0K
                 atom_smearing_energy = output_parameters["energy_smearing"]
-                atom_energy = atom_free_energy - 0.5 * atom_smearing_energy
+                atom_energy = atom_free_energy - atom_smearing_energy
             elif output_parameters["smearing_type"] == "mv":
                 # After QE 6.8 the cold smearing fix the fermi energy find
                 atom_energy = atom_free_energy
