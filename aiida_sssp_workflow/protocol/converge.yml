@@ -6,12 +6,47 @@ acwf:
     base:   # base parameters is inherit by other process
         occupations: smearing
         degauss: 0.0045
-        smearing: cold
+        smearing: fd
         electron_conv_thr: 1.0e-10
         kpoints_distance: 0.15
 
     cohesive_energy:
         atom_smearing: gaussian
+        vacuum_length: 12.0
+
+    phonon_frequencies:
+        qpoints_list:
+            - [0.5, 0.5, 0.5]
+        epsilon: false
+        tr2_ph: 1.0e-16
+
+    pressure:
+        scale_count: 7
+        scale_increment: 0.02
+
+    bands:
+        init_nbands_factor: 3.0
+        fermi_shift: 10.0
+        kpoints_distance_scf: 0.15
+        kpoints_distance_bands: 0.15
+
+    delta:
+        scale_count: 7
+        scale_increment: 0.02
+
+moderate:
+    name: moderate
+    description: The protocol where input parameters bring from aiidaqe moderate protocol. Only for QE >= 6.8
+
+    base:   # base parameters is inherit by other process
+        occupations: smearing
+        degauss: 0.01
+        smearing: cold
+        electron_conv_thr: 1.0e-10
+        kpoints_distance: 0.15
+
+    cohesive_energy:
+        atom_smearing: cold # according to Flav, it is fixed and safe to use for QE>=6.8
         vacuum_length: 12.0
 
     phonon_frequencies:
@@ -40,7 +75,7 @@ test:
 
     base:   # base parameters is inherit by other process
         occupations: smearing
-        degauss: 0.0045
+        degauss: 0.01
         smearing: cold
         electron_conv_thr: 1.0e-6
         kpoints_distance: 0.5

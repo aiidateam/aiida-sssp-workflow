@@ -170,8 +170,18 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
             output_parameters = child.outputs.output_parameters
 
             atom_free_energy = output_parameters["energy"]
-            atom_smearing_energy = output_parameters["energy_smearing"]
-            atom_energy = atom_free_energy - atom_smearing_energy
+            if output_parameters["smearing_type"] in ["gaussian", "fd"]:
+                # need to interplate to T=0K
+                atom_smearing_energy = output_parameters["energy_smearing"]
+                atom_energy = atom_free_energy - 0.5 * atom_smearing_energy
+            elif output_parameters["smearing_type"] == "mv":
+                # After QE 6.8 the cold smearing fix the fermi energy find
+                atom_energy = atom_free_energy
+            else:
+                raise ValueError(
+                    f'Unsupported smearing type: {output_parameters["smearing_type"]}.'
+                )
+
             element_energy[element] = atom_energy
             calc_time += output_parameters["wall_time_seconds"]
 
