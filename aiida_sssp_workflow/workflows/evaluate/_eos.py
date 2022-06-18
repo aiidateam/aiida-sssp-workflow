@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Equation of state workflow that can use any code plugin implementing the common relax workflow."""
+from typing import List
 
 from aiida import orm
 from aiida.engine import WorkChain, append_, calcfunction, run_get_node
@@ -53,7 +54,7 @@ class _EquationOfStateWorkChain(WorkChain):
             message='The birch murnaghan fit failed with exit code={code}.')
         # yapf: enable
 
-    def get_scale_factors(self) -> list[float]:
+    def get_scale_factors(self) -> List[float]:
         """Return the list of scale factors.
         The points are averagely distributed from the minimal volume.
         The scale equal to 1 will not returned.
