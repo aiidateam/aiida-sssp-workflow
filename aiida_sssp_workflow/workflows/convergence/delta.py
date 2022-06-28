@@ -21,10 +21,12 @@ def helper_delta_difference(
     """calculate the delta difference from parameters"""
     res_delta = input_parameters["delta"]
     ref_delta = ref_parameters["delta"]
+    absolute_diff = abs(res_delta - ref_delta)
     relative_diff = abs((res_delta - ref_delta) / ref_delta) * 100
 
     res = {
         "delta": res_delta,
+        "absolute_diff": absolute_diff,
         "relative_diff": relative_diff,
         "delta_unit": "meV",
         "relative_unit": "%",
@@ -40,7 +42,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
 
     _PROPERTY_NAME = "delta"
     _EVALUATE_WORKCHAIN = DeltaWorkChain
-    _MEASURE_OUT_PROPERTY = "relative_diff"
+    _MEASURE_OUT_PROPERTY = "absolute_diff"
 
     def init_setup(self):
         super().init_setup()
