@@ -10,7 +10,7 @@ efficiency:
 
     delta:
         mode: 0
-        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        bounds: [0.0, 0.2]  # when relative error < 0.2
         eps: 1.0e-3
 
     phonon_frequencies:
@@ -40,7 +40,7 @@ precision:
 
     delta:
         mode: 0
-        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        bounds: [0.0, 0.1]  # when relative error < 0.1
         eps: 1.0e-3
 
     phonon_frequencies:
