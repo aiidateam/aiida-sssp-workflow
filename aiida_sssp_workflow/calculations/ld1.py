@@ -14,6 +14,7 @@ class Ld1Calculation(CalcJob):
 
         super().define(spec)
         # atom_info part read from configuration cards
+        spec.input("filename", valid_type=orm.Str)
         spec.input("parameters", valid_type=orm.SinglefileData)
         spec.output("output_pseudo", valid_type=UpfData)
 
@@ -29,7 +30,7 @@ class Ld1Calculation(CalcJob):
         """Prepare the calculation for submission"""
 
         with folder.open(self.options.input_filename, "w", encoding="utf8") as handle:
-            handle.write(inp_str)
+            handle.write(self.inputs.parameters.get_content())
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
@@ -38,6 +39,6 @@ class Ld1Calculation(CalcJob):
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.retrieve_list = [self.options.output_filename]
+        calcinfo.retrieve_list = [self.options.output_filename, self.inputs.filename.value]
 
         return calcinfo
