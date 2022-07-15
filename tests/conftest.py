@@ -152,7 +152,7 @@ def generate_calc_job_node(fixture_localhost):
         return flat_inputs
 
     def _generate_calc_job_node(
-        entry_point_name='opsp.pseudo.oncv', computer=None, test_name=None, inputs=None, attributes=None
+        entry_point_name, computer=None, test_name=None, inputs=None, attributes=None
     ):
         """Fixture to generate a mock `CalcJobNode` for testing parsers.
         :param entry_point_name: entry point name of the calculation class
@@ -174,8 +174,7 @@ def generate_calc_job_node(fixture_localhost):
 
         if test_name is not None:
             basepath = os.path.dirname(os.path.abspath(__file__))
-            filename = os.path.join(entry_point_name[len('opsp.pseudo.'):], test_name)
-            filepath_folder = os.path.join(basepath, 'parsers', 'fixtures', filename)
+            filepath_folder = os.path.join(basepath, 'parsers', 'fixtures', test_name)
 
         entry_point = format_entry_point_string('aiida.calculations', entry_point_name)
 
