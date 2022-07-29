@@ -1,5 +1,10 @@
 # aiida-sssp-workflow
 
+## Initial dual (E_rho/E_wfc) for convergence test
+
+For NC psp we use dual start from 4, PAW/US use dual from 8 for most of elements but 18 for high dual elements which we found usually high charge density cutoff are needed. 
+They are O,Fe,Hf, Mn, Co, Ni, Cr.
+
 ## Logic of convergence test on different criteria protocol
 
 The wavefunction cutoff scan list are same no matter which criteria protocol is used.
