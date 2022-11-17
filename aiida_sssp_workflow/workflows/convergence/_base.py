@@ -63,7 +63,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.input('code', valid_type=orm.Code,
+        spec.input('code', valid_type=orm.AbstractCode,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')

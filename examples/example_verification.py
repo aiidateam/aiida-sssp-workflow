@@ -15,7 +15,9 @@ from aiida_sssp_workflow.workflows.verifications import DEFAULT_PROPERTIES_LIST
 UpfData = DataFactory("pseudo.upf")
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "examples/_static")
+STATIC_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "examples/_static"
+)
 
 
 def run_verification(

@@ -1,11 +1,12 @@
-label: "pw-7.0"
-description: "QuantumESPRESSO 7.0"
-input_plugin: "quantumespresso.pw"
+---
+label: pw-7.0
+description: QuantumESPRESSO 7.0
+input_plugin: quantumespresso.pw
 on_computer: true
-remote_abs_path: "/opt/conda/bin/pw.x"
-computer: "localhost"
+remote_abs_path: /opt/conda/bin/pw.x
+computer: localhost
 prepend_text: |
-  eval "$(conda shell.posix hook)"
-  conda activate base
-  OMP_NUM_THREADS=1
-append_text: " "
+    eval "$(conda shell.posix hook)"
+    conda activate base
+    OMP_NUM_THREADS=1
+append_text: ' '

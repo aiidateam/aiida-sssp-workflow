@@ -79,9 +79,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
-        spec.input('pw_code', valid_type=orm.Code,
+        spec.input('pw_code', valid_type=orm.AbstractCode,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('ph_code', valid_type=orm.Code,
+        spec.input('ph_code', valid_type=orm.AbstractCode,
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
