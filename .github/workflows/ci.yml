@@ -65,4 +65,4 @@ jobs:
                   pip install -U .[tests]
 
             - name: Run pytest
-              run: pytest -v
+              run: pytest -v tests/test_nightly.py::test_verification_accuracy_workflow -s
