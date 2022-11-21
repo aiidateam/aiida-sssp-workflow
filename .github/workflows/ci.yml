@@ -46,13 +46,6 @@ jobs:
               with:
                   singularity-version: 3.8.7
 
-            # - name: Maximize build space
-            #   uses: easimon/maximize-build-space@master
-            #   with:
-            #     root-reserve-mb: 512
-            #     swap-size-mb: 1024
-            #     remove-dotnet: 'true'
-
             - uses: actions/checkout@v2
 
             - name: Cache Python dependencies
@@ -72,8 +65,10 @@ jobs:
                   pip install -U pip==22.3.1
                   pip install -U .[tests]
 
-            - name: Run pytest
-              run: pytest -v tests/test_nightly.py::test_verification_accuracy_workflow -s
-              env:
-                SINGULARITY_TMPDIR: /home/runner/work/
-                SINGULARITY_CACHEDIR: /home/runner/work/
+            - name: Pull the image and Run pytest
+              run: |
+                singularity run docker://containers4hpc/qe-mpich314:0.1.0 which pw.x
+                pytest -v tests/test_nightly.py::test_verification_accuracy_workflow -s
+              # env:
+              #   SINGULARITY_TMPDIR: /home/runner/work/
+              #   SINGULARITY_CACHEDIR: /home/runner/work/

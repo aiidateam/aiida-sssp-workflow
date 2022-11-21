@@ -22,3 +22,6 @@ test:
     kpoints_distance: 0.5
     scale_count: 5
     scale_increment: 0.02
+    configurations:
+        - XO
+        - BCC

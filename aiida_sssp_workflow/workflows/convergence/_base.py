@@ -333,7 +333,6 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         self.ctx.max_ecutrho = self.ctx.reference_ecutwfc * self.ctx.dual
 
-        assert "pseudos" not in self._EVALUATE_WORKCHAIN.spec().inputs["bulk"]["pw"]
         running = self.submit(self._EVALUATE_WORKCHAIN, **inputs)
         self.report(f'launching reference calculation: {running.process_label}<{running.pk}>')
 
