@@ -29,7 +29,7 @@ jobs:
 
         strategy:
             matrix:
-                python-version: ['3.9', '3.10']
+                python-version: ['3.9']
 
         services:
             rabbitmq:
@@ -42,10 +42,18 @@ jobs:
         timeout-minutes: 40
 
         steps:
-            - uses: actions/checkout@v2
             - uses: eWaterCycle/setup-singularity@v7 # for containerized code test
               with:
                   singularity-version: 3.8.7
+
+            # - name: Maximize build space
+            #   uses: easimon/maximize-build-space@master
+            #   with:
+            #     root-reserve-mb: 512
+            #     swap-size-mb: 1024
+            #     remove-dotnet: 'true'
+
+            - uses: actions/checkout@v2
 
             - name: Cache Python dependencies
               uses: actions/cache@v1
@@ -66,3 +74,6 @@ jobs:
 
             - name: Run pytest
               run: pytest -v tests/test_nightly.py::test_verification_accuracy_workflow -s
+              env:
+                SINGULARITY_TMPDIR: /home/runner/work/
+                SINGULARITY_CACHEDIR: /home/runner/work/
