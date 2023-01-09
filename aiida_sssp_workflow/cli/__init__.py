@@ -18,4 +18,4 @@ def cmd_root(profile):  # pylint: disable=unused-argument
     """CLI for the `aiida-sssp-workflow` plugin."""
 
 
-from aiida_sssp_workflow.cli.tools import dump_output
+from aiida_sssp_workflow.cli import run
