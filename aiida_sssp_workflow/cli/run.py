@@ -23,8 +23,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 SSSP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sssp")
 
 
-@cmd_root.command("dump")
-@click.option("profile", "-p", help="profile")
+@cmd_root.command("launch")
 @click.option(
     "--mode",
     type=click.Choice(["TEST", "PRECHECK", "STANDARD"], case_sensitive=False),
@@ -34,14 +33,14 @@ SSSP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sssp")
     "--computer", type=str, help="computer (aiida) to run non-test verification."
 )
 @click.option(
-    "--test-mode",
+    "--cleanup",
     is_flag=True,
-    default=False,  # TODO: rename to `--no-cleanup`
-    help="in test mode the remote folder will not being cleaned.",
+    default=True,
+    help="Clean up the remote folder of all calculation, turn this off when your want to see the remote for details.",
 )
 @click.option("--property", multiple=True, default=[])
 @click.argument("filename", type=click.Path(exists=True))
-def run(profile, mode, filename, computer, property, test_mode):
+def launch(mode, filename, computer, property, cleanup):
     if not property:
         extra_desc = "all_prop"
         if mode == "PRECHECK":
@@ -52,16 +51,14 @@ def run(profile, mode, filename, computer, property, test_mode):
         properties_list = list(property)
         extra_desc = f"{properties_list}"
 
-    _profile = aiida.load_profile(profile)
+    _profile = aiida.load_profile()
     click.echo(f"Profile: {_profile.name}")
 
     inputs = inputs_from_mode(
         mode=mode, computer_label=computer, properties_list=properties_list
     )
-    if test_mode:
-        inputs["clean_workchain"] = False
-    else:
-        inputs["clean_workchain"] = True
+
+    inputs["clean_workchain"] = cleanup
 
     basename = os.path.basename(filename)
     label, _ = os.path.splitext(basename)
@@ -99,8 +96,8 @@ def inputs_from_mode(mode, computer_label, properties_list):
 
     inputs = {}
     if mode == "TEST":
-        inputs["pw_code"] = orm.load_code("pw-6.7@localhost")
-        inputs["ph_code"] = orm.load_code("ph-6.7@localhost")
+        inputs["pw_code"] = orm.load_code("pw-7.0@localhost")
+        inputs["ph_code"] = orm.load_code("ph-7.0@localhost")
         inputs["protocol"] = orm.Str("test")
         inputs["cutoff_control"] = orm.Str("test")
         inputs["criteria"] = orm.Str("efficiency")
@@ -215,4 +212,4 @@ def run_verification(
 
 
 if __name__ == "__main__":
-    run()
+    launch()
