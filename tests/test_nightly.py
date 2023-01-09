@@ -56,6 +56,8 @@ def test_verification_accuracy_workflow(generate_test_inputs, data_regression):
     inputs = generate_test_inputs(properties_list)
     _, node = launch.run_get_node(VerificationWorkChain, **inputs)
 
+    data_regression.check(node.outputs.accuracy.delta.output_parameters.get_dict())
+
     qb = orm.QueryBuilder()
     qb.append(
         cls=orm.CalcJobNode,
@@ -69,8 +71,6 @@ def test_verification_accuracy_workflow(generate_test_inputs, data_regression):
     fnode.outputs.remote_folder.getfile("_scheduler-stderr.txt", "/tmp/err.txt")
     with open("/tmp/err.txt", "r") as fh:
         print(fh.read())
-
-    data_regression.check(node.outputs.accuracy.delta.output_parameters.get_dict())
 
 
 @pytest.mark.usefixtures("aiida_profile_clean")
@@ -103,7 +103,6 @@ def test_verification_convergence_workflow(generate_test_inputs, data_regression
     _, node = launch.run_get_node(VerificationWorkChain, **inputs)
 
     data_regression.check(node.outputs.pseudo_info.get_dict())
-    # data_regression.check(node.outputs.accuracy.delta.output_parameters.get_dict())
 
     assert "cohesive_energy" in node.outputs.convergence
     assert "phonon_frequencies" in node.outputs.convergence

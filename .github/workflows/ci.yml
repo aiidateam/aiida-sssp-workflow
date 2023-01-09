@@ -68,7 +68,4 @@ jobs:
             - name: Pull the image and Run pytest
               run: |
                 singularity run docker://containers4hpc/qe-mpich314:0.1.0 which pw.x
-                pytest -v tests/test_nightly.py::test_verification_accuracy_workflow -s
-              # env:
-              #   SINGULARITY_TMPDIR: /home/runner/work/
-              #   SINGULARITY_CACHEDIR: /home/runner/work/
+                pytest -v tests/test_nightly.py -s
