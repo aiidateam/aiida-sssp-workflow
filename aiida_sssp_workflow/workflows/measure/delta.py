@@ -396,7 +396,6 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 "delta": output["delta"],
                 "delta/natoms": output["delta/natoms"],
                 "nu": output["rel_errors_vec_length"],
-                "nu/natoms": output["nu/natoms"],
             }
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())

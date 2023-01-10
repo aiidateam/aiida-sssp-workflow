@@ -124,9 +124,9 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         B0,
         B1,
         config_string=None,
-        prefact=400,  # XXX: re-inspect this value and set it in protocol
-        weight_b0=1 / 8,
-        weight_b1=1 / 64,
+        prefact=1,
+        weight_b0=1 / 20,
+        weight_b1=1 / 400,
     )
 
     return orm.Dict(
