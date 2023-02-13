@@ -15,7 +15,9 @@ from aiida_sssp_workflow.workflows.verifications import DEFAULT_PROPERTIES_LIST
 UpfData = DataFactory("pseudo.upf")
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_static")
+STATIC_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "examples/_static"
+)
 
 
 def run_verification(
@@ -48,7 +50,7 @@ def run_verification(
                     "num_mpiprocs_per_machine": 2,
                 },
                 "max_wallclock_seconds": 1800 * 3,
-                "withmpi": True,
+                "withmpi": False,
             }
         ),
         "parallelization": orm.Dict(dict={"npool": 1}),
@@ -75,8 +77,8 @@ if __name__ == "__main__":
     if not sys.argv[2:]:
         properties_list = DEFAULT_PROPERTIES_LIST
 
-    pw_code = load_code("pw-6.7@localhost")
-    ph_code = load_code("ph-6.7@localhost")
+    pw_code = load_code("pw-7.0@localhost")
+    ph_code = load_code("ph-7.0@localhost")
 
     if element == "Mg":
         pp_label = "psl/Mg.pbe-spn-kjpaw_psl.1.0.0.UPF"

@@ -2,20 +2,18 @@
 # pylint: disable=wrong-import-position,wildcard-import
 """Module for the command line interface."""
 import click
-import click_completion
-from aiida.cmdline.params import options as options_core
-from aiida.cmdline.params import types
-
-# Activate the completion of parameter types provided by the click_completion package
-click_completion.init()
+from aiida.cmdline.groups import VerdiCommandGroup
+from aiida.cmdline.params import options, types
 
 
 @click.group(
-    "aiida-sssp-workflow", context_settings={"help_option_names": ["-h", "--help"]}
+    "aiida-sssp-workfloww",
+    cls=VerdiCommandGroup,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
-@options_core.PROFILE(type=types.ProfileParamType(load_profile=True))
-def cmd_root(profile):  # pylint: disable=unused-argument
+@options.PROFILE(type=types.ProfileParamType(load_profile=True), expose_value=False)
+def cmd_root():
     """CLI for the `aiida-sssp-workflow` plugin."""
 
 
-from aiida_sssp_workflow.cli.tools import dump_output
+from .run import launch

@@ -79,9 +79,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
-        spec.input('pw_code', valid_type=orm.Code,
+        spec.input('pw_code', valid_type=orm.AbstractCode,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('ph_code', valid_type=orm.Code,
+        spec.input('ph_code', valid_type=orm.AbstractCode,
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
@@ -158,7 +158,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         """parse pseudo"""
         pseudo_info = parse_pseudo_info(self.inputs.pseudo)
         self.ctx.pseudo_info = pseudo_info.get_dict()
-        self.node.set_extra_many(
+        self.node.base.extras.set_many(
             self.ctx.pseudo_info
         )  # set the extra attributes for the node
 
@@ -172,7 +172,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         else:
             label = self._label_from_pseudo_info(self.ctx.pseudo_info)
 
-        self.node.set_extra("label", label)
+        self.node.base.extras.set("label", label)
 
         # Properties list
         valid_list = self._VALID_ACCURACY_WF + self._VALID_CONGENCENCE_WF
@@ -391,13 +391,14 @@ class VerificationWorkChain(SelfCleanWorkChain):
             else:
                 return None
 
-        # For calcjobs in _caching, to prevent it from being used by second run after
-        # remote work_dir cleaned. I invalid it from caching if it is being cleaned.
-        invalid_calcs = operate_calcjobs(
-            self.ctx.verify_caching, operator=_invalid_cache, all_same_nodes=True
-        )
-
-        if invalid_calcs:
-            self.report(
-                f"Invalid cache of `_caching` (even nonmenon) workflow's calcjob node: {' '.join(map(str, invalid_calcs))}"
+        if "verify_caching" in self.ctx:
+            # For calcjobs in _caching, to prevent it from being used by second run after
+            # remote work_dir cleaned. I invalid it from caching if it is being cleaned.
+            invalid_calcs = operate_calcjobs(
+                self.ctx.verify_caching, operator=_invalid_cache, all_same_nodes=True
             )
+
+            if invalid_calcs:
+                self.report(
+                    f"Invalid cache of `_caching` (even nonmenon) workflow's calcjob node: {' '.join(map(str, invalid_calcs))}"
+                )

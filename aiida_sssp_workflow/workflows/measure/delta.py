@@ -184,6 +184,13 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
 
+        # narrow the configuration list by protocol
+        # this is used for test protocol which only has limited configurations to be verified
+        clist = protocol.get("configurations", self.ctx.configuration_list)
+        for key in list(self.ctx.structures.keys()):
+            if key not in clist:
+                self.ctx.structures.pop(key)
+
         cutoff_control = get_protocol(
             category="control", name=self.inputs.cutoff_control.value
         )
@@ -389,7 +396,6 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 "delta": output["delta"],
                 "delta/natoms": output["delta/natoms"],
                 "nu": output["rel_errors_vec_length"],
-                "nu/natoms": output["nu/natoms"],
             }
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())

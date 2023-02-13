@@ -16,7 +16,7 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('code', valid_type=orm.Code,
+        spec.input('code', valid_type=orm.AbstractCode,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')

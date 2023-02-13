@@ -45,4 +45,4 @@ def test_parse_element(content):
 )
 def test_parse_pseudo_type(content):
     """Test the ``parse_pseudo_type`` method"""
-    assert parse_pseudo_type(content) == "US"
+    assert parse_pseudo_type(content) == "us"
