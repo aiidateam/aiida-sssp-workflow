@@ -1,0 +1,13 @@
+---
+# verdi computer setup -n --config setup-yaml/computer-setup.yaml
+label: "localhost"
+hostname: "localhost"
+description: "WS"
+transport: "core.local"
+scheduler: "core.direct"
+work_dir: "/scratch/{username}/aiida_run/"
+shebang: "#!/bin/bash"
+mpirun_command: "mpirun -np {tot_num_mpiprocs}"
+mpiprocs_per_machine: 8
+prepend_text: " "
+append_text: " "
