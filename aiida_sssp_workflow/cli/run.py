@@ -33,8 +33,7 @@ SSSP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sssp")
     "--computer", type=str, help="computer (aiida) to run non-test verification."
 )
 @click.option(
-    "--cleanup",
-    is_flag=True,
+    "--cleanup/--no-cleanup",
     default=True,
     help="Clean up the remote folder of all calculation, turn this off when your want to see the remote for details.",
 )
@@ -189,7 +188,6 @@ def run_verification(
             "protocol": protocol,
             "cutoff_control": cutoff_control,
             "criteria": criteria,
-            # "preset_ecutwfc": orm.Int(31),
         },
         "pw_code": pw_code,
         "ph_code": ph_code,
