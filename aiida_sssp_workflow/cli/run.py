@@ -26,7 +26,7 @@ SSSP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sssp")
 @cmd_root.command("launch")
 @click.option(
     "--mode",
-    type=click.Choice(["TEST", "PRECHECK", "STANDARD"], case_sensitive=False),
+    type=click.Choice(["OPSP", "TEST", "PRECHECK", "STANDARD"], case_sensitive=False),
     help="mode of verification.",
 )
 @click.option(
@@ -37,9 +37,14 @@ SSSP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sssp")
     default=True,
     help="Clean up the remote folder of all calculation, turn this off when your want to see the remote for details.",
 )
+@click.option(
+    "--daemon/--no-daemon",
+    default=True,
+    help="Launch the verfication to daemon by submit or run directly.",
+)
 @click.option("--property", multiple=True, default=[])
 @click.argument("filename", type=click.Path(exists=True))
-def launch(mode, filename, computer, property, cleanup):
+def launch(mode, filename, computer, property, cleanup, daemon):
     if not property:
         extra_desc = "all_prop"
         if mode == "PRECHECK":
@@ -73,6 +78,7 @@ def launch(mode, filename, computer, property, cleanup):
             "label": label,
             "extra_desc": extra_desc,
         },
+        on_daemon=daemon,
     )
 
     click.echo(node)
@@ -95,8 +101,8 @@ def inputs_from_mode(mode, computer_label, properties_list):
 
     inputs = {}
     if mode == "TEST":
-        inputs["pw_code"] = orm.load_code("pw-7.0@localhost")
-        inputs["ph_code"] = orm.load_code("ph-7.0@localhost")
+        inputs["pw_code"] = orm.load_code("pw-7.1@localhost")
+        inputs["ph_code"] = orm.load_code("ph-7.1@localhost")
         inputs["protocol"] = orm.Str("test")
         inputs["cutoff_control"] = orm.Str("test")
         inputs["criteria"] = orm.Str("efficiency")
@@ -111,6 +117,25 @@ def inputs_from_mode(mode, computer_label, properties_list):
             }
         )
         inputs["parallization"] = orm.Dict(dict={})
+        inputs["properties_list"] = orm.List(list=properties_list)
+        
+    if mode == "OPSP":
+        inputs["pw_code"] = orm.load_code(f"pw-7.0@{computer_label}")
+        inputs["ph_code"] = orm.load_code(f"ph-7.0@{computer_label}")
+        inputs["protocol"] = orm.Str("opsp")
+        inputs["cutoff_control"] = orm.Str("opsp")
+        inputs["criteria"] = orm.Str("efficiency")
+        inputs["options"] = orm.Dict(
+            dict={
+                "resources": {
+                    "num_machines": 1,
+                    "num_mpiprocs_per_machine": mpiprocs,
+                },
+                "max_wallclock_seconds": walltime,
+                "withmpi": True,
+            }
+        )
+        inputs["parallization"] = orm.Dict(dict={"npool": npool})
         inputs["properties_list"] = orm.List(list=properties_list)
 
     if mode == "PRECHECK":
@@ -167,6 +192,7 @@ def run_verification(
     label,
     extra_desc,
     clean_workchain,
+    on_daemon,
 ):
     """
     pw_code: code for pw.x calculation
@@ -199,10 +225,10 @@ def run_verification(
         "clean_workchain": orm.Bool(clean_workchain),
     }
 
-    if cutoff_control.value == "test":
-        _, node = run_get_node(VerificationWorkChain, **inputs)
-    else:
+    if on_daemon:
         node = submit(VerificationWorkChain, **inputs)
+    else:
+        _, node = run_get_node(VerificationWorkChain, **inputs)
 
     node.description = f"{label.value} ({extra_desc})"
 

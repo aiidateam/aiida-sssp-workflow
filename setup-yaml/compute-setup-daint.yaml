@@ -1,0 +1,21 @@
+---
+label: "daint-mc-mrcloud"
+hostname: "daint.cscs.ch"
+description: Piz Daint supercomputer at CSCS Lugano, Switzerland, multicore partition.
+transport: "core.ssh"
+scheduler: "core.slurm"
+work_dir: "/scratch/snx3000/{username}/aiida_run/"
+shebang: "#!/bin/bash"
+mpirun_command: "srun -n {tot_num_mpiprocs}"
+mpiprocs_per_machine: 36
+prepend_text: |
+    ### computer prepend_text start ###
+    #SBATCH --partition=normal
+    #SBATCH --constraint=mc
+    #SBATCH --cpus-per-task=1
+    #SBATCH --account="mrcloud"
+    export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+    source $MODULESHOME/init/bash
+    ulimit -s unlimited
+    ### computer prepend_text end ###
+append_text: " "
