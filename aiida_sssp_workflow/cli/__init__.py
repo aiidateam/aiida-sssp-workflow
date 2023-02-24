@@ -7,7 +7,7 @@ from aiida.cmdline.params import options, types
 
 
 @click.group(
-    "aiida-sssp-workfloww",
+    "aiida-sssp-workflow",
     cls=VerdiCommandGroup,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
