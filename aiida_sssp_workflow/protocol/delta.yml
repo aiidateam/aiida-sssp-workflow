@@ -42,3 +42,15 @@ opsp:
         - XO2
         - BCC
         - SC
+
+opsp-full:
+    name: opsp-full
+    description: For OPSP verifications with all configurations
+
+    occupations: smearing
+    degauss: 0.0045
+    smearing: fd
+    electron_conv_thr: 1.0e-8
+    kpoints_distance: 0.2
+    scale_count: 7
+    scale_increment: 0.02

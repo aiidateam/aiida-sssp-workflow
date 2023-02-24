@@ -26,7 +26,7 @@ SSSP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sssp")
 @cmd_root.command("launch")
 @click.option(
     "--mode",
-    type=click.Choice(["OPSP", "TEST", "PRECHECK", "STANDARD"], case_sensitive=False),
+    type=click.Choice(["OPSP", "OPSP_FULL", "TEST", "PRECHECK", "STANDARD"], case_sensitive=False),
     help="mode of verification.",
 )
 @click.option(
@@ -123,6 +123,25 @@ def inputs_from_mode(mode, computer_label, properties_list):
         inputs["pw_code"] = orm.load_code(f"pw-7.0@{computer_label}")
         inputs["ph_code"] = orm.load_code(f"ph-7.0@{computer_label}")
         inputs["protocol"] = orm.Str("opsp")
+        inputs["cutoff_control"] = orm.Str("opsp")
+        inputs["criteria"] = orm.Str("efficiency")
+        inputs["options"] = orm.Dict(
+            dict={
+                "resources": {
+                    "num_machines": 1,
+                    "num_mpiprocs_per_machine": mpiprocs,
+                },
+                "max_wallclock_seconds": walltime,
+                "withmpi": True,
+            }
+        )
+        inputs["parallization"] = orm.Dict(dict={"npool": npool})
+        inputs["properties_list"] = orm.List(list=properties_list)
+        
+    if mode == "OPSP_FULL":
+        inputs["pw_code"] = orm.load_code(f"pw-7.0@{computer_label}")
+        inputs["ph_code"] = orm.load_code(f"ph-7.0@{computer_label}")
+        inputs["protocol"] = orm.Str("opsp-full")
         inputs["cutoff_control"] = orm.Str("opsp")
         inputs["criteria"] = orm.Str("efficiency")
         inputs["options"] = orm.Dict(
