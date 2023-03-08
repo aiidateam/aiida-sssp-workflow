@@ -13,7 +13,7 @@ from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
-from aiida_sssp_workflow.workflows.common import operate_calcjobs
+from aiida_sssp_workflow.workflows.common import operate_calcjobs, invalid_cache
 from aiida_sssp_workflow.workflows.convergence import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
@@ -371,31 +371,11 @@ class VerificationWorkChain(SelfCleanWorkChain):
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return
 
-        def _invalid_cache(node: orm.CalcJobNode) -> Optional[int]:
-            """This is different from invalid_cache of `common.py`.
-            It is stringent that even for non-cached node it will be invalided from caching
-            so it can not be used for further caching. Only applied below for `_caching`
-            workflow at the end of verification."""
-
-            if "_aiida_hash" in node.extras:
-                # It is implemented in aiida 2.0.0, by setting the is_valid_cache.
-                # set the it to disable the caching to precisely control extras.
-                # here in order that the correct node is cleaned and caching controlled
-                # I only invalid_caching if this node is cached from other node, otherwise
-                # that node (should be the node from `_caching` workflow) will not be invalid
-                # caching.
-                # This ensure that if the calcjob is identically running, it will still be used for
-                # further calculation.
-                node.delete_extra("_aiida_hash")
-                return node.pk
-            else:
-                return None
-
         if "verify_caching" in self.ctx:
             # For calcjobs in _caching, to prevent it from being used by second run after
             # remote work_dir cleaned. I invalid it from caching if it is being cleaned.
             invalid_calcs = operate_calcjobs(
-                self.ctx.verify_caching, operator=_invalid_cache, all_same_nodes=True
+                self.ctx.verify_caching, operator=invalid_cache, all_same_nodes=True
             )
 
             if invalid_calcs:

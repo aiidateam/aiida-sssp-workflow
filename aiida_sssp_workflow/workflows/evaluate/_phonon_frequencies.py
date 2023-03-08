@@ -87,7 +87,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
                 ][0]
                 all_same_nodes = pw_node.get_all_same_nodes()
                 for node in all_same_nodes:
-                    node.delete_extra("_aiida_hash")
+                    node.is_valid_cache = False
 
         except NotExistentAttributeError:
             # set condition to False to break loop
