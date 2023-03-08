@@ -49,6 +49,7 @@ def retrieve_bands(
     first dimension is for the up and down spin.
     I simply concatenate along the first dimension.
     """
+    print(efermi)
     bands = bandsdata.get_bands()
     kpoints, weights = bandsdata.get_kpoints(also_weights=True)
 
@@ -79,7 +80,7 @@ def retrieve_bands(
         # in bands measure.
         homo_energy = get_homo(bands, num_electrons)
         output_efermi = homo_energy
-
+        
     return {
         "bands": output_bands,
         "efermi": output_efermi,
@@ -100,7 +101,7 @@ def calculate_eta_and_max_diff(
     from functools import partial
 
     from scipy.optimize import minimize
-
+    
     weight_a = bands_a.get_array("weights")
     weight_b = bands_b.get_array("weights")
     weight = weight_a
@@ -119,8 +120,8 @@ def calculate_eta_and_max_diff(
     bands_a = bands_a[:, : num_bands - 1]
     bands_b = bands_b[:, : num_bands - 1]
 
-    occ_a = fermi_dirac(bands_a, efermi_a + fermi_shift, smearing)
-    occ_b = fermi_dirac(bands_b, efermi_b + fermi_shift, smearing)
+    occ_a = fermi_dirac(bands_a, fermi_shift, smearing)
+    occ_b = fermi_dirac(bands_b, fermi_shift, smearing)
     occ = np.sqrt(occ_a * occ_b)
 
     bands_diff = bands_a - bands_b
@@ -197,9 +198,12 @@ def get_bands_distance(
     outputs = calculate_eta_and_max_diff(
         bands_a, bands_b, efermi_a, efermi_b, fermi_shift_v, smearing_v
     )
-    eta_v = outputs.get("eta")
-    shift_v = outputs.get("shift")
-    max_diff_v = outputs.get("max_diff")
+
+    _eV_to_mev = 1000
+    eta_v = outputs.get("eta") * _eV_to_mev
+    shift_v = outputs.get("shift") * _eV_to_mev
+    max_diff_v = outputs.get("max_diff") * _eV_to_mev
+
 
     # eta_c
     # if not metal
@@ -208,15 +212,19 @@ def get_bands_distance(
         bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_c
     )
 
-    eta_c = outputs.get("eta")
-    shift_c = outputs.get("shift")
-    max_diff_c = outputs.get("max_diff")
+    eta_c = outputs.get("eta") * _eV_to_mev
+    shift_c = outputs.get("shift") * _eV_to_mev
+    max_diff_c = outputs.get("max_diff") * _eV_to_mev
 
-    return {
+
+    out = {
         "eta_v": eta_v,
         "shift_v": shift_v,
         "max_diff_v": max_diff_v,
         "eta_c": eta_c,
         "shift_c": shift_c,
         "max_diff_c": max_diff_c,
+        "units": "meV",
     }
+    print(out)
+    return out
