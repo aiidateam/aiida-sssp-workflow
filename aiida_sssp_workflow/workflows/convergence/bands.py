@@ -7,9 +7,6 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.calculations.bands_distance import (
-    get_bands_distance as get_bands_distance_new,
-)
 from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
 from aiida_sssp_workflow.utils import MAGNETIC_ELEMENTS, NONMETAL_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
@@ -19,7 +16,7 @@ UpfData = DataFactory("pseudo.upf")
 
 
 @calcfunction
-def helper_bands_distence_difference_new(
+def helper_bands_distence_difference(
     band_structure_a: orm.BandsData,
     band_parameters_a: orm.Dict,
     band_structure_b: orm.BandsData,
@@ -29,25 +26,8 @@ def helper_bands_distence_difference_new(
     do_smearing: orm.Bool,
     spin: orm.Bool,
 ):
-    """doc"""
-    # # `get_bands_distance` require the less electrons results pass
-    # # to inputs of label 'a', do swap a and b if not.
-    # num_electrons_a = band_parameters_a["number_of_electrons"]
-    # num_electrons_b = band_parameters_b["number_of_electrons"]
-
-    # if num_electrons_a > num_electrons_b:
-    #     band_parameters_a, band_parameters_b = band_parameters_b, band_parameters_a
-    #     band_structure_a, band_structure_b = band_structure_b, band_structure_a
-
-    # res = get_bands_distance(
-    #     band_structure_a,
-    #     band_structure_b,
-    #     band_parameters_a,
-    #     band_parameters_b,
-    #     smearing.value,
-    #     fermi_shift.value,
-    #     do_smearing.value,
-    # )
+    """The helper function to calculate the bands distance between two band structures.
+    The function is called in last step of convergence workflow to get the bands distance."""
 
     # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
     bandsdata_a = {
@@ -66,7 +46,7 @@ def helper_bands_distence_difference_new(
         "kpoints": band_structure_b.get_kpoints(),
         "weights": band_structure_b.get_array("weights"),
     }
-    res = get_bands_distance_new(
+    res = get_bands_distance(
         bandsdata_a,
         bandsdata_b,
         smearing=smearing.value,
@@ -74,52 +54,6 @@ def helper_bands_distence_difference_new(
         do_smearing=do_smearing.value,
         spin=spin.value,
     )
-    eta = res.get("eta_c", None)
-    shift = res.get("shift_c", None)
-    max_diff = res.get("max_diff_c", None)
-    units = res.get("units", None)
-
-    return orm.Dict(
-        dict={
-            "eta_c": eta,
-            "shift_c": shift,
-            "max_diff_c": max_diff,
-            "bands_unit": units,
-        }
-    )
-
-
-@calcfunction
-def helper_bands_distence_difference(
-    band_structure_a: orm.BandsData,
-    band_parameters_a: orm.Dict,
-    band_structure_b: orm.BandsData,
-    band_parameters_b: orm.Dict,
-    smearing: orm.Float,
-    fermi_shift: orm.Float,
-    do_smearing: orm.Bool,
-    spin: orm.Bool,
-):
-    """doc"""
-    # `get_bands_distance` require the less electrons results pass
-    # to inputs of label 'a', do swap a and b if not.
-    num_electrons_a = band_parameters_a["number_of_electrons"]
-    num_electrons_b = band_parameters_b["number_of_electrons"]
-
-    if num_electrons_a > num_electrons_b:
-        band_parameters_a, band_parameters_b = band_parameters_b, band_parameters_a
-        band_structure_a, band_structure_b = band_structure_b, band_structure_a
-
-    res = get_bands_distance(
-        band_structure_a,
-        band_structure_b,
-        band_parameters_a,
-        band_parameters_b,
-        smearing.value,
-        fermi_shift.value,
-        do_smearing.value,
-    )
-
     eta = res.get("eta_c", None)
     shift = res.get("shift_c", None)
     max_diff = res.get("max_diff_c", None)
