@@ -49,7 +49,6 @@ def retrieve_bands(
     first dimension is for the up and down spin.
     I simply concatenate along the first dimension.
     """
-    print(efermi)
     bands = bandsdata.get_bands()
     kpoints, weights = bandsdata.get_kpoints(also_weights=True)
 
@@ -80,7 +79,7 @@ def retrieve_bands(
         # in bands measure.
         homo_energy = get_homo(bands, num_electrons)
         output_efermi = homo_energy
-        
+
     return {
         "bands": output_bands,
         "efermi": output_efermi,
@@ -101,7 +100,7 @@ def calculate_eta_and_max_diff(
     from functools import partial
 
     from scipy.optimize import minimize
-    
+
     weight_a = bands_a.get_array("weights")
     weight_b = bands_b.get_array("weights")
     weight = weight_a
@@ -204,7 +203,6 @@ def get_bands_distance(
     shift_v = outputs.get("shift") * _eV_to_mev
     max_diff_v = outputs.get("max_diff") * _eV_to_mev
 
-
     # eta_c
     # if not metal
     smearing_c = smearing
@@ -216,7 +214,6 @@ def get_bands_distance(
     shift_c = outputs.get("shift") * _eV_to_mev
     max_diff_c = outputs.get("max_diff") * _eV_to_mev
 
-
     out = {
         "eta_v": eta_v,
         "shift_v": shift_v,
@@ -226,5 +223,5 @@ def get_bands_distance(
         "max_diff_c": max_diff_c,
         "units": "meV",
     }
-    print(out)
+
     return out

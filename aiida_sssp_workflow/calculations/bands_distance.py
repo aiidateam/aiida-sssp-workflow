@@ -71,10 +71,8 @@ def retrieve_bands(
         bands = bands[:, start_band_idx : start_band_idx + num_bands]
 
     # shift to fermi level aligh to zero
-    print("fermi level", bandsdata.get("fermi_level"))
     bandsdata["bands"] = bands - bandsdata["fermi_level"]
     bandsdata["fermi_level"] = 0.0
-    print("bands", bandsdata.get("bands"))
 
     # update fermi_level
     if not do_smearing:
@@ -94,10 +92,9 @@ def retrieve_bands(
         # )
         #####
         # use the fermi_level from QE therefore do nothing.
-        # This can be commented out since with acwf protocol I use the fermi dirac smearing 
+        # This can be commented out since with acwf protocol I use the fermi dirac smearing
         # which should give the exact the same fermi level.
         pass
-    
 
     return bandsdata
 
@@ -125,11 +122,6 @@ def calculate_eta_and_max_diff(
 
     bands_a = bandsdata_a.get("bands")
     bands_b = bandsdata_b.get("bands")
-
-    fermi_level_a = bandsdata_a.get("fermi_level")
-    fermi_level_b = bandsdata_b.get("fermi_level")
-    print("fermi_level_a", fermi_level_a)
-    print("fermi_level_b", fermi_level_b)
 
     num_bands = min(np.shape(bands_a)[1], np.shape(bands_b)[1])
 
@@ -213,7 +205,7 @@ def get_bands_distance(
 
     num_electrons_a = int(bandsdata_a["number_of_electrons"])
     num_electrons_b = int(bandsdata_b["number_of_electrons"])
-    
+
     # divide by 2 is valid for both spin and non-spin bands, since for spin I concatenate the bands
     # the number of bands is half of electrons
     band_b_start_band = int(num_electrons_b - num_electrons_a) // 2
@@ -277,7 +269,5 @@ def get_bands_distance(
         "max_diff_c": max_diff_c,
         "units": "meV",
     }
-    
-    print(out)
-    
+
     return out

@@ -7,12 +7,13 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
+from aiida_sssp_workflow.calculations.bands_distance import (
+    get_bands_distance as get_bands_distance_new,
+)
 from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
-from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import MAGNETIC_ELEMENTS, NONMETAL_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
-from aiida_sssp_workflow.utils import MAGNETIC_ELEMENTS
-from aiida_sssp_workflow.calculations.bands_distance import get_bands_distance as get_bands_distance_new
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -47,7 +48,7 @@ def helper_bands_distence_difference_new(
     #     fermi_shift.value,
     #     do_smearing.value,
     # )
-    
+
     # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
     bandsdata_a = {
         "number_of_electrons": band_parameters_a["number_of_electrons"],
@@ -86,8 +87,8 @@ def helper_bands_distence_difference_new(
             "bands_unit": units,
         }
     )
-    
-    
+
+
 @calcfunction
 def helper_bands_distence_difference(
     band_structure_a: orm.BandsData,
@@ -118,7 +119,7 @@ def helper_bands_distence_difference(
         fermi_shift.value,
         do_smearing.value,
     )
-    
+
     eta = res.get("eta_c", None)
     shift = res.get("shift_c", None)
     max_diff = res.get("max_diff_c", None)
@@ -237,7 +238,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
         sample_band_structure = sample_node.outputs.bands.band_structure
         reference_band_structure = reference_node.outputs.bands.band_structure
-        
+
         spin = self.ctx.element in MAGNETIC_ELEMENTS
 
         # Always process smearing to find fermi level even for non-metal elements.

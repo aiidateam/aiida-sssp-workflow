@@ -13,7 +13,7 @@ from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
-from aiida_sssp_workflow.workflows.common import operate_calcjobs, invalid_cache
+from aiida_sssp_workflow.workflows.common import invalid_cache, operate_calcjobs
 from aiida_sssp_workflow.workflows.convergence import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.convergence.caching import (
     _CachingConvergenceWorkChain,
