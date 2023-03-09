@@ -140,8 +140,8 @@ def calculate_eta_and_max_diff(
 
     def fun_shift(occ, bands_diff, shift):
         # 1/w ~ degeneracy of the kpoints
-        nominator = np.multiply(1 / weight[:, None], (occ * (bands_diff + shift) ** 2))
-        denominator = np.multiply(1 / weight[:, None], occ)
+        nominator = np.multiply(weight[:, None], (occ * (bands_diff + shift) ** 2))
+        denominator = np.multiply(weight[:, None], occ)
         return np.sqrt(np.sum(nominator) / np.sum(denominator))
 
     # Compute eta
