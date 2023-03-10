@@ -8,7 +8,7 @@ from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
-from aiida_sssp_workflow.utils import NONMETAL_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import MAGNETIC_ELEMENTS, NONMETAL_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
@@ -24,36 +24,47 @@ def helper_bands_distence_difference(
     smearing: orm.Float,
     fermi_shift: orm.Float,
     do_smearing: orm.Bool,
+    spin: orm.Bool,
 ):
-    """doc"""
-    # `get_bands_distance` require the less electrons results pass
-    # to inputs of label 'a', do swap a and b if not.
-    num_electrons_a = band_parameters_a["number_of_electrons"]
-    num_electrons_b = band_parameters_b["number_of_electrons"]
+    """The helper function to calculate the bands distance between two band structures.
+    The function is called in last step of convergence workflow to get the bands distance."""
 
-    if num_electrons_a > num_electrons_b:
-        band_parameters_a, band_parameters_b = band_parameters_b, band_parameters_a
-        band_structure_a, band_structure_b = band_structure_b, band_structure_a
-
+    # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
+    bandsdata_a = {
+        "number_of_electrons": band_parameters_a["number_of_electrons"],
+        "number_of_bands": band_parameters_a["number_of_bands"],
+        "fermi_level": band_parameters_a["fermi_energy"],
+        "bands": band_structure_a.get_bands(),
+        "kpoints": band_structure_a.get_kpoints(),
+        "weights": band_structure_a.get_array("weights"),
+    }
+    bandsdata_b = {
+        "number_of_electrons": band_parameters_b["number_of_electrons"],
+        "number_of_bands": band_parameters_b["number_of_bands"],
+        "fermi_level": band_parameters_b["fermi_energy"],
+        "bands": band_structure_b.get_bands(),
+        "kpoints": band_structure_b.get_kpoints(),
+        "weights": band_structure_b.get_array("weights"),
+    }
     res = get_bands_distance(
-        band_structure_a,
-        band_structure_b,
-        band_parameters_a,
-        band_parameters_b,
-        smearing.value,
-        fermi_shift.value,
-        do_smearing.value,
+        bandsdata_a,
+        bandsdata_b,
+        smearing=smearing.value,
+        fermi_shift=fermi_shift.value,
+        do_smearing=do_smearing.value,
+        spin=spin.value,
     )
     eta = res.get("eta_c", None)
     shift = res.get("shift_c", None)
     max_diff = res.get("max_diff_c", None)
+    units = res.get("units", None)
 
     return orm.Dict(
         dict={
-            "eta_c": eta * 1000,
-            "shift_c": shift * 1000,
-            "max_diff_c": max_diff * 1000,
-            "bands_unit": "meV",  # unit mev with value * 1000
+            "eta_c": eta,
+            "shift_c": shift,
+            "max_diff_c": max_diff,
+            "bands_unit": units,
         }
     )
 
@@ -156,11 +167,13 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
     def helper_compare_result_extract_fun(self, sample_node, reference_node, **kwargs):
         """implement"""
-        sample_band_parameters = sample_node.outputs["bands"].band_parameters
-        reference_band_parameters = reference_node.outputs["bands"].band_parameters
+        sample_band_parameters = sample_node.outputs.bands.band_parameters
+        reference_band_parameters = reference_node.outputs.bands.band_parameters
 
-        sample_band_structure = sample_node.outputs["bands"].band_structure
-        reference_band_structure = reference_node.outputs["bands"].band_structure
+        sample_band_structure = sample_node.outputs.bands.band_structure
+        reference_band_structure = reference_node.outputs.bands.band_structure
+
+        spin = self.ctx.element in MAGNETIC_ELEMENTS
 
         # Always process smearing to find fermi level even for non-metal elements.
         res = helper_bands_distence_difference(
@@ -171,6 +184,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
             fermi_shift=orm.Float(self.ctx.fermi_shift),
             do_smearing=orm.Bool(True),
+            spin=orm.Bool(spin),
         ).get_dict()
 
         return res

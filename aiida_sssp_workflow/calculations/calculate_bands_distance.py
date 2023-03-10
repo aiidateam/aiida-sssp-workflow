@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """
+Adapt from aiida-sssp-workflow as prototype
+Will in here refactoring it so no need to use the aiida datatype as inputs.
+
 calculate bands distance
 """
 import numpy as np
-from aiida import orm
 
-from aiida_sssp_workflow.efermi import find_efermi
+# from aiida_sssp_workflow.efermi import find_efermi
 
 
 def get_homo(bands, num_electrons: int):
@@ -19,25 +21,30 @@ def get_homo(bands, num_electrons: int):
     return max(band)
 
 
-def fermi_dirac(band_energy, fermi_energy, smearing):
+def fermi_dirac(band_energy, fermi_energy, smearing, spin):
     """
     The first argument can be an array
     """
+    if spin:
+        occ = 1.0
+    else:
+        occ = 2.0
+
     old_settings = np.seterr(over="raise", divide="raise")
     try:
-        res = 1.0 / (np.exp((band_energy - fermi_energy) / smearing) + 1.0)
+        res = occ / (np.exp((band_energy - fermi_energy) / smearing) + 1.0)
     except FloatingPointError:
-        res = np.heaviside(fermi_energy - band_energy, 1.0)
+        res = np.heaviside(fermi_energy - band_energy, occ)
     np.seterr(**old_settings)
 
     return res
 
 
 def retrieve_bands(
-    bandsdata: orm.BandsData,
-    start_band,
+    bandsdata: dict,  # bands, kpoints, weights -> corresponding array
+    start_band_idx,
+    num_bands,
     num_electrons,
-    efermi,
     smearing,
     do_smearing,
 ):
@@ -45,52 +52,57 @@ def retrieve_bands(
     collect the bands of certain number with setting the start band.
     In order to make sure that when comparing two bands distance the number of bands is the same.
 
+    aligh bands to fermi level
+
     The bands calculation of magnetic elements will giving a three dimensional bands where the
     first dimension is for the up and down spin.
     I simply concatenate along the first dimension.
     """
-    bands = bandsdata.get_bands()
-    kpoints, weights = bandsdata.get_kpoints(also_weights=True)
+    bands = bandsdata.get("bands")
+    # weights = bandsdata.get("weights")
 
     # reduce by first dimension of up, down spins
     if len(bands.shape) > 2:
+        bands = bands[:, :, start_band_idx : start_band_idx + num_bands]
         nspin, nk, nbands = bands.shape
         bands = bands.reshape(nk, nbands * nspin)
-        np.sort(bands)  # sort along last axis - eigenvalues of specific kpoint
-
-    bands = bands - efermi  # shift all bands to fermi energy 0
-    bands = bands[:, start_band:]
-    output_bands = orm.ArrayData()
-    output_bands.set_array("kpoints", kpoints)
-    output_bands.set_array("weights", weights)
-    output_bands.set_array("bands", bands)
-
-    if do_smearing:
-        # for bands distance convergence
-        # and metals in bands measure verification.
-        nelectrons = num_electrons
-        bands = np.asfortranarray(bands)
-        meth = 2  # firmi-dirac smearing
-
-        output_efermi = find_efermi(bands, weights, nelectrons, smearing, meth)
-
     else:
+        # update bands shift to fermi_level
+        bands = bands[:, start_band_idx : start_band_idx + num_bands]
+
+    # shift to fermi level aligh to zero
+    bandsdata["bands"] = bands - bandsdata["fermi_level"]
+    bandsdata["fermi_level"] = 0.0
+
+    # update fermi_level
+    if not do_smearing:
         # easy to spot the efermi energy only used for non-metals of typical configurations
         # in bands measure.
         homo_energy = get_homo(bands, num_electrons)
-        output_efermi = homo_energy
+        bandsdata["fermi_level"] = homo_energy
 
-    return {
-        "bands": output_bands,
-        "efermi": output_efermi,
-    }
+    else:
+        # for bands distance convergence
+        # and metals in bands measure verification.
+        # bands = np.asfortranarray(bands)
+        # meth = 2  # firmi-dirac smearing
+
+        # bandsdata["fermi_level"] = find_efermi(
+        #     bands, weights, num_electrons, smearing, meth
+        # )
+        #####
+        # use the fermi_level from QE therefore do nothing.
+        # This can be commented out since with acwf protocol I use the fermi dirac smearing
+        # which should give the exact the same fermi level.
+        pass
+
+    return bandsdata
 
 
 def calculate_eta_and_max_diff(
-    bands_a: orm.ArrayData,
-    bands_b: orm.ArrayData,
-    efermi_a,
-    efermi_b,
+    bandsdata_a: dict,
+    bandsdata_b: dict,
+    spin: bool,
     fermi_shift,
     smearing,
 ):
@@ -101,15 +113,15 @@ def calculate_eta_and_max_diff(
 
     from scipy.optimize import minimize
 
-    weight_a = bands_a.get_array("weights")
-    weight_b = bands_b.get_array("weights")
+    weight_a = bandsdata_a.get("weights")
+    weight_b = bandsdata_b.get("weights")
     weight = weight_a
     assert np.allclose(
         weight_a, weight_b
     ), "Different weight of kpoints of two calculation."
 
-    bands_a = bands_a.get_array("bands")
-    bands_b = bands_b.get_array("bands")
+    bands_a = bandsdata_a.get("bands")
+    bands_b = bandsdata_b.get("bands")
 
     num_bands = min(np.shape(bands_a)[1], np.shape(bands_b)[1])
 
@@ -119,16 +131,17 @@ def calculate_eta_and_max_diff(
     bands_a = bands_a[:, : num_bands - 1]
     bands_b = bands_b[:, : num_bands - 1]
 
-    occ_a = fermi_dirac(bands_a, efermi_a + fermi_shift, smearing)
-    occ_b = fermi_dirac(bands_b, efermi_b + fermi_shift, smearing)
+    # all bands are already shifted to fermi level aligh to zero
+    occ_a = fermi_dirac(bands_a, fermi_shift, smearing, spin)
+    occ_b = fermi_dirac(bands_b, fermi_shift, smearing, spin)
     occ = np.sqrt(occ_a * occ_b)
 
     bands_diff = bands_a - bands_b
 
     def fun_shift(occ, bands_diff, shift):
         # 1/w ~ degeneracy of the kpoints
-        nominator = np.multiply(1 / weight[:, None], (occ * (bands_diff + shift) ** 2))
-        denominator = np.multiply(1 / weight[:, None], occ)
+        nominator = np.multiply(weight[:, None], (occ * (bands_diff + shift) ** 2))
+        denominator = np.multiply(weight[:, None], occ)
         return np.sqrt(np.sum(nominator) / np.sum(denominator))
 
     # Compute eta
@@ -154,38 +167,71 @@ def calculate_eta_and_max_diff(
 
 
 def get_bands_distance(
-    bands_a: orm.BandsData,
-    bands_b: orm.BandsData,
-    band_parameters_a: orm.Dict,
-    band_parameters_b: orm.Dict,
+    bandsdata_a: dict,
+    bandsdata_b: dict,
     smearing: float,
     fermi_shift: float,
     do_smearing: bool,
+    spin: bool,
 ):
     """
+    example of bandsdata_a -> dict = {
+        "number_of_electrons": 10,
+        "number_of_bands": 10,
+        "fermi_level": -0.97,
+        "bands": <bands array> as list,
+        "kpoints": <kpoints array> as list,
+        "weights": <weights array> as list,
+    }
+
+
     First aligh the number of two bands, e.g tranctrate the overceed nubmer of bands
     """
-    num_electrons_a = band_parameters_a["number_of_electrons"]
-    num_electrons_b = band_parameters_b["number_of_electrons"]
+    # post process to deserial list to numpy arrar
+    for key in ["bands", "kpoints", "weights"]:
+        bandsdata_a[key] = np.asarray(bandsdata_a[key])
+        bandsdata_b[key] = np.asarray(bandsdata_b[key])
 
-    assert (
-        not num_electrons_a > num_electrons_b
-    ), "Need to be less num_electrons result as argument labeled 'a'."
+    # make sure always less electrons bands as a. b hase more electrons if not equal
+    if not int(bandsdata_b["number_of_electrons"]) >= int(
+        bandsdata_a["number_of_electrons"]
+    ):
+        # swap to make sure a is less electrons pseudo
+        bandsdata_a, bandsdata_b = bandsdata_b, bandsdata_a
 
-    efermi_a = band_parameters_a["fermi_energy"]
-    efermi_b = band_parameters_b["fermi_energy"]
+    assert int(bandsdata_b["number_of_electrons"]) >= int(
+        bandsdata_a["number_of_electrons"]
+    ), f"Need to be less num_bands in a {bandsdata_a['number_of_electrons']} than b {bandsdata_b['number_of_electrons']}"
 
-    num_electrons = int(num_electrons_a)
-    res = retrieve_bands(bands_a, 0, num_electrons, efermi_a, smearing, do_smearing)
-    bands_a = res["bands"]
-    efermi_a = res["efermi"]
+    num_electrons_a = int(bandsdata_a["number_of_electrons"])
+    num_electrons_b = int(bandsdata_b["number_of_electrons"])
 
-    start_band = int(num_electrons_b - num_electrons_a) // 2
-    res = retrieve_bands(
-        bands_b, start_band, num_electrons, efermi_b, smearing, do_smearing
+    # divide by 2 is valid for both spin and non-spin bands, since for spin I concatenate the bands
+    # the number of bands is half of electrons
+    band_b_start_band = int(num_electrons_b - num_electrons_a) // 2
+
+    num_bands_a = bandsdata_a["number_of_bands"]
+    num_bands_b = bandsdata_b["number_of_bands"] - band_b_start_band
+
+    num_bands = min(num_bands_a, num_bands_b)
+
+    bandsdata_a = retrieve_bands(
+        bandsdata_a, 0, num_bands, num_electrons_a, smearing, do_smearing
     )
-    bands_b = res["bands"]
-    efermi_b = res["efermi"]
+
+    bandsdata_b = retrieve_bands(
+        bandsdata_b,
+        band_b_start_band,
+        num_bands,
+        num_electrons_b,
+        smearing,
+        do_smearing,
+    )
+
+    # after cut and aligh in retrive band, the shapes are same now
+    assert np.shape(bandsdata_a["bands"]) == np.shape(
+        bandsdata_b["bands"]
+    ), f'{np.shape(bandsdata_a["bands"])} != {np.shape(bandsdata_b["bands"])}'
 
     # eta_v
     fermi_shift_v = 0.0
@@ -195,28 +241,33 @@ def get_bands_distance(
         smearing_v = 0
 
     outputs = calculate_eta_and_max_diff(
-        bands_a, bands_b, efermi_a, efermi_b, fermi_shift_v, smearing_v
+        bandsdata_a, bandsdata_b, spin, fermi_shift_v, smearing_v
     )
-    eta_v = outputs.get("eta")
-    shift_v = outputs.get("shift")
-    max_diff_v = outputs.get("max_diff")
+
+    _eV_to_mev = 1000
+    eta_v = outputs.get("eta") * _eV_to_mev
+    shift_v = outputs.get("shift") * _eV_to_mev
+    max_diff_v = outputs.get("max_diff") * _eV_to_mev
 
     # eta_c
     # if not metal
     smearing_c = smearing
     outputs = calculate_eta_and_max_diff(
-        bands_a, bands_b, efermi_a, efermi_b, fermi_shift, smearing_c
+        bandsdata_a, bandsdata_b, spin, fermi_shift, smearing_c
     )
 
-    eta_c = outputs.get("eta")
-    shift_c = outputs.get("shift")
-    max_diff_c = outputs.get("max_diff")
+    eta_c = outputs.get("eta") * _eV_to_mev
+    shift_c = outputs.get("shift") * _eV_to_mev
+    max_diff_c = outputs.get("max_diff") * _eV_to_mev
 
-    return {
+    out = {
         "eta_v": eta_v,
         "shift_v": shift_v,
         "max_diff_v": max_diff_v,
         "eta_c": eta_c,
         "shift_c": shift_c,
         "max_diff_c": max_diff_c,
+        "units": "meV",
     }
+
+    return out
