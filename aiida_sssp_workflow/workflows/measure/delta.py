@@ -395,7 +395,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             output_parameters[configuration] = {
                 "delta": output["delta"],
                 "delta/natoms": output["delta/natoms"],
-                "nu": output["rel_errors_vec_length"],
+                # "nu": output["rel_errors_vec_length"],    # TODO: get this back when the formula is fixed in acwf
             }
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
