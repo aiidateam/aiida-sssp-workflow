@@ -116,18 +116,23 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
     # Delta computation
     delta, deltarel, delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
 
-    nu_measure = rel_errors_vec_length(
-        ref_V0,
-        ref_B0,
-        ref_B1,
-        V0,
-        B0,
-        B1,
-        config_string=None,
-        prefact=1,
-        weight_b0=1 / 20,
-        weight_b1=1 / 400,
-    )
+    # The nu_measure is a measure of the relative error of the fit
+    # It is not used as the output of the verification since the final formula not decided yet
+    # Please update and use the function from ACWF
+    # In the aiidalab-sssp the nu_measure is calculated in the app rather than read from output given by this calcfunction.
+
+    # nu_measure = rel_errors_vec_length(
+    #     ref_V0,
+    #     ref_B0,
+    #     ref_B1,
+    #     V0,
+    #     B0,
+    #     B1,
+    #     config_string=None,
+    #     prefact=1,
+    #     weight_b0=1 / 20,
+    #     weight_b1=1 / 400,
+    # )
 
     return orm.Dict(
         dict={
@@ -141,8 +146,7 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
             "birch_murnaghan_results": [V0, B0, B1],
             "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
             "V0_B0_B1_units_info": "eV/A^3 for B0",
-            "rel_errors_vec_length": nu_measure,
-            "nu/natoms": nu_measure / natoms,
+            # "rel_errors_vec_length": nu_measure,
         }
     )
 
