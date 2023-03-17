@@ -6,6 +6,7 @@ from aiida.engine import if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
+    ACTINIDE_ELEMENTS,
     HIGH_DUAL_ELEMENTS,
     MAGNETIC_ELEMENTS,
     OXIDE_CONFIGURATIONS,
@@ -53,6 +54,9 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             ),
             if_(cls.is_rare_earth_element)(
                 cls.extra_setup_for_rare_earth_element,
+            ),
+            if_(cls.is_actinide_element)(
+                cls.extra_setup_for_actinide_element,
             ),
             cls.setup_pw_parameters_from_protocol,
             cls.run_delta,
@@ -113,9 +117,10 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
             )
 
-        # set structures except RARE earth element with will be set independently
-        # in sepecific step
-        if self.ctx.element not in RARE_EARTH_ELEMENTS:
+        # set structures except RARE earth element and actinides elements with will be set independently
+        # in sepecific step. Other wise, the typical structure is request but not provided, which
+        # will raise error.
+        if self.ctx.element not in RARE_EARTH_ELEMENTS + ACTINIDE_ELEMENTS:
             self.ctx.structures = {}
             for configuration in self.ctx.configuration_list:
                 self.ctx.structures[configuration] = get_standard_structure(
@@ -148,6 +153,10 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         """Check if the element is rare earth"""
         return self.ctx.element in RARE_EARTH_ELEMENTS
 
+    def is_actinide_element(self):
+        """Check if the element is actinide"""
+        return self.ctx.element in ACTINIDE_ELEMENTS
+
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element"""
         nbnd_factor = self._NBANDS_FACTOR_FOR_REN
@@ -163,6 +172,18 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         # set configuration list for rare earth
         self.ctx.structures = {}
         self.ctx.configuration_list = self._OXIDE_CONFIGURATIONS + ["RE"]
+        for configuration in self.ctx.configuration_list:
+            self.ctx.structures[configuration] = get_standard_structure(
+                self.ctx.element,
+                prop="delta",
+                configuration=configuration,
+            )
+
+    def extra_setup_for_actinide_element(self):
+        """Extra setup for actinide element"""
+        # set configuration list for actinide
+        self.ctx.structures = {}
+        self.ctx.configuration_list = self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
         for configuration in self.ctx.configuration_list:
             self.ctx.structures[configuration] = get_standard_structure(
                 self.ctx.element,

@@ -48,6 +48,23 @@ RARE_EARTH_ELEMENTS = [
     "Lu",
 ]
 
+ACTINIDE_ELEMENTS = [
+    "Th",
+    "Pa",
+    "U",
+    "Np",
+    "Pu",
+    "Am",
+    "Cm",
+    "Bk",
+    "Cf",
+    "Es",
+    "Fm",
+    "Md",
+    "No",
+    "Lr",
+]
+
 MAGNETIC_ELEMENTS = ["Mn", "O", "Cr", "Fe", "Co", "Ni"]
 
 NONMETAL_ELEMENTS = [
