@@ -343,5 +343,61 @@
     "Zr": {
         "bands": "typical/Zr.cif",
         "convergence": "typical/Zr.cif"
+    },
+    "Th": {
+        "bands": "unaries/Th_FCC.cif",
+        "convergence": "unaries/Th_FCC.cif"
+    },
+    "Pa": {
+        "bands": "unaries/Pa_FCC.cif",
+        "convergence": "unaries/Pa_FCC.cif"
+    },
+    "U": {
+        "bands": "unaries/U_FCC.cif",
+        "convergence": "unaries/U_FCC.cif"
+    },
+    "Np": {
+        "bands": "unaries/Np_FCC.cif",
+        "convergence": "unaries/Np_FCC.cif"
+    },
+    "Pu": {
+        "bands": "unaries/Pu_FCC.cif",
+        "convergence": "unaries/Pu_FCC.cif"
+    },
+    "Am": {
+        "bands": "unaries/Am_FCC.cif",
+        "convergence": "unaries/Am_FCC.cif"
+    },
+    "Cm": {
+        "bands": "unaries/Cm_FCC.cif",
+        "convergence": "unaries/Cm_FCC.cif"
+    },
+    "Bk": {
+        "bands": "unaries/Bk_FCC.cif",
+        "convergence": "unaries/Bk_FCC.cif"
+    },
+    "Cf": {
+        "bands": "unaries/Cf_FCC.cif",
+        "convergence": "unaries/Cf_FCC.cif"
+    },
+    "Es": {
+        "bands": "unaries/Es_FCC.cif",
+        "convergence": "unaries/Es_FCC.cif"
+    },
+    "Fm": {
+        "bands": "unaries/Fm_FCC.cif",
+        "convergence": "unaries/Fm_FCC.cif"
+    },
+    "Md": {
+        "bands": "unaries/Md_FCC.cif",
+        "convergence": "unaries/Md_FCC.cif"
+    },
+    "No": {
+        "bands": "unaries/No_FCC.cif",
+        "convergence": "unaries/No_FCC.cif"
+    },
+    "Lr": {
+        "bands": "unaries/Lr_FCC.cif",
+        "convergence": "unaries/Lr_FCC.cif"
     }
 }
