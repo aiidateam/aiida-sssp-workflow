@@ -89,6 +89,7 @@ def launch(
     # otherwise, use the specified properties.
     if not property:
         properties_list = DEFAULT_PROPERTIES_LIST
+        extra_desc = "All properties"
     else:
         properties_list = list(property)
         extra_desc = f"{properties_list}"
