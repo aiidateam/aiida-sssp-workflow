@@ -7,7 +7,11 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import (
+    ACTINIDE_ELEMENTS,
+    RARE_EARTH_ELEMENTS,
+    update_dict,
+)
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 
@@ -72,6 +76,8 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
         # configuration for delta convergence
         if self.ctx.element in RARE_EARTH_ELEMENTS:
             self.ctx.configuration = "RE"
+        if self.ctx.element in ACTINIDE_ELEMENTS:
+            self.ctx.configuration = "FCC"
         else:
             self.ctx.configuration = "TYPICAL"
 
