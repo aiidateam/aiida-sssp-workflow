@@ -81,7 +81,7 @@ test:
         kpoints_distance: 0.5
 
     cohesive_energy:
-        atom_smearing: cold
+        atom_smearing: gaussian
         vacuum_length: 12.0
 
     phonon_frequencies:
