@@ -163,7 +163,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
 
         return workchain
 
-    def not_enough_bands(self):
+    def not_enough_bands(self) -> bool:
         """inspect and check if the number of bands enough for fermi shift (_FERMI_SHIFT)
         this is a if-else statement"""
         if self.ctx.break_increase_nbands:
@@ -178,7 +178,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         # not enough until eigenvalues of all kpoints are greater than shift value.
         highest_band = bands[:, -1]
 
-        return np.all(highest_band < fermi_energy + self.inputs.fermi_shift.value)
+        return bool(np.all(highest_band < fermi_energy + self.inputs.fermi_shift.value))
 
     def increase_nbands(self):
         """inspect the result of bands calculation."""

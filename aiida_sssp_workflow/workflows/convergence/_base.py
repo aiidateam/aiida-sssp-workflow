@@ -185,7 +185,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         in control.yml protocol file. Most likely run the 200vs300_ref_check
         protocol.
         """
-        return self._RUN_RHO_TEST and (self.ctx.dual_scan_list)
+        return self._RUN_RHO_TEST and len(self.ctx.dual_scan_list) > 0
 
     def init_setup(self):
         """
