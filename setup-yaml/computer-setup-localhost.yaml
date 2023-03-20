@@ -1,5 +1,5 @@
 ---
-# verdi computer setup -n --config setup-yaml/computer-setup.yaml
+# verdi computer setup -n --config setup-yaml/computer-setup-localhost.yaml
 label: "localhost"
 hostname: "localhost"
 description: "WS"
