@@ -403,5 +403,13 @@
     "Lr": {
         "bands": "unaries/Lr_FCC.cif",
         "convergence": "unaries/Lr_FCC.cif"
+    },
+    "Fr": {
+        "bands": "unaries/Fr_FCC.cif",
+        "convergence": "unaries/Fr_FCC.cif"
+    },
+    "Ra": {
+        "bands": "unaries/Ra_FCC.cif",
+        "convergence": "unaries/Ra_FCC.cif"
     }
 }

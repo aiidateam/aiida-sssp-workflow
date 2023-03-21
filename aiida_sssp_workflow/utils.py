@@ -89,6 +89,9 @@ NONMETAL_ELEMENTS = [
     "Rn",
 ]
 
+# These elements don't have typical configurations from Cottiner's paper
+NO_TYPICAL_CONF_ELEMENTS = ["At", "Fr", "Ra"]
+
 HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
 
 OXIDE_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
