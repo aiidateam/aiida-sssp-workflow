@@ -112,6 +112,11 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
             self.ctx.configuration_list = self._UNARIE_CONFIGURATIONS
+        elif self.ctx.element == "At":
+            # Don't have typical structure for At
+            self.ctx.configuration_list = (
+                self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
+            )
         else:
             self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS

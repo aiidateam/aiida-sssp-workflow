@@ -49,6 +49,7 @@ RARE_EARTH_ELEMENTS = [
 ]
 
 ACTINIDE_ELEMENTS = [
+    "Ac",
     "Th",
     "Pa",
     "U",
