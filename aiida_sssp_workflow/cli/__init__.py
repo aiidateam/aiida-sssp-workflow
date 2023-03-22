@@ -16,4 +16,5 @@ def cmd_root():
     """CLI for the `aiida-sssp-workflow` plugin."""
 
 
+from .extract import extract
 from .run import launch
