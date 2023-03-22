@@ -49,6 +49,7 @@ RARE_EARTH_ELEMENTS = [
 ]
 
 ACTINIDE_ELEMENTS = [
+    "Ac",
     "Th",
     "Pa",
     "U",
@@ -87,6 +88,9 @@ NONMETAL_ELEMENTS = [
     "Xe",
     "Rn",
 ]
+
+# These elements don't have typical configurations from Cottiner's paper
+NO_TYPICAL_CONF_ELEMENTS = ["At", "Fr", "Ra"]
 
 HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
 

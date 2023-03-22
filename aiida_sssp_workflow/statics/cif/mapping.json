@@ -17,7 +17,7 @@
         "convergence": "typical/As.cif"
     },
     "At": {
-        "bands": "unaries/At_Diamond.cif",
+        "bands": "unaries/At_FCC.cif",
         "convergence": "unaries/At_FCC.cif"
     },
     "Au": {
@@ -344,6 +344,10 @@
         "bands": "typical/Zr.cif",
         "convergence": "typical/Zr.cif"
     },
+    "Ac": {
+        "bands": "unaries/Ac_FCC.cif",
+        "convergence": "unaries/Ac_FCC.cif"
+    },
     "Th": {
         "bands": "unaries/Th_FCC.cif",
         "convergence": "unaries/Th_FCC.cif"
@@ -399,5 +403,13 @@
     "Lr": {
         "bands": "unaries/Lr_FCC.cif",
         "convergence": "unaries/Lr_FCC.cif"
+    },
+    "Fr": {
+        "bands": "unaries/Fr_FCC.cif",
+        "convergence": "unaries/Fr_FCC.cif"
+    },
+    "Ra": {
+        "bands": "unaries/Ra_FCC.cif",
+        "convergence": "unaries/Ra_FCC.cif"
     }
 }

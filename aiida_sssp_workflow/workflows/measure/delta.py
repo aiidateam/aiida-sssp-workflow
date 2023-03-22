@@ -9,6 +9,7 @@ from aiida_sssp_workflow.utils import (
     ACTINIDE_ELEMENTS,
     HIGH_DUAL_ELEMENTS,
     MAGNETIC_ELEMENTS,
+    NO_TYPICAL_CONF_ELEMENTS,
     OXIDE_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
@@ -112,6 +113,11 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         if self.ctx.element == "O":
             # For oxygen, only unaries are available.
             self.ctx.configuration_list = self._UNARIE_CONFIGURATIONS
+        elif self.ctx.element in NO_TYPICAL_CONF_ELEMENTS:
+            # Don't have typical structure for At, Fr, Ra
+            self.ctx.configuration_list = (
+                self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
+            )
         else:
             self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
