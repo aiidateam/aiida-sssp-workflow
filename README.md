@@ -86,9 +86,13 @@ The following extra parameters are added for the calculation:
 },
 ```
 
+### atomic calculation
+
+In atomic calculation, we use the `GAMMA_ONLY` in PwBaseWorkChain, which will decrease the resource use to nearly half which make the calculation of heavy metal which initially failed due to resource limit to be able to run.
+
 ## Resource options and parallelization
 
-## parallelization for atomic calculation
+### parallelization for atomic calculation
 
 In case of atomic calculation running on a machine with too many CPUs,
 the `npool` and `ndiag` is explicitly set to 1 for atomic calculation.
