@@ -132,6 +132,9 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
                 dict=self.inputs.atom_parameters[element]
             )
 
+            # Set gamma-only for the atom calculation
+            atom_inputs["pw"]["settings"] = orm.Dict(dict={"GAMMA_ONLY": True})
+
             running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
             self.logger.info(f"Submit atomic SCF of {element}.")
             self.to_context(workchain_atom_children=append_(running_atom_energy))
