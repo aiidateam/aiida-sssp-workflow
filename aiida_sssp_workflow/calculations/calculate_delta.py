@@ -152,7 +152,7 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
 
 
 def rel_errors_vec_length(
-    v0w, b0w, b1w, v0f, b0f, b1f, config_string, prefact, weight_b0, weight_b1
+    v0w, b0w, b1w, v0f, b0f, b1f, prefact=100, weight_b0=1/20, weight_b1=1/400,
 ):
     """
     Returns the length of the vector formed by the relative error of V0, B0, B1
