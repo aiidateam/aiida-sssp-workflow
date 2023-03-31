@@ -73,6 +73,7 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         - FCC
         - SC
         - Diamond
+    - For actinides and Ar, Fr, Ra: using FCC from ACWF dataset
 
     conf_key is key in json file for configurations of every element.
     """
@@ -93,11 +94,11 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         conf_key = f"{element}"
 
     if configuration in UNARIE_CONFIGURATIONS:
-        ref_json = "WIEN2K_UNARIES.json"
+        ref_json = "AE-average-unaries.json"
         conf_key = f"{element}-X/{configuration}"
 
     if configuration in OXIDE_CONFIGURATIONS:
-        ref_json = "WIEN2K_OXIDES.json"
+        ref_json = "AE-average-oxides.json"
         conf_key = f"{element}-{configuration}"
 
     import_path = importlib.resources.path(
