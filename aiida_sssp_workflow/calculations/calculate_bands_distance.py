@@ -94,6 +94,8 @@ def retrieve_bands(
         # use the fermi_level from QE therefore do nothing.
         # This can be commented out since with acwf protocol I use the fermi dirac smearing
         # which should give the exact the same fermi level.
+        # We align the bands to fermi level and make the fermi level equal to 0.0 Ry as
+        # code above.
         pass
 
     return bandsdata
@@ -214,16 +216,17 @@ def get_bands_distance(
     num_bands_b = bandsdata_b["number_of_bands"] - band_b_start_band
 
     num_bands = min(num_bands_a, num_bands_b)
+    num_electrons = min(num_electrons_a, num_electrons_b)
 
     bandsdata_a = retrieve_bands(
-        bandsdata_a, 0, num_bands, num_electrons_a, smearing, do_smearing
+        bandsdata_a, 0, num_bands, num_electrons, smearing, do_smearing
     )
 
     bandsdata_b = retrieve_bands(
         bandsdata_b,
         band_b_start_band,
         num_bands,
-        num_electrons_b,
+        num_electrons,
         smearing,
         do_smearing,
     )
