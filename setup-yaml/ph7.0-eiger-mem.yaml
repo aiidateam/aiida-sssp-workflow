@@ -1,0 +1,12 @@
+---
+label: "ph-7.0"
+description: Quantum ESPRESSO ph.x v7.0 Compiled with CpeIntel v21.12
+default_calc_job_plugin: "quantumespresso.ph"
+computer: "eiger-mc-mr32-mem"
+filepath_executable: "/apps/eiger/UES/jenkins/1.4.0/software/QuantumESPRESSO/7.0-cpeIntel-21.12/bin/ph.x"
+prepend_text: |
+  module load cpeIntel/21.12
+  module load QuantumESPRESSO/7.0
+
+  export OMP_NUM_THREADS=1
+append_text: " "
