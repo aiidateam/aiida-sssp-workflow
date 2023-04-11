@@ -50,7 +50,11 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
 
     def init_setup(self):
         super().init_setup()
-        self.ctx.extra_pw_parameters = {}
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "nowf",  # no wavefunction file
+            },
+        }
 
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()
