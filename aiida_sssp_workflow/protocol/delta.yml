@@ -38,9 +38,7 @@ opsp:
     scale_count: 7
     scale_increment: 0.02
     configurations:
-        - XO
         - XO2
-        - BCC
         - SC
 
 opsp-full:

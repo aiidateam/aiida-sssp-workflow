@@ -164,12 +164,12 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         get inputs for the bands evaluation with given pseudo
         """
         element, pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
-        if pseudo_type in ['NC', 'SL']:
+        if pseudo_type in ['nc', 'sl']:
             ecutrho = self.ctx.ecutwfc * 4
         else:
             ecutrho = self.ctx.ecutwfc * 8
 
-        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ['NC', 'SL']:
+        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ['nc', 'sl']:
             ecutrho = self.ctx.ecutwfc * 18
 
         if element in RARE_EARTH_ELEMENTS:
