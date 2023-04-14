@@ -208,7 +208,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         # set the ecutrho according to the type of pseudopotential
         # dual 4 for NC and 10 for all other type of PP.
-        if self.ctx.pseudo_type == 'nc':
+        if self.ctx.pseudo_type in ['nc', 'sl']:
             self.ctx.dual = 4.0
             self.ctx.dual_scan_list = cutoff_control['nc_dual_scan']
         else:

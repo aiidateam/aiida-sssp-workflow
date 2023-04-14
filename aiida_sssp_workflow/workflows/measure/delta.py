@@ -305,7 +305,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
-            if pseudo_type in ["NC", "SL"]:
+            if pseudo_type in ["nc", "sl"]:
                 ecutrho = self.ctx.ecutwfc * 4
             else:
                 ecutrho = self.ctx.ecutwfc * 8
@@ -334,7 +334,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             # Since non-NC nitrogen pseudo is used
             ecutrho = self.ctx.ecutwfc * 8
 
-        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ["NC", "SL"]:
+        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ["nc", "sl"]:
             ecutrho = self.ctx.ecutwfc * 18
 
         parameters = {
