@@ -17,8 +17,8 @@
         "convergence": "typical/As.cif"
     },
     "At": {
-        "bands": "unaries/At_FCC.cif",
-        "convergence": "unaries/At_FCC.cif"
+        "bands": "unaries/At-FCC.xsf",
+        "convergence": "unaries/At-FCC.xsf"
     },
     "Au": {
         "bands": "typical/Au.cif",
@@ -345,71 +345,71 @@
         "convergence": "typical/Zr.cif"
     },
     "Ac": {
-        "bands": "unaries/Ac_FCC.cif",
-        "convergence": "unaries/Ac_FCC.cif"
+        "bands": "unaries/Ac-FCC.xsf",
+        "convergence": "unaries/Ac-FCC.xsf"
     },
     "Th": {
-        "bands": "unaries/Th_FCC.cif",
-        "convergence": "unaries/Th_FCC.cif"
+        "bands": "unaries/Th-FCC.xsf",
+        "convergence": "unaries/Th-FCC.xsf"
     },
     "Pa": {
-        "bands": "unaries/Pa_FCC.cif",
-        "convergence": "unaries/Pa_FCC.cif"
+        "bands": "unaries/Pa-FCC.xsf",
+        "convergence": "unaries/Pa-FCC.xsf"
     },
     "U": {
-        "bands": "unaries/U_FCC.cif",
-        "convergence": "unaries/U_FCC.cif"
+        "bands": "unaries/U-FCC.xsf",
+        "convergence": "unaries/U-FCC.xsf"
     },
     "Np": {
-        "bands": "unaries/Np_FCC.cif",
-        "convergence": "unaries/Np_FCC.cif"
+        "bands": "unaries/Np-FCC.xsf",
+        "convergence": "unaries/Np-FCC.xsf"
     },
     "Pu": {
-        "bands": "unaries/Pu_FCC.cif",
-        "convergence": "unaries/Pu_FCC.cif"
+        "bands": "unaries/Pu-FCC.xsf",
+        "convergence": "unaries/Pu-FCC.xsf"
     },
     "Am": {
-        "bands": "unaries/Am_FCC.cif",
-        "convergence": "unaries/Am_FCC.cif"
+        "bands": "unaries/Am-FCC.xsf",
+        "convergence": "unaries/Am-FCC.xsf"
     },
     "Cm": {
-        "bands": "unaries/Cm_FCC.cif",
-        "convergence": "unaries/Cm_FCC.cif"
+        "bands": "unaries/Cm-FCC.xsf",
+        "convergence": "unaries/Cm-FCC.xsf"
     },
     "Bk": {
-        "bands": "unaries/Bk_FCC.cif",
-        "convergence": "unaries/Bk_FCC.cif"
+        "bands": "unaries/Bk-FCC.xsf",
+        "convergence": "unaries/Bk-FCC.xsf"
     },
     "Cf": {
-        "bands": "unaries/Cf_FCC.cif",
-        "convergence": "unaries/Cf_FCC.cif"
+        "bands": "unaries/Cf-FCC.xsf",
+        "convergence": "unaries/Cf-FCC.xsf"
     },
     "Es": {
-        "bands": "unaries/Es_FCC.cif",
-        "convergence": "unaries/Es_FCC.cif"
+        "bands": "unaries/Es-FCC.xsf",
+        "convergence": "unaries/Es-FCC.xsf"
     },
     "Fm": {
-        "bands": "unaries/Fm_FCC.cif",
-        "convergence": "unaries/Fm_FCC.cif"
+        "bands": "unaries/Fm-FCC.xsf",
+        "convergence": "unaries/Fm-FCC.xsf"
     },
     "Md": {
-        "bands": "unaries/Md_FCC.cif",
-        "convergence": "unaries/Md_FCC.cif"
+        "bands": "unaries/Md-FCC.xsf",
+        "convergence": "unaries/Md-FCC.xsf"
     },
     "No": {
-        "bands": "unaries/No_FCC.cif",
-        "convergence": "unaries/No_FCC.cif"
+        "bands": "unaries/No-FCC.xsf",
+        "convergence": "unaries/No-FCC.xsf"
     },
     "Lr": {
-        "bands": "unaries/Lr_FCC.cif",
-        "convergence": "unaries/Lr_FCC.cif"
+        "bands": "unaries/Lr-FCC.xsf",
+        "convergence": "unaries/Lr-FCC.xsf"
     },
     "Fr": {
-        "bands": "unaries/Fr_FCC.cif",
-        "convergence": "unaries/Fr_FCC.cif"
+        "bands": "unaries/Fr-FCC.xsf",
+        "convergence": "unaries/Fr-FCC.xsf"
     },
     "Ra": {
-        "bands": "unaries/Ra_FCC.cif",
-        "convergence": "unaries/Ra_FCC.cif"
+        "bands": "unaries/Ra-FCC.xsf",
+        "convergence": "unaries/Ra-FCC.xsf"
     }
 }
