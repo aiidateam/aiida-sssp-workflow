@@ -122,7 +122,7 @@ def get_standard_structure(
 
     The principles are for bands measure, using the configurations from Cottiner's paper since they are the groud state structures exist in real wolrd.
     And for lanthanides using the Nitrides from Wenzowech paper.
-    Using the uniaries/diamond configurations for convergence verification.
+    For elements that don't have configuration from Cottiner's paper, using the uniaries/diamond configurations for convergence verification.
 
     The structure is convert to primitive cell except for those magnetic elements
     configurations (typical ones of Cottiner's paper) for bands measure, since we need to
@@ -137,8 +137,12 @@ def get_standard_structure(
     Returns:
         orm.StructureData: return a orm.StructureData
     """
+    from pathlib import Path
+
+    from ase import io
+
     # If for delta measure workflow
-    base_cif_module = "aiida_sssp_workflow.statics.cif"
+    base_cif_module = "aiida_sssp_workflow.statics.structures"
     if prop == "delta":
         if configuration == "RE":
             assert element in RARE_EARTH_ELEMENTS
@@ -148,30 +152,36 @@ def get_standard_structure(
             res_path = importlib.resources.path(
                 f"{base_cif_module}.typical", f"{element}N.cif"
             )
+            primitive_cell = True
 
         if configuration == "TYPICAL":
             res_path = importlib.resources.path(
                 f"{base_cif_module}.typical", f"{element}.cif"
             )
+            primitive_cell = True
 
+        # For elements that are verified in ACWF paper, use the XSF files.
+        # https://github.com/aiidateam/acwf-verification-scripts/tree/main/0-preliminary-do-not-run
         if configuration in OXIDE_CONFIGURATIONS:
             res_path = importlib.resources.path(
-                f"{base_cif_module}.oxides", f"{element}_{configuration}.cif"
+                f"{base_cif_module}.oxides", f"{element}-{configuration}.xsf"
             )
+            primitive_cell = False
 
         if configuration in UNARIE_CONFIGURATIONS:
             res_path = importlib.resources.path(
-                f"{base_cif_module}.unaries", f"{element}_{configuration}.cif"
+                f"{base_cif_module}.unaries", f"{element}-{configuration}.xsf"
             )
+            primitive_cell = False
 
     else:
         # If for bands measure or convergence workflow
         # after some back-forward, most elements only use typical structure
         # for bands and for convergence. But with the primitived structure.
         # But for future maintainance, I keep the mapping.json for configuration
-        # mapping. Only At using unaries since it is not in typical.
+        # mapping. Only At, Fr, Ra and actinides using unaries FCC since it is not in typical.
         import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.cif", f"mapping.json"
+            "aiida_sssp_workflow.statics.structures", f"mapping.json"
         )
 
         with import_path as path, open(path, "r") as handle:
@@ -179,16 +189,27 @@ def get_standard_structure(
 
         dir, fn = mapping[element][prop].split("/")
         res_path = importlib.resources.path(f"{base_cif_module}.{dir}", fn)
+        primitive_cell = (
+            True  # Since we want the convergence test run fast, use primitive cell.
+        )
 
+    # For magnetic elements, use the conventional cell
     if element in MAGNETIC_ELEMENTS:
         primitive_cell = False
     else:
         primitive_cell = True
 
     with res_path as path:
-        structure = orm.CifData.get_or_create(str(path), use_first=True)[
-            0
-        ].get_structure(primitive_cell=primitive_cell)
+        if Path(path).suffix == ".cif":
+            structure = orm.CifData.get_or_create(str(path), use_first=True)[
+                0
+            ].get_structure(primitive_cell=primitive_cell)
+        elif Path(path).suffix == ".xsf":
+            ase_structure = io.read(str(path))
+            structure = orm.StructureData(ase=ase_structure)
+            # No functionality for primitive cell in ase
+        else:
+            raise ValueError(f"Unknown file type {Path(path).suffix}")
 
     return structure
 
