@@ -98,6 +98,11 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
     def init_setup(self):
         super().init_setup()
         self.ctx.pw_parameters = {}
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "nowf",  # no wavefunction file
+            },
+        }
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
