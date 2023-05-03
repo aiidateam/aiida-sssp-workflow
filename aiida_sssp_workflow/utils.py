@@ -139,6 +139,7 @@ def get_standard_structure(
     """
     from pathlib import Path
 
+    from aiida.tools.data.array.kpoints import get_kpoints_path
     from ase import io
 
     # If for delta measure workflow
@@ -210,6 +211,10 @@ def get_standard_structure(
             # No functionality for primitive cell in ase
         else:
             raise ValueError(f"Unknown file type {Path(path).suffix}")
+
+    # To make the structure consistent with the structure from acwf
+    res = get_kpoints_path(structure, method="seekpath")
+    structure = res["primitive_structure"]
 
     return structure
 
