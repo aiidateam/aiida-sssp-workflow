@@ -232,6 +232,9 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             "ELECTRONS": {
                 "conv_thr": self._CONV_THR,
             },
+            "CONTROL": {
+                "calculation": "scf",
+            },
         }
 
         self.ctx.ecutwfc = self._ECUTWFC

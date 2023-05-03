@@ -149,6 +149,9 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             "ELECTRONS": {
                 "conv_thr": self._CONV_THR,
             },
+            "CONTROL": {
+                "calculation": "scf",
+            },
         }
 
         self.ctx.ecutwfc = self._ECUTWFC
@@ -187,6 +190,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
         parameters_bands = update_dict(parameters, {})
         parameters_bands["SYSTEM"].pop("nbnd", None)
+        parameters_bands["CONTROL"]["calculation"] = "bands"
 
         inputs = {
             "structure": self.ctx.structure,

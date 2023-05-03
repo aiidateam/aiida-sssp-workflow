@@ -32,8 +32,8 @@ def helper_phonon_frequencies_difference(
     """
     import numpy as np
 
-    input_frequencies = input_parameters["dynamical_matrix_0"]["frequencies"]
-    ref_frequencies = ref_parameters["dynamical_matrix_0"]["frequencies"]
+    input_frequencies = input_parameters["dynamical_matrix_1"]["frequencies"]
+    ref_frequencies = ref_parameters["dynamical_matrix_1"]["frequencies"]
 
     # set strat_idx the idx of frequencies start to count
     element = element.value

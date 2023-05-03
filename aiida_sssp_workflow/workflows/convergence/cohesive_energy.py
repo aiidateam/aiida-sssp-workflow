@@ -122,6 +122,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             "ELECTRONS": {
                 "conv_thr": self._CONV_THR,
             },
+            "CONTROL": {
+                "calculation": "scf",
+            },
         }
 
         self.ctx.atom_parameters = {}
