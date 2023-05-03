@@ -48,13 +48,21 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
 
     def init_setup(self):
         super().init_setup()
-        self.ctx.extra_pw_parameters = {}
-        self.ctx.extra_pw_parameters_for_atom = {}
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "nowf",  # no wavefunction file
+            },
+        }
+        self.ctx.extra_pw_parameters_for_atom = {
+            "CONTROL": {
+                "disk_io": "nowf",  # no wavefunction file
+            },
+        }
 
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element, for atom especially"""
         super().extra_setup_for_magnetic_element()
-        self.ctx.extra_pw_parameters_for_atom = {
+        extra_pw_parameters_for_atom_magnetic_element = {
             self.ctx.element: {
                 "SYSTEM": {
                     "nspin": 2,
@@ -69,11 +77,12 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 },
             }
         }
+        self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_magnetic_element, self.ctx.extra_pw_parameters_for_atom)
 
     def extra_setup_for_rare_earth_element(self):
         """Extra setup for rare earth element, for atom especially"""
         super().extra_setup_for_rare_earth_element()
-        self.ctx.extra_pw_parameters_for_atom = {
+        extra_pw_parameters_for_atom_rare_earth_element = {
             self.ctx.element: {
                 "SYSTEM": {
                     "nspin": 2,
@@ -91,6 +100,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 },
             },
         }
+        self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_rare_earth_element, self.ctx.extra_pw_parameters_for_atom)
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
