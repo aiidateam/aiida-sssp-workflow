@@ -289,7 +289,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 'conv_thr': conv_thr,
             },
             'CONTROL': {
-                # 'calculation': 'scf', NOT EXPLICITLY SET. `scf` is default if not override.
+                'calculation': 'scf',
                 'tstress': True,    # for pressue to use _caching node directly.
             },
         }

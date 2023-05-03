@@ -128,6 +128,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         parameters_bands = update_dict(parameters, {})
         parameters_bands["SYSTEM"].pop("nbnd", None)
         parameters_bands["CONTROL"].pop("tstress", None)
+        parameters_bands["CONTROL"]["calculation"] = "bands"
 
         inputs = {
             "structure": self.ctx.structure,
