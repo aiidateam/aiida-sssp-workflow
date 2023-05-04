@@ -205,6 +205,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 },
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
+            "clean_workchain": self.inputs.clean_workchain,
         }
 
         running = self.submit(_EquationOfStateWorkChain, **inputs)
