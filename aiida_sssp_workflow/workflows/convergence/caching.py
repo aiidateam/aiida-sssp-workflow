@@ -34,6 +34,14 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
             help="If `True`, work directories of all called calculation will be cleaned at the end of execution.",
         )
 
+    def init_setup(self):
+        super().init_setup()
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "nowf",  # no wavefunction file
+            },
+        }
+
     def inspect_wfc_convergence_test(self):
         """Override this step to do nothing to parse wavefunction
         cutoff test results but only run it."""

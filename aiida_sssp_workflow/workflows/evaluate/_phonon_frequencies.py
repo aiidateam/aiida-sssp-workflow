@@ -81,7 +81,16 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
                 pw_node = [
                     c for c in workchain.called if isinstance(c, orm.CalcJobNode)
                 ][0]
-                all_same_nodes = pw_node.get_all_same_nodes()
+                all_same_nodes = pw_node.base.caching.get_all_same_nodes()
+                for node in all_same_nodes:
+                    node.is_valid_cache = False
+
+                # also set valid_cache=False for the source node
+                # It should be included in all_same_nodes, but because of the bug in aiida-core
+                # that the hash is not stable see: https://github.com/aiidateam/aiida-core/issues/5997
+                src_node = orm.load_node(pw_node.base.caching.get_cache_source())
+                src_node.is_valid_cache = False
+                all_same_nodes = src_node.base.caching.get_all_same_nodes()
                 for node in all_same_nodes:
                     node.is_valid_cache = False
             else:
