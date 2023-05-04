@@ -211,6 +211,9 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
 
+        # Set the hardcoded parameters
+        _disk_io = "nowf"
+
         # narrow the configuration list by protocol
         # this is used for test protocol which only has limited configurations to be verified
         clist = protocol.get("configurations", self.ctx.configuration_list)
@@ -224,6 +227,9 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         self._ECUTWFC = cutoff_control["max_wfc"]
 
         parameters = {
+            "CONTROL": {
+                "disk_io": _disk_io,
+            },
             "SYSTEM": {
                 "degauss": self._DEGAUSS,
                 "occupations": self._OCCUPATIONS,

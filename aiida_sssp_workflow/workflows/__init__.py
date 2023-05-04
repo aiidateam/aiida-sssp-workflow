@@ -38,15 +38,19 @@ class SelfCleanWorkChain(WorkChain):
         cleaned_calcs = operate_calcjobs(
             self.node, operator=clean_workdir, all_same_nodes=False
         )
-        cache_invalid_calcs = operate_calcjobs(
-            self.node, operator=invalid_cache, all_same_nodes=False
-        )
 
         if cleaned_calcs:
             self.report(
                 f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
             )
-        if cache_invalid_calcs:
-            self.report(
-                f"Invalid cache of cached calculations: {' '.join(map(str, cache_invalid_calcs))}"
-            )
+
+        # This is not turned on since it will make all finished workflow not cacheable.
+        # I need to find a way to properly work around the parent_folder empty issue.
+        # cache_invalid_calcs = operate_calcjobs(
+        #     self.node, operator=invalid_cache, all_same_nodes=False
+        # )
+
+        # if cache_invalid_calcs:
+        #     self.report(
+        #         f"Invalid cache of cached calculations: {' '.join(map(str, cache_invalid_calcs))}"
+        #     )
