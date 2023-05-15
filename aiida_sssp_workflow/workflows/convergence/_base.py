@@ -74,6 +74,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                     help='The cutoff control list to use for the workchain.')
         spec.input('criteria', valid_type=orm.Str, required=True,
                     help='Criteria for convergence measurement to give recommend cutoff pair.')
+        spec.input('configuration', valid_type=orm.Str, required=False)
         spec.input('preset_ecutwfc', valid_type=orm.Int, required=False,
                     help='Preset wavefunction cutoff will be used and skip wavefunction test.')
         spec.input('options', valid_type=orm.Dict, required=False,
@@ -230,7 +231,12 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         # Please check README for what and why we use configuration set 'convergence'
         # for convergence verification.
-        self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence')
+        if "configuration" in self.inputs:
+            configuration = self.inputs.configuration.value
+        else:
+            # will use the default configuration set in the protocol (mapping.json)
+            configuration = None
+        self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence', configuration=configuration)
 
         # For configuration that contains O, which is the configuration from ACWF set, we need to add O pseudo
         if "O" in self.ctx.structure.get_kind_names():

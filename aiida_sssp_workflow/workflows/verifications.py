@@ -86,7 +86,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
         spec.input('label', valid_type=orm.Str, required=False,
-                    help='label store for display as extra attribut.')
+                    help='label store for display as extra attributes.')
         spec.input('properties_list', valid_type=orm.List,
                     default=lambda: orm.List(list=DEFAULT_PROPERTIES_LIST),
                     help='The preperties will be calculated, passed as a list.')
