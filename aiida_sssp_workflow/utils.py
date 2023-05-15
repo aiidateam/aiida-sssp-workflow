@@ -143,40 +143,36 @@ def get_standard_structure(
     from ase import io
 
     # If for delta measure workflow
-    base_cif_module = "aiida_sssp_workflow.statics.structures"
-    if prop == "delta":
-        if configuration == "RE":
-            assert element in RARE_EARTH_ELEMENTS
+    base_structure_module = "aiida_sssp_workflow.statics.structures"
 
-            # use RE-nitrides of Wenzovich paper
-            # from typical cif folder
-            res_path = importlib.resources.path(
-                f"{base_cif_module}.typical", f"{element}N.cif"
-            )
-            primitive_cell = True
+    if configuration == "RE":
+        assert element in RARE_EARTH_ELEMENTS
 
-        if configuration == "TYPICAL":
-            res_path = importlib.resources.path(
-                f"{base_cif_module}.typical", f"{element}.cif"
-            )
-            primitive_cell = True
+        # use RE-nitrides of Wenzovich paper
+        # from typical cif folder
+        res_path = importlib.resources.path(
+            f"{base_structure_module}.typical", f"{element}N.cif"
+        )
 
-        # For elements that are verified in ACWF paper, use the XSF files.
-        # https://github.com/aiidateam/acwf-verification-scripts/tree/main/0-preliminary-do-not-run
-        if configuration in OXIDE_CONFIGURATIONS:
-            res_path = importlib.resources.path(
-                f"{base_cif_module}.oxides", f"{element}-{configuration}.xsf"
-            )
-            primitive_cell = False
+    if configuration == "TYPICAL":
+        res_path = importlib.resources.path(
+            f"{base_structure_module}.typical", f"{element}.cif"
+        )
 
-        if configuration in UNARIE_CONFIGURATIONS:
-            res_path = importlib.resources.path(
-                f"{base_cif_module}.unaries", f"{element}-{configuration}.xsf"
-            )
-            primitive_cell = False
+    # For elements that are verified in ACWF paper, use the XSF files.
+    # https://github.com/aiidateam/acwf-verification-scripts/tree/main/0-preliminary-do-not-run
+    if configuration in OXIDE_CONFIGURATIONS:
+        res_path = importlib.resources.path(
+            f"{base_structure_module}.oxides", f"{element}-{configuration}.xsf"
+        )
 
-    else:
-        # If for bands measure or convergence workflow
+    if configuration in UNARIE_CONFIGURATIONS:
+        res_path = importlib.resources.path(
+            f"{base_structure_module}.unaries", f"{element}-{configuration}.xsf"
+        )
+
+    if configuration is None:
+        # If configuration is not specified, use the one from mapping.json as default
         # after some back-forward, most elements only use typical structure
         # for bands and for convergence. But with the primitived structure.
         # But for future maintainance, I keep the mapping.json for configuration
@@ -189,15 +185,19 @@ def get_standard_structure(
             mapping = json.load(handle)
 
         dir, fn = mapping[element][prop].split("/")
-        res_path = importlib.resources.path(f"{base_cif_module}.{dir}", fn)
-        primitive_cell = (
-            True  # Since we want the convergence test run fast, use primitive cell.
-        )
+        res_path = importlib.resources.path(f"{base_structure_module}.{dir}", fn)
 
     # For magnetic elements, use the conventional cell
     if element in MAGNETIC_ELEMENTS:
         primitive_cell = False
     else:
+        primitive_cell = True
+
+    if prop == "delta":
+        primitive_cell = False
+    else:
+        # bands and convergence test.
+        # Since we want the convergence test run fast, use primitive cell.
         primitive_cell = True
 
     with res_path as path:
