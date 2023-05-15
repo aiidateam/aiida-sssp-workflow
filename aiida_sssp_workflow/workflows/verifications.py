@@ -371,14 +371,14 @@ class VerificationWorkChain(SelfCleanWorkChain):
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return
 
-        if "verify_caching" in self.ctx:
-            # For calcjobs in _caching, to prevent it from being used by second run after
-            # remote work_dir cleaned. I invalid it from caching if it is being cleaned.
-            invalid_calcs = operate_calcjobs(
-                self.ctx.verify_caching, operator=invalid_cache, all_same_nodes=True
-            )
+        # if "verify_caching" in self.ctx:
+        #     # For calcjobs in _caching, to prevent it from being used by second run after
+        #     # remote work_dir cleaned. I invalid it from caching if it is being cleaned.
+        #     invalid_calcs = operate_calcjobs(
+        #         self.ctx.verify_caching, operator=invalid_cache, all_same_nodes=True
+        #     )
 
-            if invalid_calcs:
-                self.report(
-                    f"Invalid cache of `_caching` (even nonmenon) workflow's calcjob node: {' '.join(map(str, invalid_calcs))}"
-                )
+        #     if invalid_calcs:
+        #         self.report(
+        #             f"Invalid cache of `_caching` (even nonmenon) workflow's calcjob node: {' '.join(map(str, invalid_calcs))}"
+        #         )
