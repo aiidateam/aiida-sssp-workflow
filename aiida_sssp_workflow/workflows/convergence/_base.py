@@ -24,6 +24,7 @@ from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
     get_pseudo_element_and_type,
     get_pseudo_N,
+    get_pseudo_O,
 )
 
 UpfData = DataFactory('pseudo.upf')
@@ -230,6 +231,10 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         # Please check README for what and why we use configuration set 'convergence'
         # for convergence verification.
         self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence')
+
+        # For configuration that contains O, which is the configuration from ACWF set, we need to add O pseudo
+        if "O" in self.ctx.structure.get_kind_names():
+            self.ctx.pseudos["O"] = get_pseudo_O()
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
