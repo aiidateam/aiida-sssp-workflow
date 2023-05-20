@@ -111,8 +111,10 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE
         # parentatheses means not supported yet.
         if self.ctx.element == "O":
-            # For oxygen, only unaries are available.
-            self.ctx.configuration_list = self._UNARIE_CONFIGURATIONS
+            # For oxygen, still run for oxides but use only the tested pseudo.
+            self.ctx.pseudos_oxide = {
+                element: self.inputs.pseudo,
+            }
         elif self.ctx.element in NO_TYPICAL_CONF_ELEMENTS:
             # Don't have typical structure for At, Fr, Ra
             self.ctx.configuration_list = (
@@ -143,6 +145,8 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         """
         Extra setup for magnetic element, set starting magnetization
         and reset pseudos to correspont elements name.
+
+        ! only for TYPEICAL structure.
         """
         (
             self.ctx.structures["TYPICAL"],

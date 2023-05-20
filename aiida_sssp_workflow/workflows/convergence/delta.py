@@ -75,29 +75,33 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
 
-        # configuration for delta convergence read from mapping.json of static
-        # Instead of hard code the configuration, the configuration is read from mapping.json
-        import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.structures", f"mapping.json"
-        )
-        with import_path as path, open(path, "r") as handle:
-            mapping = json.load(handle)
-
-        dir, fn = mapping[self.ctx.element]["convergence"].split("/")
-
-        if str.upper(dir) == "TYPICAL":
-            self.report(f"Use typical configuration for {self.ctx.element}")
-            element = fn.split(".")[0]
-            assert element == self.ctx.element
-            self.ctx.configuration = "TYPICAL"
+        # Please check README for what and why we use configuration set 'convergence'
+        # for convergence verification.
+        if "configuration" in self.inputs:
+            self.ctx.configuration = self.inputs.configuration.value
         else:
-            # the convergence configuration is read from ACWF set
-            element, configuration = fn.replace("-", ".").split(".")[:-1]
-            self.report(
-                f"Use ACWF configuration {configuration} for {self.ctx.element}"
+            # configuration for delta convergence read from mapping.json as default
+            import_path = importlib.resources.path(
+                "aiida_sssp_workflow.statics.structures", f"mapping.json"
             )
-            assert element == self.ctx.element
-            self.ctx.configuration = configuration
+            with import_path as path, open(path, "r") as handle:
+                mapping = json.load(handle)
+
+            dir, fn = mapping[self.ctx.element]["convergence"].split("/")
+
+            if str.upper(dir) == "TYPICAL":
+                self.report(f"Use typical configuration for {self.ctx.element}")
+                element = fn.split(".")[0]
+                assert element == self.ctx.element
+                self.ctx.configuration = "TYPICAL"
+            else:
+                # the convergence configuration is read from ACWF set
+                element, configuration = fn.replace("-", ".").split(".")[:-1]
+                self.report(
+                    f"Use ACWF configuration {configuration} for {self.ctx.element}"
+                )
+                assert element == self.ctx.element
+                self.ctx.configuration = configuration
 
         # Set context parameters
         self.ctx.kpoints_distance = self._KDISTANCE
