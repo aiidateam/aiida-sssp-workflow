@@ -105,7 +105,9 @@ def launch(
 
     computer = pw_code.computer.label
     label, _ = os.path.splitext(basename)
-    label = orm.Str(f"({protocol}-{criteria}-{cutoff_control} at {computer}) {label}")
+    label = orm.Str(
+        f"({protocol}-{criteria}-{cutoff_control} at {computer} - {configuration}) {label}"
+    )
 
     with open(pseudo, "rb") as stream:
         pseudo = UpfData(stream)

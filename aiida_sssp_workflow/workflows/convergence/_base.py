@@ -239,7 +239,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence', configuration=configuration)
 
         # For configuration that contains O, which is the configuration from ACWF set, we need to add O pseudo
-        if "O" in self.ctx.structure.get_kind_names():
+        if "O" in self.ctx.structure.get_kind_names() and self.ctx.element != "O":
             self.ctx.pseudos["O"] = get_pseudo_O()
 
     def is_magnetic_element(self):
@@ -251,12 +251,14 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         Extra setup for magnetic element, set starting magnetization
         and reset pseudos to correspont elements name.
         """
-        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
-        self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
+        # ! only for typical configuration we set the starting magnetization and reset pseudos
+        if "configuration" in self.inputs and self.inputs.configuration.value == 'TYPICAL':
+            self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
+            self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 
-        # override pseudos setting
-        # required for O, Mn, Cr where the kind names varies for sites
-        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
+            # override pseudos setting
+            # required for O, Mn, Cr where the kind names varies for sites
+            self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
 
     def is_rare_earth_element(self):
         """Check if the element is rare earth"""
