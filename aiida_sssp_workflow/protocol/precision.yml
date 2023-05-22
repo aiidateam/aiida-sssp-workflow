@@ -8,6 +8,8 @@ acwf:
     smearing: fd
     electron_conv_thr: 1.0e-10
     kpoints_distance: 0.10
+    mixing_beta: 0.4
+    disk_io: nowf
     scale_count: 7
     scale_increment: 0.02
 
@@ -20,6 +22,8 @@ test:
     smearing: fd
     electron_conv_thr: 1.0e-6
     kpoints_distance: 0.5
+    mixing_beta: 0.4
+    disk_io: nowf
     scale_count: 5
     scale_increment: 0.02
     configurations:
@@ -35,6 +39,8 @@ opsp:
     smearing: fd
     electron_conv_thr: 1.0e-8
     kpoints_distance: 0.2
+    mixing_beta: 0.4
+    disk_io: nowf
     scale_count: 7
     scale_increment: 0.02
     configurations:
@@ -50,5 +56,7 @@ opsp-full:
     smearing: fd
     electron_conv_thr: 1.0e-8
     kpoints_distance: 0.2
+    mixing_beta: 0.4
+    disk_io: nowf
     scale_count: 7
     scale_increment: 0.02

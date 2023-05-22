@@ -33,6 +33,9 @@ acwf:
     delta:
         scale_count: 7
         scale_increment: 0.02
+        mixing_beta: 0.4
+        disk_io: nowf
+
 
 moderate:
     name: moderate
@@ -68,6 +71,8 @@ moderate:
     delta:
         scale_count: 7
         scale_increment: 0.02
+        mixing_beta: 0.4
+        disk_io: nowf
 
 test:
     name: test-only
@@ -103,3 +108,5 @@ test:
     delta:
         scale_count: 5
         scale_increment: 0.02
+        mixing_beta: 0.4
+        disk_io: nowf

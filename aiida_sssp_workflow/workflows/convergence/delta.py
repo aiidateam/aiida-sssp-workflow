@@ -78,6 +78,13 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
 
+        # set extra pw parameters for eos only
+        self._DISK_IO = protocol["disk_io"]
+        self._MIXING_BETA = protocol["mixing_beta"]
+
+        self.ctx.pw_parameters["CONTROL"]["disk_io"] = self._DISK_IO
+        self.ctx.pw_parameters["ELECTRONS"]["mixing_beta"] = self._MIXING_BETA
+
         self.logger.info(
             f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
         )
@@ -104,6 +111,11 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             parameters["SYSTEM"].pop("smearing", None)
             parameters["SYSTEM"].pop("degauss", None)
             parameters["SYSTEM"]["occupations"] = "tetrahedra"
+
+        natoms = len(self.ctx.structure.sites)
+        parameters["ELECTRONS"]["conv_thr"] = (
+            parameters["ELECTRONS"]["conv_thr"] * natoms
+        )
 
         inputs = {
             "eos": {

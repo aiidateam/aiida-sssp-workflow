@@ -211,12 +211,11 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
         self._CONV_THR = protocol["electron_conv_thr"]
+        self._DISK_IO = protocol["disk_io"]
+        self._MIXING_BETA = protocol["mixing_beta"]
         self.ctx.kpoints_distance = self._KDISTANCE = protocol["kpoints_distance"]
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
-
-        # Set the hardcoded parameters
-        _disk_io = "nowf"
 
         # narrow the configuration list by protocol
         # this is used for test protocol which only has limited configurations to be verified
@@ -232,7 +231,8 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
         parameters = {
             "CONTROL": {
-                "disk_io": _disk_io,
+                "calculation": "scf",
+                "disk_io": self._DISK_IO,
             },
             "SYSTEM": {
                 "degauss": self._DEGAUSS,
@@ -241,9 +241,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             },
             "ELECTRONS": {
                 "conv_thr": self._CONV_THR,
-            },
-            "CONTROL": {
-                "calculation": "scf",
+                "mixing_beta": self._MIXING_BETA,
             },
         }
 
@@ -357,6 +355,12 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             },
         }
         parameters = update_dict(parameters, pw_parameters)
+
+        # conv_thr is extensive, like the total energy so we need to scale it with the number of atoms
+        natoms = len(structure.sites)
+        parameters["ELECTRONS"]["conv_thr"] = (
+            parameters["ELECTRONS"]["conv_thr"] * natoms
+        )
 
         inputs = {
             "eos": {
