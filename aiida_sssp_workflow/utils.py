@@ -165,7 +165,12 @@ def get_standard_structure(
     base_structure_module = "aiida_sssp_workflow.statics.structures"
 
     if configuration is None:
+        if prop == "delta":
+            raise ValueError("Must provide configuration name for delta measure")
         configuration = get_default_configuration(element, prop)
+
+    # uppercase configuration
+    configuration = configuration.upper()
 
     if configuration == "RE":
         assert element in RARE_EARTH_ELEMENTS
