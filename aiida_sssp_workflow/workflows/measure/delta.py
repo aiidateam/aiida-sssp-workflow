@@ -9,7 +9,7 @@ from aiida_sssp_workflow.utils import (
     ACTINIDE_ELEMENTS,
     HIGH_DUAL_ELEMENTS,
     MAGNETIC_ELEMENTS,
-    NO_TYPICAL_CONF_ELEMENTS,
+    NO_GS_CONF_ELEMENTS,
     OXIDE_CONFIGURATIONS,
     RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
@@ -38,7 +38,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
     # pylint: disable=too-many-instance-attributes
 
     _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
-    _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["TYPICAL"]
+    _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
 
     _NBANDS_FACTOR_FOR_REN = 1.5
 
@@ -115,7 +115,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             self.ctx.pseudos_oxide = {
                 element: self.inputs.pseudo,
             }
-        elif self.ctx.element in NO_TYPICAL_CONF_ELEMENTS:
+        elif self.ctx.element in NO_GS_CONF_ELEMENTS:
             # Don't have typical structure for At, Fr, Ra
             self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
@@ -149,14 +149,14 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         ! only for TYPEICAL structure.
         """
         (
-            self.ctx.structures["TYPICAL"],
+            self.ctx.structures["GS"],
             self.ctx.pw_magnetic_parameters,
-        ) = get_magnetic_inputs(self.ctx.structures["TYPICAL"])
+        ) = get_magnetic_inputs(self.ctx.structures["GS"])
 
         # override pseudos setting
         # required for O, Mn, Cr where the kind names varies for sites
         self.ctx.pseudos_magnetic = reset_pseudos_for_magnetic(
-            self.inputs.pseudo, self.ctx.structures["TYPICAL"]
+            self.inputs.pseudo, self.ctx.structures["GS"]
         )
 
     def is_rare_earth_element(self):
@@ -313,7 +313,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 )
                 pw_parameters["SYSTEM"]["nbnd"] = int(nbnd)
 
-        if configuration in self._UNARIE_CONFIGURATIONS:  # include regular 'TYPICAL'
+        if configuration in self._UNARIE_CONFIGURATIONS:  # include regular 'GS'
             # pseudos for BCC, FCC, SC, Diamond and TYPYCAL configurations
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
@@ -323,7 +323,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             else:
                 ecutrho = self.ctx.ecutwfc * 8
 
-        if configuration == "TYPICAL" and self.ctx.element in MAGNETIC_ELEMENTS:
+        if configuration == "GS" and self.ctx.element in MAGNETIC_ELEMENTS:
             # specific setting for magnetic elements typical since mag on
             pseudos = self.ctx.pseudos_magnetic
             pw_parameters = update_dict(

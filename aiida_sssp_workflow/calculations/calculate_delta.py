@@ -60,7 +60,7 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
 
     The configuration can be one of:
     - RE: for Rare-earth element
-    - TYPICAL: for BM fit results from Corttiner's paper
+    - GS: for BM fit results from Corttiner's paper
     - One of OXIDES:
         - XO
         - XO2
@@ -89,8 +89,8 @@ def delta_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         ref_json = "WIEN2K_LANN.json"
         conf_key = f"{element}N"
 
-    if configuration == "TYPICAL":
-        ref_json = "WIEN2K_TYPICAL.json"
+    if configuration == "GS":
+        ref_json = "WIEN2K_GS.json"
         conf_key = f"{element}"
 
     if configuration in UNARIE_CONFIGURATIONS:

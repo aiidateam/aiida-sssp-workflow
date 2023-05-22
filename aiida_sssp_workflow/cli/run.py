@@ -53,7 +53,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option(
     "configuration",
     "--configuration",
-    help="(convergence only) Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, TYPICAL.",
+    help="(convergence only) Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, GS.",
 )
 @click.option("withmpi", "--withmpi", default=True, help="Run with mpi.")
 @click.option("npool", "--npool", default=1, help="Number of pool.")

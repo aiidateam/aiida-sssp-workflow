@@ -35,7 +35,7 @@ This what we call it residual volume is therefore a stiffness-agnostic value tha
 
 ## Delta & nu factor in accuracy and convergence verificaiton
 
-In convergence delta factor calculation, the typical configurations from Cottiner's paper are used.
+In convergence delta factor calculation, the GS configurations from Cottiner's paper are used.
 To have a uniform sence of accuracy through looking at delta factor, the value is defined as delta factor per atom.
 However, since it is hard to define delta per/atom for oxides, ACWF does not use per/atom value to represent results.
 To compatible with it, the accuracy delta verification also use the structure delta.
@@ -128,7 +128,7 @@ And for lanthanoids using the Nitrides from Wenzowitch paper for bands measure a
 
 But the structures used for convergence verfication are varias.
 The lanthanides still using the nitrides from Wenzovitch paper.
-We keep on using typical nature configuration from Cottiner's paper, but convert them to primitive with pymatgen (for magnetic elements, no primitive convert process but still refine with `pymatgen`).
+We keep on using GS nature configuration from Cottiner's paper, but convert them to primitive with pymatgen (for magnetic elements, no primitive convert process but still refine with `pymatgen`).
 Maybe the flourine (F) still have thekproblem mentioned in legacy SSSP that hard to convergence (SCF convergence), will rollback to use SiF4 for it.
 
 ## Work chains clean policy

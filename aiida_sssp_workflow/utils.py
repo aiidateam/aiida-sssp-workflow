@@ -90,7 +90,7 @@ NONMETAL_ELEMENTS = [
 ]
 
 # These elements don't have typical configurations from Cottiner's paper
-NO_TYPICAL_CONF_ELEMENTS = ["At", "Fr", "Ra"]
+NO_GS_CONF_ELEMENTS = ["At", "Fr", "Ra"]
 
 HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
 
@@ -181,7 +181,7 @@ def get_standard_structure(
             f"{base_structure_module}.typical", f"{element}N.cif"
         )
 
-    if configuration == "TYPICAL":
+    if configuration == "GS":
         res_path = importlib.resources.path(
             f"{base_structure_module}.typical", f"{element}.cif"
         )

@@ -9,7 +9,11 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import (
+    RARE_EARTH_ELEMENTS,
+    get_default_configuration,
+    update_dict,
+)
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
 
@@ -74,34 +78,6 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
 
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
-
-        # Please check README for what and why we use configuration set 'convergence'
-        # for convergence verification.
-        if "configuration" in self.inputs:
-            self.ctx.configuration = self.inputs.configuration.value
-        else:
-            # configuration for delta convergence read from mapping.json as default
-            import_path = importlib.resources.path(
-                "aiida_sssp_workflow.statics.structures", f"mapping.json"
-            )
-            with import_path as path, open(path, "r") as handle:
-                mapping = json.load(handle)
-
-            dir, fn = mapping[self.ctx.element]["convergence"].split("/")
-
-            if str.upper(dir) == "TYPICAL":
-                self.report(f"Use typical configuration for {self.ctx.element}")
-                element = fn.split(".")[0]
-                assert element == self.ctx.element
-                self.ctx.configuration = "TYPICAL"
-            else:
-                # the convergence configuration is read from ACWF set
-                element, configuration = fn.replace("-", ".").split(".")[:-1]
-                self.report(
-                    f"Use ACWF configuration {configuration} for {self.ctx.element}"
-                )
-                assert element == self.ctx.element
-                self.ctx.configuration = configuration
 
         # Set context parameters
         self.ctx.kpoints_distance = self._KDISTANCE

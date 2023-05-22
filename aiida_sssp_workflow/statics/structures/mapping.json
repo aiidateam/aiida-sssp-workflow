@@ -1,84 +1,84 @@
 {
     "_commont": "The mapping from element to configuration for convergence and bands verification.",
     "Ag": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Al": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ar": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "As": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "At": {
         "bands": "FCC",
         "convergence": "FCC"
     },
     "Au": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ba": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Be": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "B": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Bi": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Br": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ca": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Cd": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ce": {
         "bands": "RE",
         "convergence": "RE"
     },
     "C": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Cl": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Co": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Cr": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Cs": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Cu": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Dy": {
         "bands": "RE",
@@ -93,256 +93,256 @@
         "convergence": "RE"
     },
     "Fe": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "F": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ga": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Gd": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Ge": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "He": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Hf": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "H": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Hg": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ho": {
         "bands": "RE",
         "convergence": "RE"
     },
     "I": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "In": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ir": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "K": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Kr": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "La": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Li": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Lu": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Mg": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Mn": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Mo": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Na": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Nb": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Nd": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Ne": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "N": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ni": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "O": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Os": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Pb": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Pd": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "P": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Pm": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Po": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Pr": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Pt": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Rb": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Re": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Rh": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Rn": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ru": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Sb": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Sc": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Se": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "S": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Si": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Sm": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Sn": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Sr": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ta": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Tb": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Tc": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Te": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ti": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Tl": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Tm": {
         "bands": "RE",
         "convergence": "RE"
     },
     "V": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "W": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Xe": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Yb": {
         "bands": "RE",
         "convergence": "RE"
     },
     "Y": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Zn": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Zr": {
-        "bands": "TYPICAL",
-        "convergence": "TYPICAL"
+        "bands": "GS",
+        "convergence": "GS"
     },
     "Ac": {
         "bands": "FCC",
