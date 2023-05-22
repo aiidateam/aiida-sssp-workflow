@@ -177,7 +177,7 @@ def extract(pks, element, dst, override, custom_label):
                 psp_result = {
                     "_metadata": [get_metadata(_node)],
                 }  # the results of one verification
-                psp_result["accuracy"] = {}
+                psp_result["measure"] = {}
                 psp_result["convergence"] = {}
             else:
                 # append the new _metadata of the output node if it update the previous result
@@ -196,12 +196,12 @@ def extract(pks, element, dst, override, custom_label):
                     psp_result["pseudo_info"] = {
                         **called_wf.outputs.result.get_dict(),
                     }
-                # delta
-                if called_wf.process_label == "DeltaMeasureWorkChain":
-                    psp_result["accuracy"]["delta"] = _flatten_output(
-                        _node.outputs.accuracy.delta
+                # precision (EOS)
+                if called_wf.process_label == "PrecisionMeasureWorkChain":
+                    psp_result["measure"]["precision"] = _flatten_output(
+                        _node.outputs.measure.precision
                     )
-                    psp_result["accuracy"]["delta"]["_metadata"] = get_metadata(
+                    psp_result["measure"]["precision"]["_metadata"] = get_metadata(
                         called_wf
                     )
                 # bands

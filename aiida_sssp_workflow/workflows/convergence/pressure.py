@@ -170,7 +170,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         # calculating the pressure. There is an extra workflow (run at ecutwfc of reference point)
         # for it which need to be run before the following step.
 
-        # This workflow is shared with delta factor workchain for birch murnagan fitting.
+        # This workflow is shared with precesion measure workchain for birch murnagan fitting.
         ecutwfc = self.ctx.reference_ecutwfc
         ecutrho = ecutwfc * self.ctx.dual
         parameters = {

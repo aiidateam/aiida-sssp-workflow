@@ -38,7 +38,7 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
                     namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from EOS.'})
 
         spec.output('output_parameters', required=True,
-                    help='The output of delta factor and other measures to describe the accuracy of EOS compare '
+                    help='The output of delta factor and other measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
 
         # yapf: enable

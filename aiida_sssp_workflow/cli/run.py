@@ -19,7 +19,7 @@ UpfData = DataFactory("pseudo.upf")
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 
 # Trigger the launch by running:
-# aiida-sssp-workflow launch --property accuracy.delta --pw-code pw-7.0@localhost --ph-code ph-7.0@localhost --protocol test --cutoff-control test --criteria efficiency --withmpi True -- examples/_static/Si_ONCV_PBE-1.2.upf
+# aiida-sssp-workflow launch --property measure.precision --pw-code pw-7.0@localhost --ph-code ph-7.0@localhost --protocol test --cutoff-control test --criteria efficiency --withmpi True -- examples/_static/Si_ONCV_PBE-1.2.upf
 
 
 @cmd_root.command("launch")
@@ -33,7 +33,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
     "--property",
     multiple=True,
     default=[],
-    help="Property to verify, can be: accuracy.delta, accuracy.bands, convergence ...",
+    help="Property to verify, can be: measure.precision, measure.bands, convergence ...",
 )
 @click.option(
     "protocol",
@@ -113,7 +113,7 @@ def launch(
         pseudo = UpfData(stream)
 
     inputs = {
-        "accuracy": {
+        "measure": {
             "protocol": orm.Str(protocol),
             "cutoff_control": orm.Str(cutoff_control),
         },

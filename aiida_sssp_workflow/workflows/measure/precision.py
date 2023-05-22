@@ -32,7 +32,7 @@ from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
+class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
     # pylint: disable=too-many-instance-attributes
@@ -73,7 +73,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                         })
 
         spec.output('output_parameters',
-                    help='The summary output parameters of all delta measures to describe the accuracy of EOS compare '
+                    help='The summary output parameters of all delta measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
                     message=f'The {DeltaWorkChain.__name__} sub process failed.')
@@ -206,7 +206,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol = get_protocol(category="delta", name=self.inputs.protocol.value)
+        protocol = get_protocol(category="precision", name=self.inputs.protocol.value)
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
