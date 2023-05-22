@@ -1,415 +1,415 @@
 {
     "_commont": "The mapping from element to configuration for convergence and bands verification.",
     "Ag": {
-        "bands": "typical/Ag.cif",
-        "convergence": "typical/Ag.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Al": {
-        "bands": "typical/Al.cif",
-        "convergence": "typical/Al.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ar": {
-        "bands": "typical/Ar.cif",
-        "convergence": "typical/Ar.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "As": {
-        "bands": "typical/As.cif",
-        "convergence": "typical/As.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "At": {
-        "bands": "unaries/At-FCC.xsf",
-        "convergence": "unaries/At-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Au": {
-        "bands": "typical/Au.cif",
-        "convergence": "typical/Au.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ba": {
-        "bands": "typical/Ba.cif",
-        "convergence": "typical/Ba.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Be": {
-        "bands": "typical/Be.cif",
-        "convergence": "typical/Be.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "B": {
-        "bands": "typical/B.cif",
-        "convergence": "typical/B.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Bi": {
-        "bands": "typical/Bi.cif",
-        "convergence": "typical/Bi.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Br": {
-        "bands": "typical/Br.cif",
-        "convergence": "typical/Br.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ca": {
-        "bands": "typical/Ca.cif",
-        "convergence": "typical/Ca.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Cd": {
-        "bands": "typical/Cd.cif",
-        "convergence": "typical/Cd.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ce": {
-        "bands": "typical/CeN.cif",
-        "convergence": "typical/CeN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "C": {
-        "bands": "typical/C.cif",
-        "convergence": "typical/C.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Cl": {
-        "bands": "typical/Cl.cif",
-        "convergence": "typical/Cl.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Co": {
-        "bands": "typical/Co.cif",
-        "convergence": "typical/Co.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Cr": {
-        "bands": "typical/Cr.cif",
-        "convergence": "typical/Cr.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Cs": {
-        "bands": "typical/Cs.cif",
-        "convergence": "typical/Cs.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Cu": {
-        "bands": "typical/Cu.cif",
-        "convergence": "typical/Cu.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Dy": {
-        "bands": "typical/DyN.cif",
-        "convergence": "typical/DyN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Er": {
-        "bands": "typical/ErN.cif",
-        "convergence": "typical/ErN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Eu": {
-        "bands": "typical/EuN.cif",
-        "convergence": "typical/EuN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Fe": {
-        "bands": "typical/Fe.cif",
-        "convergence": "typical/Fe.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "F": {
-        "bands": "typical/F.cif",
-        "convergence": "typical/F.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ga": {
-        "bands": "typical/Ga.cif",
-        "convergence": "typical/Ga.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Gd": {
-        "bands": "typical/GdN.cif",
-        "convergence": "typical/GdN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Ge": {
-        "bands": "typical/Ge.cif",
-        "convergence": "typical/Ge.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "He": {
-        "bands": "typical/He.cif",
-        "convergence": "typical/He.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Hf": {
-        "bands": "typical/Hf.cif",
-        "convergence": "typical/Hf.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "H": {
-        "bands": "typical/H.cif",
-        "convergence": "typical/H.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Hg": {
-        "bands": "typical/Hg.cif",
-        "convergence": "typical/Hg.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ho": {
-        "bands": "typical/HoN.cif",
-        "convergence": "typical/HoN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "I": {
-        "bands": "typical/I.cif",
-        "convergence": "typical/I.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "In": {
-        "bands": "typical/In.cif",
-        "convergence": "typical/In.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ir": {
-        "bands": "typical/Ir.cif",
-        "convergence": "typical/Ir.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "K": {
-        "bands": "typical/K.cif",
-        "convergence": "typical/K.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Kr": {
-        "bands": "typical/Kr.cif",
-        "convergence": "typical/Kr.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "La": {
-        "bands": "typical/LaN.cif",
-        "convergence": "typical/LaN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Li": {
-        "bands": "typical/Li.cif",
-        "convergence": "typical/Li.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Lu": {
-        "bands": "typical/LuN.cif",
-        "convergence": "typical/LuN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Mg": {
-        "bands": "typical/Mg.cif",
-        "convergence": "typical/Mg.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Mn": {
-        "bands": "typical/Mn.cif",
-        "convergence": "typical/Mn.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Mo": {
-        "bands": "typical/Mo.cif",
-        "convergence": "typical/Mo.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Na": {
-        "bands": "typical/Na.cif",
-        "convergence": "typical/Na.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Nb": {
-        "bands": "typical/Nb.cif",
-        "convergence": "typical/Nb.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Nd": {
-        "bands": "typical/NdN.cif",
-        "convergence": "typical/NdN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Ne": {
-        "bands": "typical/Ne.cif",
-        "convergence": "typical/Ne.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "N": {
-        "bands": "typical/N.cif",
-        "convergence": "typical/N.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ni": {
-        "bands": "typical/Ni.cif",
-        "convergence": "typical/Ni.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "O": {
-        "bands": "typical/O.cif",
-        "convergence": "typical/O.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Os": {
-        "bands": "typical/Os.cif",
-        "convergence": "typical/Os.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Pb": {
-        "bands": "typical/Pb.cif",
-        "convergence": "typical/Pb.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Pd": {
-        "bands": "typical/Pd.cif",
-        "convergence": "typical/Pd.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "P": {
-        "bands": "typical/P.cif",
-        "convergence": "typical/P.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Pm": {
-        "bands": "typical/PmN.cif",
-        "convergence": "typical/PmN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Po": {
-        "bands": "typical/Po.cif",
-        "convergence": "typical/Po.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Pr": {
-        "bands": "typical/PrN.cif",
-        "convergence": "typical/PrN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Pt": {
-        "bands": "typical/Pt.cif",
-        "convergence": "typical/Pt.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Rb": {
-        "bands": "typical/Rb.cif",
-        "convergence": "typical/Rb.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Re": {
-        "bands": "typical/Re.cif",
-        "convergence": "typical/Re.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Rh": {
-        "bands": "typical/Rh.cif",
-        "convergence": "typical/Rh.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Rn": {
-        "bands": "typical/Rn.cif",
-        "convergence": "typical/Rn.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ru": {
-        "bands": "typical/Ru.cif",
-        "convergence": "typical/Ru.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Sb": {
-        "bands": "typical/Sb.cif",
-        "convergence": "typical/Sb.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Sc": {
-        "bands": "typical/Sc.cif",
-        "convergence": "typical/Sc.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Se": {
-        "bands": "typical/Se.cif",
-        "convergence": "typical/Se.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "S": {
-        "bands": "typical/S.cif",
-        "convergence": "typical/S.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Si": {
-        "bands": "typical/Si.cif",
-        "convergence": "typical/Si.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Sm": {
-        "bands": "typical/SmN.cif",
-        "convergence": "typical/SmN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Sn": {
-        "bands": "typical/Sn.cif",
-        "convergence": "typical/Sn.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Sr": {
-        "bands": "typical/Sr.cif",
-        "convergence": "typical/Sr.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ta": {
-        "bands": "typical/Ta.cif",
-        "convergence": "typical/Ta.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Tb": {
-        "bands": "typical/TbN.cif",
-        "convergence": "typical/TbN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Tc": {
-        "bands": "typical/Tc.cif",
-        "convergence": "typical/Tc.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Te": {
-        "bands": "typical/Te.cif",
-        "convergence": "typical/Te.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ti": {
-        "bands": "typical/Ti.cif",
-        "convergence": "typical/Ti.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Tl": {
-        "bands": "typical/Tl.cif",
-        "convergence": "typical/Tl.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Tm": {
-        "bands": "typical/TmN.cif",
-        "convergence": "typical/TmN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "V": {
-        "bands": "typical/V.cif",
-        "convergence": "typical/V.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "W": {
-        "bands": "typical/W.cif",
-        "convergence": "typical/W.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Xe": {
-        "bands": "typical/Xe.cif",
-        "convergence": "typical/Xe.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Yb": {
-        "bands": "typical/YbN.cif",
-        "convergence": "typical/YbN.cif"
+        "bands": "RE",
+        "convergence": "RE"
     },
     "Y": {
-        "bands": "typical/Y.cif",
-        "convergence": "typical/Y.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Zn": {
-        "bands": "typical/Zn.cif",
-        "convergence": "typical/Zn.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Zr": {
-        "bands": "typical/Zr.cif",
-        "convergence": "typical/Zr.cif"
+        "bands": "TYPICAL",
+        "convergence": "TYPICAL"
     },
     "Ac": {
-        "bands": "unaries/Ac-FCC.xsf",
-        "convergence": "unaries/Ac-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Th": {
-        "bands": "unaries/Th-FCC.xsf",
-        "convergence": "unaries/Th-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Pa": {
-        "bands": "unaries/Pa-FCC.xsf",
-        "convergence": "unaries/Pa-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "U": {
-        "bands": "unaries/U-FCC.xsf",
-        "convergence": "unaries/U-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Np": {
-        "bands": "unaries/Np-FCC.xsf",
-        "convergence": "unaries/Np-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Pu": {
-        "bands": "unaries/Pu-FCC.xsf",
-        "convergence": "unaries/Pu-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Am": {
-        "bands": "unaries/Am-FCC.xsf",
-        "convergence": "unaries/Am-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Cm": {
-        "bands": "unaries/Cm-FCC.xsf",
-        "convergence": "unaries/Cm-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Bk": {
-        "bands": "unaries/Bk-FCC.xsf",
-        "convergence": "unaries/Bk-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Cf": {
-        "bands": "unaries/Cf-FCC.xsf",
-        "convergence": "unaries/Cf-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Es": {
-        "bands": "unaries/Es-FCC.xsf",
-        "convergence": "unaries/Es-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Fm": {
-        "bands": "unaries/Fm-FCC.xsf",
-        "convergence": "unaries/Fm-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Md": {
-        "bands": "unaries/Md-FCC.xsf",
-        "convergence": "unaries/Md-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "No": {
-        "bands": "unaries/No-FCC.xsf",
-        "convergence": "unaries/No-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Lr": {
-        "bands": "unaries/Lr-FCC.xsf",
-        "convergence": "unaries/Lr-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Fr": {
-        "bands": "unaries/Fr-FCC.xsf",
-        "convergence": "unaries/Fr-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     },
     "Ra": {
-        "bands": "unaries/Ra-FCC.xsf",
-        "convergence": "unaries/Ra-FCC.xsf"
+        "bands": "FCC",
+        "convergence": "FCC"
     }
 }

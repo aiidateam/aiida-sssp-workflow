@@ -13,6 +13,7 @@ from aiida_sssp_workflow.utils import (
     MAGNETIC_ELEMENTS,
     RARE_EARTH_ELEMENTS,
     convergence_analysis,
+    get_default_configuration,
     get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
@@ -232,11 +233,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         # Please check README for what and why we use configuration set 'convergence'
         # for convergence verification.
         if "configuration" in self.inputs:
-            configuration = self.inputs.configuration.value
+            self.ctx.configuration = self.inputs.configuration.value
         else:
             # will use the default configuration set in the protocol (mapping.json)
-            configuration = None
-        self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence', configuration=configuration)
+            self.ctx.configuration = get_default_configuration(self.ctx.element, prop='convergence')
+        self.ctx.structure = get_standard_structure(self.ctx.element, prop='convergence', configuration=self.ctx.configuration)
 
         # For configuration that contains O, which is the configuration from ACWF set, we need to add O pseudo
         if "O" in self.ctx.structure.get_kind_names() and self.ctx.element != "O":
@@ -252,7 +253,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         and reset pseudos to correspont elements name.
         """
         # ! only for typical configuration we set the starting magnetization and reset pseudos
-        if "configuration" in self.inputs and self.inputs.configuration.value == 'TYPICAL':
+        if self.ctx.configuration.value == 'TYPICAL':
             self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
             self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 

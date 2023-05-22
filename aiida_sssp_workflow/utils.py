@@ -113,6 +113,25 @@ def update_dict(d, u):
     return ret
 
 
+def get_default_configuration(element: str, prop: str) -> str:
+    """get default configuration from mapping.json"""
+    # use the one from mapping.json as default
+    # after some back-forward, most elements only use typical structure
+    # for bands and for convergence. But with the primitived structure.
+    # But for future maintainance, I keep the mapping.json for configuration
+    # mapping. Only At, Fr, Ra and actinides using unaries FCC since it is not in typical.
+    import_path = importlib.resources.path(
+        "aiida_sssp_workflow.statics.structures", f"mapping.json"
+    )
+
+    with import_path as path, open(path, "r") as handle:
+        mapping = json.load(handle)
+
+    configuration = mapping[element][prop]
+
+    return configuration
+
+
 def get_standard_structure(
     element: str, prop: str, configuration=None
 ) -> orm.StructureData:
@@ -145,6 +164,9 @@ def get_standard_structure(
     # If for delta measure workflow
     base_structure_module = "aiida_sssp_workflow.statics.structures"
 
+    if configuration is None:
+        configuration = get_default_configuration(element, prop)
+
     if configuration == "RE":
         assert element in RARE_EARTH_ELEMENTS
 
@@ -171,37 +193,17 @@ def get_standard_structure(
             f"{base_structure_module}.unaries", f"{element}-{configuration}.xsf"
         )
 
-    if configuration is None:
-        # If configuration is not specified, use the one from mapping.json as default
-        # after some back-forward, most elements only use typical structure
-        # for bands and for convergence. But with the primitived structure.
-        # But for future maintainance, I keep the mapping.json for configuration
-        # mapping. Only At, Fr, Ra and actinides using unaries FCC since it is not in typical.
-        import_path = importlib.resources.path(
-            "aiida_sssp_workflow.statics.structures", f"mapping.json"
-        )
-
-        with import_path as path, open(path, "r") as handle:
-            mapping = json.load(handle)
-
-        dir, fn = mapping[element][prop].split("/")
-        res_path = importlib.resources.path(f"{base_structure_module}.{dir}", fn)
-
-    # For magnetic elements, use the conventional cell
-    if element in MAGNETIC_ELEMENTS:
-        primitive_cell = False
-    else:
-        primitive_cell = True
-
-    if prop == "delta":
-        primitive_cell = False
-    else:
-        # bands and convergence test.
-        # Since we want the convergence test run fast, use primitive cell.
-        primitive_cell = True
-
     with res_path as path:
         if Path(path).suffix == ".cif":
+            # For magnetic elements, use the conventional cell
+            primitive_cell = True
+
+            if element in MAGNETIC_ELEMENTS:
+                primitive_cell = False
+
+            if prop == "delta":
+                primitive_cell = False
+
             structure = orm.CifData.get_or_create(str(path), use_first=True)[
                 0
             ].get_structure(primitive_cell=primitive_cell)
@@ -209,12 +211,12 @@ def get_standard_structure(
             ase_structure = io.read(str(path))
             structure = orm.StructureData(ase=ase_structure)
             # No functionality for primitive cell in ase
+
+            # To make the structure consistent with the structure from acwf
+            res = get_kpoints_path(structure, method="seekpath")
+            structure = res["primitive_structure"]
         else:
             raise ValueError(f"Unknown file type {Path(path).suffix}")
-
-    # To make the structure consistent with the structure from acwf
-    res = get_kpoints_path(structure, method="seekpath")
-    structure = res["primitive_structure"]
 
     return structure
 
