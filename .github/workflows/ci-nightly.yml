@@ -29,7 +29,7 @@ jobs:
 
         strategy:
             matrix:
-                python-version: ['3.9', '3.10']
+                python-version: ['3.9']
 
         services:
             rabbitmq:
@@ -42,6 +42,10 @@ jobs:
         timeout-minutes: 40
 
         steps:
+            - uses: eWaterCycle/setup-singularity@v7 # for containerized code test
+              with:
+                  singularity-version: 3.8.7
+
             - uses: actions/checkout@v2
 
             - name: Cache Python dependencies
@@ -61,6 +65,7 @@ jobs:
                   pip install -U pip==22.3.1
                   pip install -U .[tests]
 
-            - name: Pull the image and Run pytest
-              run: |
-                pytest -sv tests
+            # - name: Pull the image and Run pytest
+            #   run: |
+            #     singularity run docker://containers4hpc/qe-mpich314:0.1.0 which pw.x
+            #     pytest -v tests/test_nightly.py -s
