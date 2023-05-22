@@ -114,37 +114,49 @@ def metric_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         BM_fit["bulk_deriv"],
     )
 
+    results = {
+        "birch_murnaghan_results": [V0, B0, B1],
+        "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
+        "V0_B0_B1_units_info": "eV/A^3 for B0",
+    }
     # Delta computation
-    delta, deltarel, delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
+    try:
+        delta, deltarel, delta1 = _calcDelta(ref_V0, ref_B0, ref_B1, V0, B0, B1)
+    except Exception:
+        pass
+    else:
+        results.update(
+            {
+                "delta": delta,
+                "delta1": delta1,
+                "delta_unit": "meV/atom",
+                "delta_relative": deltarel,
+                "delta_relative_unit": "%",
+                "natoms": natoms,
+                "delta/natoms": delta / natoms,
+            }
+        )
 
     # The nu_measure is a measure of the relative error of the fit parameters
-    nu_measure = rel_errors_vec_length(
-        ref_V0,
-        ref_B0,
-        ref_B1,
-        V0,
-        B0,
-        B1,
-        config_string=None,
-        prefact=1,
-        weight_b0=1 / 20,
-        weight_b1=1 / 400,
-    )
+    try:
+        nu_measure = rel_errors_vec_length(
+            ref_V0,
+            ref_B0,
+            ref_B1,
+            V0,
+            B0,
+            B1,
+            prefact=1,
+            weight_b0=1 / 20,
+            weight_b1=1 / 400,
+        )
+    except Exception:
+        pass
+    else:
+        results.update({"rel_errors_vec_length": nu_measure})
 
     return orm.Dict(
-        dict={
-            "delta": delta,
-            "delta1": delta1,
-            "delta_unit": "meV/atom",
-            "delta_relative": deltarel,
-            "delta_relative_unit": "%",
-            "natoms": natoms,
-            "delta/natoms": delta / natoms,
-            "birch_murnaghan_results": [V0, B0, B1],
-            "reference_wien2k_V0_B0_B1": [ref_V0, ref_B0, ref_B1],
-            "V0_B0_B1_units_info": "eV/A^3 for B0",
-            "rel_errors_vec_length": nu_measure,
-        }
+        dict=results,
     )
 
 

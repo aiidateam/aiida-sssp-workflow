@@ -432,10 +432,16 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 )
                 continue
 
-            output_parameters[configuration] = {
-                "delta": output["delta"],
-                "delta/natoms": output["delta/natoms"],
-                # "nu": output["rel_errors_vec_length"],    # TODO: get this back when the formula is fixed in acwf
-            }
+            try:
+                output_parameters[configuration] = {
+                    "delta": output["delta"],
+                    "delta/natoms": output["delta/natoms"],
+                    "nu": output["rel_errors_vec_length"],
+                }
+            except KeyError:
+                self.logger.warning(
+                    f"Can not get the metric, check EOS result or directly recalculate metric from EOS."
+                )
+                continue
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
