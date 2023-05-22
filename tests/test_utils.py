@@ -15,7 +15,8 @@ def test_get_standard_structure_default(data_regression):
 @pytest.mark.parametrize(
     "element, prop, configuration",
     [
-        ("Fe", "delta", "typical"),
+        ("Fe", "delta", "gs"),
+        ("Fe", "convergence", None),
         ("Te", "convergence", "xo"),
         ("Te", "delta", "xo"),
     ],
