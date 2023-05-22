@@ -252,8 +252,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         Extra setup for magnetic element, set starting magnetization
         and reset pseudos to correspont elements name.
         """
-        # ! only for typical configuration we set the starting magnetization and reset pseudos
-        if self.ctx.configuration.value == 'GS':
+        # ! only for GS configuration we set the starting magnetization and reset pseudos
+        if self.ctx.configuration == 'GS':
             self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
             self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 

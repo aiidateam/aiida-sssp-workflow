@@ -116,7 +116,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 element: self.inputs.pseudo,
             }
         elif self.ctx.element in NO_GS_CONF_ELEMENTS:
-            # Don't have typical structure for At, Fr, Ra
+            # Don't have ground state structure for At, Fr, Ra
             self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
             )
@@ -126,7 +126,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
             )
 
         # set structures except RARE earth element and actinides elements with will be set independently
-        # in sepecific step. Other wise, the typical structure is request but not provided, which
+        # in sepecific step. Other wise, the gs structure is request but not provided, which
         # will raise error.
         if self.ctx.element not in RARE_EARTH_ELEMENTS + ACTINIDE_ELEMENTS:
             self.ctx.structures = {}
@@ -324,7 +324,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 ecutrho = self.ctx.ecutwfc * 8
 
         if configuration == "GS" and self.ctx.element in MAGNETIC_ELEMENTS:
-            # specific setting for magnetic elements typical since mag on
+            # specific setting for magnetic elements gs since mag on
             pseudos = self.ctx.pseudos_magnetic
             pw_parameters = update_dict(
                 self.ctx.pw_parameters, self.ctx.pw_magnetic_parameters

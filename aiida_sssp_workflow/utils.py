@@ -176,27 +176,30 @@ def get_standard_structure(
         assert element in RARE_EARTH_ELEMENTS
 
         # use RE-nitrides of Wenzovich paper
-        # from typical cif folder
+        # from typical (gs) cif folder
         res_path = importlib.resources.path(
-            f"{base_structure_module}.typical", f"{element}N.cif"
+            f"{base_structure_module}.gs", f"{element}N.cif"
         )
 
-    if configuration == "GS":
+    elif configuration == "GS":
         res_path = importlib.resources.path(
-            f"{base_structure_module}.typical", f"{element}.cif"
+            f"{base_structure_module}.gs", f"{element}.cif"
         )
 
     # For elements that are verified in ACWF paper, use the XSF files.
     # https://github.com/aiidateam/acwf-verification-scripts/tree/main/0-preliminary-do-not-run
-    if configuration in OXIDE_CONFIGURATIONS:
+    elif configuration in OXIDE_CONFIGURATIONS:
         res_path = importlib.resources.path(
             f"{base_structure_module}.oxides", f"{element}-{configuration}.xsf"
         )
 
-    if configuration in UNARIE_CONFIGURATIONS:
+    elif configuration in UNARIE_CONFIGURATIONS:
         res_path = importlib.resources.path(
             f"{base_structure_module}.unaries", f"{element}-{configuration}.xsf"
         )
+
+    else:
+        raise ValueError(f"Unknown configuration {configuration}")
 
     with res_path as path:
         if Path(path).suffix == ".cif":
