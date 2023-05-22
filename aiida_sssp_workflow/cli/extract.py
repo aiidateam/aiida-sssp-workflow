@@ -206,11 +206,11 @@ def extract(pks, element, dst, override, custom_label):
                     )
                 # bands
                 if called_wf.process_label == "BandsMeasureWorkChain":
-                    psp_result["accuracy"]["bands"] = {
+                    psp_result["measure"]["bands"] = {
                         "bands": f"bands/{element}/{label}.json",
                         "band_structure": f"band_structure/{element}/{label}.json",
                     }
-                    psp_result["accuracy"]["bands"]["_metadata"] = get_metadata(
+                    psp_result["measure"]["bands"]["_metadata"] = get_metadata(
                         called_wf
                     )
 

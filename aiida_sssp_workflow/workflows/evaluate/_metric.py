@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-WorkChain calculate the delta for certain pseudopotential
+WorkChain calculate the metric (from EOS results) for certain pseudopotential
 """
 from aiida import orm
 from aiida.plugins import DataFactory
 from plumpy import ToContext
 
-from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
+from aiida_sssp_workflow.calculations.calculate_metric import metric_analyze
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 
 from . import _BaseEvaluateWorkChain
@@ -14,7 +14,7 @@ from . import _BaseEvaluateWorkChain
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaWorkChain(_BaseEvaluateWorkChain):
+class MetricWorkChain(_BaseEvaluateWorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
 
     @classmethod
@@ -27,7 +27,6 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
                     help='element')
         spec.input('configuration', valid_type=orm.Str,
                     help='Configuration name of structure, determine with AE reference data to use.')
-        # TODO: validate structure in _EOS conform with element and configuration.
 
         spec.outline(
             cls.run_eos,
@@ -38,7 +37,7 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
                     namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from EOS.'})
 
         spec.output('output_parameters', required=True,
-                    help='The output of delta factor and other measures to describe the precision of EOS compare '
+                    help='The output of metric factor measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
 
         # yapf: enable
@@ -97,4 +96,4 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
         self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
         self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
-        self.out(f"output_parameters", delta_analyze(**inputs))
+        self.out(f"output_parameters", metric_analyze(**inputs))
