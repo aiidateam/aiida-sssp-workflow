@@ -78,22 +78,27 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
 
     def finalize(self):
         """result"""
-        output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
-
-        V0 = orm.Float(output_bmf["volume0"])
-        natoms = output_bmf["num_of_atoms"]
-
-        inputs = {
-            "element": self.inputs.element,
-            "configuration": self.inputs.configuration,
-            "V0": V0,
-            "B0": orm.Float(output_bmf["bulk_modulus0"]),
-            "B1": orm.Float(output_bmf["bulk_deriv0"]),
-            "natoms": orm.Int(natoms),
-        }
-
         # set ecutwfc and ecutrho
         self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
         self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
-        self.out(f"output_parameters", metric_analyze(**inputs))
+        output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
+
+        if output_bmf is not None:
+            inputs = {
+                "element": self.inputs.element,
+                "configuration": self.inputs.configuration,
+                "V0": orm.Float(output_bmf["volume0"]),
+                "B0": orm.Float(output_bmf["bulk_modulus0"]),
+                "B1": orm.Float(output_bmf["bulk_deriv0"]),
+                "natoms": orm.Int(output_bmf["num_of_atoms"]),
+            }
+
+            output_parameters = metric_analyze(**inputs)
+            self.out("output_parameters", output_parameters)
+        else:
+            self.report(
+                "birch_murnaghan_fit result not found in eos workchain outputs, fit failed."
+            )
+            output_parameters = orm.Dict(dict={})
+            self.out("output_parameters", output_parameters.store())
