@@ -170,7 +170,8 @@ def get_standard_structure(
         configuration = get_default_configuration(element, prop)
 
     # uppercase configuration
-    configuration = configuration.upper()
+    if configuration != "Diamond":
+        configuration = configuration.upper()
 
     if configuration == "RE":
         assert element in RARE_EARTH_ELEMENTS

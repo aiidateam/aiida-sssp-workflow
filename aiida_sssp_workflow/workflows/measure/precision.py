@@ -25,14 +25,14 @@ from aiida_sssp_workflow.workflows.common import (
     get_pseudo_N,
     get_pseudo_O,
 )
-from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
+from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
 from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
 
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
+class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
     """Workchain to calculate delta factor of specific pseudopotential"""
 
     # pylint: disable=too-many-instance-attributes
@@ -60,23 +60,23 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 cls.extra_setup_for_actinide_element,
             ),
             cls.setup_pw_parameters_from_protocol,
-            cls.run_delta,
-            cls.inspect_delta,
+            cls.run_metric,
+            cls.inspect_metric,
             cls.finalize,
         )
         # namespace for storing all detail of run on each configuration
         for configuration in cls._OXIDE_CONFIGURATIONS + cls._UNARIE_CONFIGURATIONS + ["RE"]:
-            spec.expose_outputs(DeltaWorkChain, namespace=configuration,
+            spec.expose_outputs(MetricWorkChain, namespace=configuration,
                         namespace_options={
                             'help': f'Delta calculation result of {configuration} EOS.',
                             'required': False,
                         })
 
         spec.output('output_parameters',
-                    help='The summary output parameters of all delta measures to describe the accuracy of EOS compare '
+                    help='The summary output parameters of all delta measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
-                    message=f'The {DeltaWorkChain.__name__} sub process failed.')
+                    message=f'The {MetricWorkChain.__name__} sub process failed.')
         # yapf: enable
 
     def init_setup(self):
@@ -206,7 +206,7 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
         # pylint: disable=invalid-name, attribute-defined-outside-init
 
         # Read from protocol if parameters not set from inputs
-        protocol = get_protocol(category="delta", name=self.inputs.protocol.value)
+        protocol = get_protocol(category="precision", name=self.inputs.protocol.value)
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
@@ -382,35 +382,35 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
 
         return inputs
 
-    def run_delta(self):
+    def run_metric(self):
         """run eos workchain"""
 
         for configuration, structure in self.ctx.structures.items():
             inputs = self._get_inputs(structure, configuration)
 
-            future = self.submit(DeltaWorkChain, **inputs)
+            future = self.submit(MetricWorkChain, **inputs)
             self.report(
                 f"launching DeltaWarkChain<{future.pk}> for {configuration} structure."
             )
 
-            self.to_context(**{f"{configuration}_delta": future})
+            self.to_context(**{f"{configuration}_metric": future})
 
-    def inspect_delta(self):
-        """Inspect the results of DeltaWorkChain"""
+    def inspect_metric(self):
+        """Inspect the results of MetricWorkChain"""
         failed = []
         for configuration in self.ctx.structures.keys():
-            workchain = self.ctx[f"{configuration}_delta"]
+            workchain = self.ctx[f"{configuration}_metric"]
 
             if not workchain.is_finished_ok:
                 self.logger.warning(
-                    f"DeltaWorkChain of {configuration} failed with exit status {workchain.exit_status}"
+                    f"MetricWorkChain of {configuration} failed with exit status {workchain.exit_status}"
                 )
                 failed.append(configuration)
 
             self.out_many(
                 self.exposed_outputs(
                     workchain,
-                    DeltaWorkChain,
+                    MetricWorkChain,
                     namespace=configuration,
                 )
             )
@@ -432,10 +432,16 @@ class DeltaMeasureWorkChain(_BaseMeasureWorkChain):
                 )
                 continue
 
-            output_parameters[configuration] = {
-                "delta": output["delta"],
-                "delta/natoms": output["delta/natoms"],
-                # "nu": output["rel_errors_vec_length"],    # TODO: get this back when the formula is fixed in acwf
-            }
+            try:
+                output_parameters[configuration] = {
+                    "delta": output["delta"],
+                    "delta/natoms": output["delta/natoms"],
+                    "nu": output["rel_errors_vec_length"],
+                }
+            except KeyError:
+                self.logger.warning(
+                    f"Can not get the metric, check EOS result or directly recalculate metric from EOS."
+                )
+                continue
 
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())

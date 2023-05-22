@@ -2,20 +2,13 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
-import importlib
-import json
-
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import (
-    RARE_EARTH_ELEMENTS,
-    get_default_configuration,
-    update_dict,
-)
+from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
-from aiida_sssp_workflow.workflows.evaluate._delta import DeltaWorkChain
+from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -47,7 +40,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
     # pylint: disable=too-many-instance-attributes
 
     _PROPERTY_NAME = "delta"
-    _EVALUATE_WORKCHAIN = DeltaWorkChain
+    _EVALUATE_WORKCHAIN = MetricWorkChain
     _MEASURE_OUT_PROPERTY = "absolute_diff"
 
     def init_setup(self):
@@ -91,7 +84,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
-        get inputs for the evaluation DeltaWorkChain by provide ecutwfc and ecutrho,
+        get inputs for the evaluation MetricWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
         parameters = {

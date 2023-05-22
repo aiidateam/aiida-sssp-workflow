@@ -28,7 +28,7 @@ def run_verification(
     else:
         clean_workchain = False
     inputs = {
-        "accuracy": {
+        "measure": {
             "protocol": orm.Str("test"),
             "cutoff_control": orm.Str("test"),
         },

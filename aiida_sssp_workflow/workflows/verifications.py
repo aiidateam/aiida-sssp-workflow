@@ -44,13 +44,13 @@ DEFAULT_CONVERGENCE_PROPERTIES_LIST = [
     "convergence.bands",
 ]
 
-DEFAULT_ACCURACY_PROPERTIES_LIST = [
-    "accuracy.delta",
-    "accuracy.bands",
+DEFAULT_MEASURE_PROPERTIES_LIST = [
+    "measure.precision",
+    "measure.bands",
 ]
 
 DEFAULT_PROPERTIES_LIST = (
-    DEFAULT_ACCURACY_PROPERTIES_LIST + DEFAULT_CONVERGENCE_PROPERTIES_LIST
+    DEFAULT_MEASURE_PROPERTIES_LIST + DEFAULT_CONVERGENCE_PROPERTIES_LIST
 )
 
 
@@ -66,16 +66,16 @@ class VerificationWorkChain(SelfCleanWorkChain):
         "convergence.delta",
         "convergence.bands",
     ]
-    _VALID_ACCURACY_WF = [
-        "accuracy.delta",
-        "accuracy.bands",
+    _VALID_MEASURE_WF = [
+        "measure.precision",
+        "measure.bands",
     ]
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
         # yapf: disable
-        spec.expose_inputs(_BaseMeasureWorkChain, namespace='accuracy',
+        spec.expose_inputs(_BaseMeasureWorkChain, namespace='measure',
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
@@ -99,9 +99,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
             cls.setup_code_resource_options,
             cls.parse_pseudo,
             cls.init_setup,
-            if_(cls.is_verify_accuracy)(
-                cls.run_accuracy,
-                cls.inspect_accuracy,
+            if_(cls.is_verify_measure)(
+                cls.run_measure,
+                cls.inspect_measure,
             ),
             if_(cls.is_verify_convergence)(
                 if_(cls.is_caching)(
@@ -114,7 +114,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         )
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
             help='pseudopotential info')
-        for wfname in cls._VALID_ACCURACY_WF:
+        for wfname in cls._VALID_MEASURE_WF:
             spec.output_namespace(wfname, dynamic=True,
                 help=f'results of {wfname} calculation.')
         for wfname in cls._VALID_CONGENCENCE_WF:
@@ -175,25 +175,23 @@ class VerificationWorkChain(SelfCleanWorkChain):
         self.node.base.extras.set("label", label)
 
         # Properties list
-        valid_list = self._VALID_ACCURACY_WF + self._VALID_CONGENCENCE_WF
+        valid_list = self._VALID_MEASURE_WF + self._VALID_CONGENCENCE_WF
         self.ctx.properties_list = [
             p for p in self.inputs.properties_list.get_list() if p in valid_list
         ]
 
-        # Accuracy workflow: bands measure and delta measure workflows inputs setting
-        accurary_inputs = self.exposed_inputs(
-            _BaseMeasureWorkChain, namespace="accuracy"
-        )
-        accurary_inputs["pseudo"] = self.inputs.pseudo
-        accurary_inputs["code"] = self.inputs.pw_code
-        accurary_inputs["options"] = self.inputs.options
-        accurary_inputs["parallelization"] = self.inputs.parallelization
+        # Measure workflow: bands measure and precision measure workflows inputs setting
+        measure_inputs = self.exposed_inputs(_BaseMeasureWorkChain, namespace="measure")
+        measure_inputs["pseudo"] = self.inputs.pseudo
+        measure_inputs["code"] = self.inputs.pw_code
+        measure_inputs["options"] = self.inputs.options
+        measure_inputs["parallelization"] = self.inputs.parallelization
 
-        accurary_inputs["clean_workchain"] = self.inputs.clean_workchain
+        measure_inputs["clean_workchain"] = self.inputs.clean_workchain
 
-        self.ctx.accuracy_inputs = {
-            "delta": accurary_inputs.copy(),
-            "bands": accurary_inputs.copy(),
+        self.ctx.measure_inputs = {
+            "precision": measure_inputs.copy(),
+            "bands": measure_inputs.copy(),
         }
 
         # Convergence inputs setting, the properties of convergence test are:
@@ -239,36 +237,34 @@ class VerificationWorkChain(SelfCleanWorkChain):
         # For store the finished_ok workflow
         self.ctx.finished_ok_wf = {}
 
-    def is_verify_accuracy(self):
+    def is_verify_measure(self):
         """
-        Whether to run accuracy (delta measure, bands distance} workflow.
+        Whether to run measure (delta measure, bands distance} workflow.
         """
         for p in self.ctx.properties_list:
-            if "accuracy" in p:
+            if "measure" in p:
                 return True
 
         return False
 
-    def run_accuracy(self):
+    def run_measure(self):
         """Run delta measure sub-workflow"""
-        for property in DEFAULT_ACCURACY_PROPERTIES_LIST:
+        for property in DEFAULT_MEASURE_PROPERTIES_LIST:
             property_name = property.split(".")[1]
             if property in self.ctx.properties_list:
-                AccuracyWorkflow = WorkflowFactory(f"sssp_workflow.{property}")
+                MeasureWorkflow = WorkflowFactory(f"sssp_workflow.{property}")
 
                 running = self.submit(
-                    AccuracyWorkflow, **self.ctx["accuracy_inputs"][property_name]
+                    MeasureWorkflow, **self.ctx["measure_inputs"][property_name]
                 )
-                self.report(
-                    f"Submit {property_name} accuracy workchain pk={running.pk}"
-                )
+                self.report(f"Submit {property_name} measure workchain pk={running.pk}")
 
                 self.to_context(_=running)
                 self.ctx.workchains[f"{property}"] = running
 
-    def inspect_accuracy(self):
+    def inspect_measure(self):
         """Inspect delta measure results"""
-        return self._report_and_results(wname_list=self._VALID_ACCURACY_WF)
+        return self._report_and_results(wname_list=self._VALID_MEASURE_WF)
 
     def is_verify_convergence(self):
         """Whether to run convergence test workflows"""

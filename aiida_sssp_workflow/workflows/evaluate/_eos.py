@@ -46,7 +46,7 @@ class _EquationOfStateWorkChain(WorkChain):
         )
         spec.output('output_volume_energy', valid_type=orm.Dict,
             help='Results volumes and energise.')
-        spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict,
+        spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict, required=False,
             help='Result of birch murnaghan fitting.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')

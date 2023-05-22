@@ -1,5 +1,5 @@
-"""Base Measure Workchain since bands measure and delta measure share same input ports
-This class makes it able to expose delta measure and bands measure inputs to verification
+"""Base Measure Workchain since bands measure and precision measure share same input ports
+This class makes it able to expose precision measure and bands measure inputs to verification
 workchain.
 """
 from aiida import orm

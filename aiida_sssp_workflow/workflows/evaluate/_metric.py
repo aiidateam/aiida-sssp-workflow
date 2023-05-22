@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-WorkChain calculate the delta for certain pseudopotential
+WorkChain calculate the metric (from EOS results) for certain pseudopotential
 """
 from aiida import orm
 from aiida.plugins import DataFactory
 from plumpy import ToContext
 
-from aiida_sssp_workflow.calculations.calculate_delta import delta_analyze
+from aiida_sssp_workflow.calculations.calculate_metric import metric_analyze
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 
 from . import _BaseEvaluateWorkChain
@@ -14,7 +14,7 @@ from . import _BaseEvaluateWorkChain
 UpfData = DataFactory("pseudo.upf")
 
 
-class DeltaWorkChain(_BaseEvaluateWorkChain):
+class MetricWorkChain(_BaseEvaluateWorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
 
     @classmethod
@@ -27,7 +27,6 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
                     help='element')
         spec.input('configuration', valid_type=orm.Str,
                     help='Configuration name of structure, determine with AE reference data to use.')
-        # TODO: validate structure in _EOS conform with element and configuration.
 
         spec.outline(
             cls.run_eos,
@@ -38,7 +37,7 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
                     namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from EOS.'})
 
         spec.output('output_parameters', required=True,
-                    help='The output of delta factor and other measures to describe the accuracy of EOS compare '
+                    help='The output of metric factor measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
 
         # yapf: enable
@@ -79,22 +78,27 @@ class DeltaWorkChain(_BaseEvaluateWorkChain):
 
     def finalize(self):
         """result"""
-        output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
-
-        V0 = orm.Float(output_bmf["volume0"])
-        natoms = output_bmf["num_of_atoms"]
-
-        inputs = {
-            "element": self.inputs.element,
-            "configuration": self.inputs.configuration,
-            "V0": V0,
-            "B0": orm.Float(output_bmf["bulk_modulus0"]),
-            "B1": orm.Float(output_bmf["bulk_deriv0"]),
-            "natoms": orm.Int(natoms),
-        }
-
         # set ecutwfc and ecutrho
         self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
         self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
-        self.out(f"output_parameters", delta_analyze(**inputs))
+        output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
+
+        if output_bmf is not None:
+            inputs = {
+                "element": self.inputs.element,
+                "configuration": self.inputs.configuration,
+                "V0": orm.Float(output_bmf["volume0"]),
+                "B0": orm.Float(output_bmf["bulk_modulus0"]),
+                "B1": orm.Float(output_bmf["bulk_deriv0"]),
+                "natoms": orm.Int(output_bmf["num_of_atoms"]),
+            }
+
+            output_parameters = metric_analyze(**inputs)
+            self.out("output_parameters", output_parameters)
+        else:
+            self.report(
+                "birch_murnaghan_fit result not found in eos workchain outputs, fit failed."
+            )
+            output_parameters = orm.Dict(dict={})
+            self.out("output_parameters", output_parameters.store())
