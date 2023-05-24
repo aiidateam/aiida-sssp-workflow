@@ -67,7 +67,7 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
             exclude=('clean_workdir', 'pw.structure'),
             namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
         spec.expose_inputs(PwBaseWorkChain, namespace='bands',
-            exclude=('clean_workdir', 'pw.structure', 'pw.kpoints', 'pw.kpoints_distance'),
+            exclude=('clean_workdir', 'pw.structure', 'pw.kpoints', 'pw.kpoints_distance', 'pw.parent_folder'),
             namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the BANDS calculation.'})
         spec.input('structure', valid_type=orm.StructureData, help='The inputs structure.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),

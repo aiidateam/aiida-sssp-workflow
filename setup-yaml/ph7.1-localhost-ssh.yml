@@ -1,0 +1,11 @@
+---
+label: ph-7.1
+description: QuantumESPRESSO 7.1
+default_calc_job_plugin: quantumespresso.ph
+filepath_executable: /home/jyu/micromamba/envs/aiida-sssp-dev/bin/ph.x
+computer: localhost-ssh
+prepend_text: |
+    eval "$(micromamba shell hook -s posix)"
+    micromamba activate aiida-sssp-dev
+    OMP_NUM_THREADS=1
+append_text: ' '

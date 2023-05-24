@@ -77,8 +77,6 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
             self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
-            # set condition to True to break loop
-            self.ctx.is_ph_failed = True
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
