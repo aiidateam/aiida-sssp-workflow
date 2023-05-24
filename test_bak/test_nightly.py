@@ -35,7 +35,7 @@ def generate_test_inputs(pw_code, ph_code, psp_Si_SG15):
                 }
             ),
             "parallelization": orm.Dict(dict={"npool": 1}),
-            "clean_workchain": orm.Bool(False),
+            "clean_workdir": orm.Bool(False),
         }
 
         return inputs

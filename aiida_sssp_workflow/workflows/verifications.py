@@ -76,9 +76,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
         super().define(spec)
         # yapf: disable
         spec.expose_inputs(_BaseMeasureWorkChain, namespace='measure',
-                    exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
+                    exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workdir'])
         spec.expose_inputs(_BaseConvergenceWorkChain, namespace='convergence',
-                    exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workchain'])
+                    exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workdir'])
         spec.input('pw_code', valid_type=orm.AbstractCode,
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.AbstractCode,
@@ -187,7 +187,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         measure_inputs["options"] = self.inputs.options
         measure_inputs["parallelization"] = self.inputs.parallelization
 
-        measure_inputs["clean_workchain"] = self.inputs.clean_workchain
+        measure_inputs["clean_workdir"] = self.inputs.clean_workdir
 
         self.ctx.measure_inputs = {
             "precision": measure_inputs.copy(),
@@ -208,7 +208,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         convergence_inputs["options"] = self.inputs.options
         convergence_inputs["parallelization"] = self.inputs.parallelization
 
-        convergence_inputs["clean_workchain"] = self.inputs.clean_workchain
+        convergence_inputs["clean_workdir"] = self.inputs.clean_workdir
 
         # Here, the shallow copy can be used since the type of convergence_inputs
         # is AttributesDict.
@@ -222,8 +222,8 @@ class VerificationWorkChain(SelfCleanWorkChain):
         # of the verification workflow.
         inputs_bands = convergence_inputs.copy()
 
-        inputs_phonon_frequencies["clean_workchain"] = orm.Bool(False)
-        inputs_bands["clean_workchain"] = orm.Bool(False)
+        inputs_phonon_frequencies["clean_workdir"] = orm.Bool(False)
+        inputs_bands["clean_workdir"] = orm.Bool(False)
 
         self.ctx.convergence_inputs = {
             "cohesive_energy": convergence_inputs.copy(),
@@ -241,7 +241,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         # 4. get the recommended cutoffs
         # 5. run measure workflow using the recommended cutoffs
         self.ctx.caching_inputs = convergence_inputs.copy()
-        self.ctx.caching_inputs["clean_workchain"] = orm.Bool(
+        self.ctx.caching_inputs["clean_workdir"] = orm.Bool(
             False
         )  # shouldn't clean until last, default of _caching but do it here explicitly
 
@@ -374,6 +374,6 @@ class VerificationWorkChain(SelfCleanWorkChain):
     def on_terminated(self):
         super().on_terminated()
 
-        if self.inputs.clean_workchain.value is False:
+        if self.inputs.clean_workdir.value is False:
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return

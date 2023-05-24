@@ -158,7 +158,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
             "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
-            "clean_workchain": self.inputs.clean_workchain,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs
@@ -215,7 +215,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 },
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
-            "clean_workchain": self.inputs.clean_workchain,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         running = self.submit(_EquationOfStateWorkChain, **inputs)

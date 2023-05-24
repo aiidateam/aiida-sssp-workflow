@@ -28,7 +28,7 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
     def define(cls, spec):
         super().define(spec)
         spec.input(
-            "clean_workchain",
+            "clean_workdir",
             valid_type=orm.Bool,
             default=lambda: orm.Bool(False),
             help="If `True`, work directories of all called calculation will be cleaned at the end of execution.",

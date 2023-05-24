@@ -148,7 +148,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
         self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
-        if self.inputs.clean_workchain.value is True:
+        if self.inputs.clean_workdir.value is True:
             cleaned_calcs = operate_calcjobs(
                 self.node, operator=clean_workdir, all_same_nodes=False
             )

@@ -381,7 +381,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             },
             "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(configuration),
-            "clean_workchain": self.inputs.clean_workchain,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

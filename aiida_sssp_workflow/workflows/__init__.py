@@ -13,7 +13,7 @@ class SelfCleanWorkChain(WorkChain):
     def define(cls, spec):
         super().define(spec)
         spec.input(
-            "clean_workchain",
+            "clean_workdir",
             valid_type=Bool,
             default=lambda: Bool(True),
             help="If `True`, work directories of all called non-cached calculations will be cleaned"
@@ -31,7 +31,7 @@ class SelfCleanWorkChain(WorkChain):
         """
         super().on_terminated()
 
-        if self.inputs.clean_workchain.value is False:
+        if self.inputs.clean_workdir.value is False:
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return
 

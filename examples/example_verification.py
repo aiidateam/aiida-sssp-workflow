@@ -24,9 +24,9 @@ def run_verification(
     pw_code, ph_code, upf, properties_list=DEFAULT_PROPERTIES_LIST, label=None
 ):
     if properties_list == DEFAULT_PROPERTIES_LIST:
-        clean_workchain = True
+        clean_workdir = True
     else:
-        clean_workchain = False
+        clean_workdir = False
     inputs = {
         "measure": {
             "protocol": orm.Str("test"),
@@ -54,7 +54,7 @@ def run_verification(
             }
         ),
         "parallelization": orm.Dict(dict={"npool": 1}),
-        "clean_workchain": orm.Bool(clean_workchain),
+        "clean_workdir": orm.Bool(clean_workdir),
     }
 
     res, node = run_get_node(VerificationWorkChain, **inputs)

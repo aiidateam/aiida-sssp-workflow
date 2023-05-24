@@ -165,7 +165,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             "run_bands_structure": orm.Bool(
                 False
             ),  # for convergence with no band structure evaluate
-            "clean_workchain": self.inputs.clean_workchain,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs
