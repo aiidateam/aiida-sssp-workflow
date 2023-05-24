@@ -5,11 +5,12 @@ WorkChain calculate the bands for certain pseudopotential
 import numpy as np
 from aiida import orm
 from aiida.engine import ToContext, calcfunction, if_, while_
-from aiida.plugins import DataFactory, WorkflowFactory
+from aiida.engine.processes import ExitCode
+from aiida.plugins import DataFactory
 
 from . import _BaseEvaluateWorkChain
+from ._caching_wise_bands import PwBandsWorkChain
 
-PwBandsWorkChain = WorkflowFactory("quantumespresso.pw.bands")
 UpfData = DataFactory("pseudo.upf")
 
 
@@ -169,7 +170,11 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         if self.ctx.break_increase_nbands:
             return False
 
-        workchain = self._inspect_bands()
+        inspect_res = self._inspect_bands()
+        if isinstance(inspect_res, ExitCode):
+            return inspect_res
+        else:
+            workchain = inspect_res
 
         fermi_energy = workchain.outputs.band_parameters["fermi_energy"]
         bands = workchain.outputs.band_structure.get_array("bands")

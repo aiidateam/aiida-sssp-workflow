@@ -6,7 +6,7 @@ but required by the following PH calculation.
 """
 from aiida import orm
 from aiida.common import AttributeDict
-from aiida.engine import ToContext, WorkChain, if_
+from aiida.engine import ToContext, WorkChain, if_, while_
 from aiida.plugins import WorkflowFactory
 from aiida_quantumespresso.calculations.functions.seekpath_structure_analysis import (
     seekpath_structure_analysis,
@@ -88,10 +88,12 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
             if_(cls.should_run_seekpath)(
                 cls.run_seekpath,
             ),
-            cls.run_scf,
-            cls.inspect_scf,
-            cls.run_bands,
-            cls.inspect_bands,
+            while_(cls.bands_failed)(
+                cls.run_scf,
+                cls.inspect_scf,
+                cls.run_bands,
+                cls.inspect_bands,
+            ),
             cls.results,
         )
         spec.exit_code(201, 'ERROR_INVALID_INPUT_NUMBER_OF_BANDS',
@@ -182,6 +184,14 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         self.ctx.current_structure = self.inputs.structure
         self.ctx.current_number_of_bands = None
         self.ctx.bands_kpoints = self.inputs.get("bands_kpoints", None)
+
+        self.ctx.is_bands_failed = True
+
+    def bands_failed(self):
+        """The value will be set to `True` if bands calculation is failed because of the remote folder issue.
+        Otherwise it keeps on trying to rerun the bands calculation until remote folder of preliminary scf is not found.
+        """
+        return self.ctx.is_bands_failed
 
     def should_run_relax(self):
         """If the 'relax' input namespace was specified, we relax the input structure."""
@@ -318,10 +328,26 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         workchain = self.ctx.workchain_bands
 
         if not workchain.is_finished_ok:
-            self.report(
-                f"bands PwBaseWorkChain failed with exit status {workchain.exit_status}"
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
+            if self.ctx.current_folder.is_empty:
+                self.logger.warning(
+                    f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
+                )
+                # invalid the caching of the node and re-run scf calculation
+                workchain_scf = self.ctx.workchain_scf
+                scf_pw_node = [
+                    c for c in workchain_scf.called if isinstance(c, orm.CalcJobNode)
+                ][0]
+                all_same_nodes = scf_pw_node.base.caching.get_all_same_nodes()
+                for node in all_same_nodes:
+                    node.is_valid_cache = False
+                return
+            else:
+                self.report(
+                    f"bands PwBaseWorkChain failed with exit status {workchain.exit_status}"
+                )
+                return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
+
+        self.ctx.is_bands_failed = False
 
     def results(self):
         """Attach the desired output nodes directly as outputs of the workchain."""
