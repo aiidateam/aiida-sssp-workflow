@@ -218,6 +218,13 @@ class VerificationWorkChain(SelfCleanWorkChain):
         inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code
         inputs_phonon_frequencies["ph_code"] = self.inputs.ph_code
 
+        # For phonon frequencies and bands convergence workflow, the clean dir is taken care by the the finalize step
+        # of the verification workflow.
+        inputs_bands = convergence_inputs.copy()
+
+        inputs_phonon_frequencies["clean_workchain"] = orm.Bool(False)
+        inputs_bands["clean_workchain"] = orm.Bool(False)
+
         self.ctx.convergence_inputs = {
             "cohesive_energy": convergence_inputs.copy(),
             "phonon_frequencies": inputs_phonon_frequencies,
@@ -226,6 +233,13 @@ class VerificationWorkChain(SelfCleanWorkChain):
             "bands": convergence_inputs.copy(),
         }
 
+        # Caching inputs setting
+        # The running strategy of caching is:
+        # 1. run phonon_frequencies/bands convergence workflow
+        # 2. run cleandir for workchains (which will be the finalize step of phonon_frequencies/bands convergence workflow)
+        # 3. run cohesive_energy/pressure/delta convergence workflow which will use the cached data and clean on the fly
+        # 4. get the recommended cutoffs
+        # 5. run measure workflow using the recommended cutoffs
         self.ctx.caching_inputs = convergence_inputs.copy()
         self.ctx.caching_inputs["clean_workchain"] = orm.Bool(
             False
@@ -291,9 +305,6 @@ class VerificationWorkChain(SelfCleanWorkChain):
 
     def run_caching(self):
         """run pressure verification for caching"""
-        ##
-        # Pressure as caching
-        ##
         running = self.submit(_CachingConvergenceWorkChain, **self.ctx.caching_inputs)
         self.report(
             f"The caching is triggered, submit and run caching "
@@ -366,15 +377,3 @@ class VerificationWorkChain(SelfCleanWorkChain):
         if self.inputs.clean_workchain.value is False:
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return
-
-        # if "verify_caching" in self.ctx:
-        #     # For calcjobs in _caching, to prevent it from being used by second run after
-        #     # remote work_dir cleaned. I invalid it from caching if it is being cleaned.
-        #     invalid_calcs = operate_calcjobs(
-        #         self.ctx.verify_caching, operator=invalid_cache, all_same_nodes=True
-        #     )
-
-        #     if invalid_calcs:
-        #         self.report(
-        #             f"Invalid cache of `_caching` (even nonmenon) workflow's calcjob node: {' '.join(map(str, invalid_calcs))}"
-        #         )

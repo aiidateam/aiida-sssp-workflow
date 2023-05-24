@@ -50,7 +50,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         super().init_setup()
         self.ctx.extra_pw_parameters = {
             "CONTROL": {
-                "disk_io": "nowf",  # no wavefunction file
+                "disk_io": "low",  # nowf is enough, but low to use caching from ph
             },
         }
         self.ctx.extra_pw_parameters_for_atom = {

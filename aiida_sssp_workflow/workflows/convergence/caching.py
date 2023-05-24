@@ -38,7 +38,7 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
         super().init_setup()
         self.ctx.extra_pw_parameters = {
             "CONTROL": {
-                "disk_io": "nowf",  # no wavefunction file
+                "disk_io": "low",
             },
         }
 

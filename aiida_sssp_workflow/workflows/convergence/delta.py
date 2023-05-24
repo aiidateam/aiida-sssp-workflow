@@ -79,10 +79,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
         )
 
         # set extra pw parameters for eos only
-        self._DISK_IO = protocol["disk_io"]
         self._MIXING_BETA = protocol["mixing_beta"]
-
-        self.ctx.pw_parameters["CONTROL"]["disk_io"] = self._DISK_IO
         self.ctx.pw_parameters["ELECTRONS"]["mixing_beta"] = self._MIXING_BETA
 
         self.logger.info(

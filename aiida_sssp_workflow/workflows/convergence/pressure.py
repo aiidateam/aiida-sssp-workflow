@@ -100,7 +100,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         self.ctx.pw_parameters = {}
         self.ctx.extra_pw_parameters = {
             "CONTROL": {
-                "disk_io": "nowf",  # no wavefunction file
+                "disk_io": "low",
             },
         }
 
@@ -124,6 +124,9 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         self.ctx.pw_parameters = super()._get_pw_base_parameters(
             self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
         )
+
+        # set extra pw parameters for eos only
+        self.ctx.mixing_beta = protocol["mixing_beta"]
 
         self.ctx.kpoints_distance = self._KDISTANCE
 
@@ -188,6 +191,13 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             parameters["SYSTEM"].pop("smearing", None)
             parameters["SYSTEM"].pop("degauss", None)
             parameters["SYSTEM"]["occupations"] = "tetrahedra"
+
+        natoms = len(self.ctx.structure.sites)
+        parameters["ELECTRONS"]["conv_thr"] = (
+            parameters["ELECTRONS"]["conv_thr"] * natoms
+        )
+
+        parameters["ELECTRONS"]["mixing_beta"] = self.ctx.mixing_beta
 
 
         inputs = {

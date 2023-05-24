@@ -82,7 +82,11 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
     def init_setup(self):
         super().init_setup()
-        self.ctx.extra_pw_parameters = {}
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "low",
+            },
+        }
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
