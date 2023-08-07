@@ -23,6 +23,7 @@ acwf:
     pressure:
         scale_count: 7
         scale_increment: 0.02
+        mixing_beta: 0.4
 
     bands:
         init_nbands_factor: 3.0
@@ -34,7 +35,6 @@ acwf:
         scale_count: 7
         scale_increment: 0.02
         mixing_beta: 0.4
-        disk_io: nowf
 
 
 moderate:
@@ -61,6 +61,7 @@ moderate:
     pressure:
         scale_count: 7
         scale_increment: 0.02
+        mixing_beta: 0.4
 
     bands:
         init_nbands_factor: 3.0
@@ -72,7 +73,6 @@ moderate:
         scale_count: 7
         scale_increment: 0.02
         mixing_beta: 0.4
-        disk_io: nowf
 
 test:
     name: test-only
@@ -93,11 +93,12 @@ test:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-9
+        tr2_ph: 1.0e-5
 
     pressure:
         scale_count: 5
         scale_increment: 0.02
+        mixing_beta: 0.4
 
     bands:
         init_nbands_factor: 3.0
@@ -109,4 +110,3 @@ test:
         scale_count: 5
         scale_increment: 0.02
         mixing_beta: 0.4
-        disk_io: nowf

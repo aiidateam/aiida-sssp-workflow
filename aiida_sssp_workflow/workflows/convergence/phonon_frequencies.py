@@ -98,7 +98,11 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
     def init_setup(self):
         super().init_setup()
         self.ctx.extra_ph_parameters = {}
-        self.ctx.extra_pw_parameters = {}
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "low",  # no wavefunction file
+            },
+        }
 
     def extra_setup_for_rare_earth_element(self):
         super().extra_setup_for_rare_earth_element()
@@ -211,7 +215,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
                     "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
                 },
             },
-            "clean_workchain": self.inputs.clean_workchain,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

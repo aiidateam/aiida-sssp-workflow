@@ -146,9 +146,6 @@ def metric_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
             V0,
             B0,
             B1,
-            prefact=100,
-            weight_b0=1 / 20,
-            weight_b1=1 / 400,
         )
     except Exception:
         pass

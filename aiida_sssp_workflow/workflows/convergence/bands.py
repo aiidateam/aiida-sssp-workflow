@@ -82,7 +82,11 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
     def init_setup(self):
         super().init_setup()
-        self.ctx.extra_pw_parameters = {}
+        self.ctx.extra_pw_parameters = {
+            "CONTROL": {
+                "disk_io": "low",
+            },
+        }
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
@@ -161,7 +165,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             "run_bands_structure": orm.Bool(
                 False
             ),  # for convergence with no band structure evaluate
-            "clean_workchain": self.inputs.clean_workchain,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

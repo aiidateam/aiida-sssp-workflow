@@ -7,6 +7,8 @@ from aiida.common import NotExistentAttributeError
 from aiida.engine import ToContext, while_
 from aiida.plugins import DataFactory, WorkflowFactory
 
+from aiida_sssp_workflow.workflows.common import clean_workdir, operate_calcjobs
+
 from . import _BaseEvaluateWorkChain
 
 PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
@@ -27,28 +29,35 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
 
         spec.outline(
             cls.setup,
-            while_(cls.is_pw_not_ready_for_ph)(
+            while_(cls.should_run_ph)(
                 cls.run_scf,
                 cls.inspect_scf,
+                cls.run_ph,
+                cls.inspect_ph,
             ),
-            cls.run_ph,
-            cls.inspect_ph,
             cls.finalize,
         )
         spec.output('output_parameters', valid_type=orm.Dict, required=True,
                     help='The output parameters include phonon frequencies.')
-        spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER',
+        spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER_OUTPUT_OF_SCF',
                     message='The remote folder node not exist')
         spec.exit_code(202, 'ERROR_SUB_PROCESS_FAILED_PH',
                     message='The `PhBaseWorkChain` sub process failed.')
+        spec.exit_code(203, 'ERROR_SUB_PROCESS_FAILED_SCF',
+                    message='The `PwBaseWorkChain` sub process failed.')
         # yapf: enable
 
     def setup(self):
-        self.ctx.not_ready_for_ph = True
+        self.ctx.should_run_ph = True
 
-    def is_pw_not_ready_for_ph(self):
-        """used to check if the remote folder is not empty, otherwise rerun pw with caching off"""
-        return self.ctx.not_ready_for_ph
+    def should_run_ph(self):
+        """will be True if ph calculation is successful, otherwise will rerun scf
+        The ph calculation can be failed due to the following reasons:
+        - the scf calculation is not successful
+        - the ph calculation is not successful
+        - the scf calculation is successful but the remote folder is not found and the ph can not be submitted
+        """
+        return self.ctx.should_run_ph
 
     def run_scf(self):
         """
@@ -68,41 +77,16 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
             self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
             )
-            # set condition to False to break loop
-            self.ctx.not_ready_for_ph = False
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
         try:
             remote_folder = self.ctx.scf_remote_folder = workchain.outputs.remote_folder
 
-            if remote_folder.is_empty:
-                # set all same node to caching off and re-run scf calculation
-                pw_node = [
-                    c for c in workchain.called if isinstance(c, orm.CalcJobNode)
-                ][0]
-                all_same_nodes = pw_node.base.caching.get_all_same_nodes()
-                for node in all_same_nodes:
-                    node.is_valid_cache = False
-
-                # also set valid_cache=False for the source node
-                # It should be included in all_same_nodes, but because of the bug in aiida-core
-                # that the hash is not stable see: https://github.com/aiidateam/aiida-core/issues/5997
-                src_node = orm.load_node(pw_node.base.caching.get_cache_source())
-                src_node.is_valid_cache = False
-                all_same_nodes = src_node.base.caching.get_all_same_nodes()
-                for node in all_same_nodes:
-                    node.is_valid_cache = False
-            else:
-                # when the remote_folder is not empty we regard it is ready for ph
-                # This has a potential problem that even the subsequent ph calculation is
-                # finished, it will be re-run since the remote_folder is changed.
-                self.ctx.not_ready_for_ph = False
-
+            self.report(f"Is remote folder empty? {remote_folder.is_empty}")
         except NotExistentAttributeError:
             # set condition to False to break loop
-            self.ctx.not_ready_for_ph = False
-            return self.exit_codes.ERROR_NO_REMOTE_FOLDER
+            return self.exit_codes.ERROR_NO_REMOTE_FOLDER_OUTPUT_OF_SCF
 
         self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
         self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
@@ -126,10 +110,25 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         workchain = self.ctx.workchain_ph
 
         if not workchain.is_finished_ok:
-            self.report(
-                f"PhBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}"
-            )
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_PH
+            # if the remote folder is empty, invalid the caching of the node and re-run scf calculation
+            if self.ctx.scf_remote_folder.is_empty:
+                self.logger.warning(
+                    f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
+                )
+                # invalid the caching of the node and re-run scf calculation
+                workchain_scf = self.ctx.workchain_scf
+                pw_node = [
+                    c for c in workchain_scf.called if isinstance(c, orm.CalcJobNode)
+                ][0]
+                all_same_nodes = pw_node.base.caching.get_all_same_nodes()
+                for node in all_same_nodes:
+                    node.is_valid_cache = False
+                return
+            else:
+                self.report(
+                    f"PhBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}"
+                )
+                return self.exit_codes.ERROR_SUB_PROCESS_FAILED_PH
 
         self.ctx.calc_time += workchain.outputs.output_parameters["wall_time_seconds"]
         output_parameters = workchain.outputs.output_parameters.get_dict()
@@ -141,7 +140,22 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         )
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
 
+        self.ctx.should_run_ph = False
+
     def finalize(self):
         """set ecutwfc and ecutrho"""
         self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
         self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
+
+        if self.inputs.clean_workdir.value is True:
+            cleaned_calcs = operate_calcjobs(
+                self.node, operator=clean_workdir, all_same_nodes=False
+            )
+
+            if cleaned_calcs:
+                self.report(
+                    f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
+                )
+
+        else:
+            self.report(f"{type(self)}: remote folders will not be cleaned")

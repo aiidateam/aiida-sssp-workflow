@@ -60,7 +60,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option("walltime", "--walltime", default=3600, help="Walltime.")
 @click.option("num_mpiprocs", "--num-mpiprocs", default=1, help="Number of mpiprocs.")
 @click.option(
-    "--clean-workchain/--no-clean-workchain",
+    "--clean-workdir/--no-clean-workdir",
     default=True,
     help="Clean up the remote folder of all calculation, turn this off when your want to see the remote for details.",
 )
@@ -83,7 +83,7 @@ def launch(
     walltime,
     num_mpiprocs,
     pseudo,
-    clean_workchain,
+    clean_workdir,
     daemon,
 ):
     """Launch the verification workchain."""
@@ -138,7 +138,7 @@ def launch(
             }
         ),
         "parallelization": orm.Dict(dict={"npool": npool}),
-        "clean_workchain": orm.Bool(clean_workchain),
+        "clean_workdir": orm.Bool(clean_workdir),
     }
 
     if configuration is not None:
