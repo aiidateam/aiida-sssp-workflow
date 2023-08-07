@@ -253,7 +253,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         and reset pseudos to correspont elements name.
         """
         # ! only for GS configuration we set the starting magnetization and reset pseudos
-        if self.ctx.configuration == 'GS':
+        magnetization_on = False
+        if self.ctx.configuration == 'GS' and magnetization_on:
             self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
             self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 

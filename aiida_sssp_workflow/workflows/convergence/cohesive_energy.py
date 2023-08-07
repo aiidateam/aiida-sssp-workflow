@@ -64,15 +64,18 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         super().extra_setup_for_magnetic_element()
         extra_pw_parameters_for_atom_magnetic_element = {
             self.ctx.element: {
-                "SYSTEM": {
-                    "nspin": 2,
-                    "starting_magnetization": {
-                        self.ctx.element: 0.5,
-                    },
-                },
+                # 2023-06-02: we decide to use non-magnetic calculation for magnetic element
+                # Because it gives fault convergence result that not compatible with other convergence tests, lead to very large
+                # convergence cutoff from cohesive energy tests.
+                # "SYSTEM": {
+                #     "nspin": 2,
+                #     "starting_magnetization": {
+                #         self.ctx.element: 0.5,
+                #     },
+                # },
                 "ELECTRONS": {
                     "diagonalization": "cg",
-                    "mixing_beta": 0.5,
+                    "mixing_beta": 0.3,
                     "electron_maxstep": 200,
                 },
             }
