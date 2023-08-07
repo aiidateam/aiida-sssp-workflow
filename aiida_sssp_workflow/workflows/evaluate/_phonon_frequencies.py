@@ -29,7 +29,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
 
         spec.outline(
             cls.setup,
-            while_(cls.ph_failed)(
+            while_(cls.should_run_ph)(
                 cls.run_scf,
                 cls.inspect_scf,
                 cls.run_ph,
@@ -48,16 +48,16 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         # yapf: enable
 
     def setup(self):
-        self.ctx.is_ph_failed = True
+        self.ctx.should_run_ph = True
 
-    def ph_failed(self):
+    def should_run_ph(self):
         """will be True if ph calculation is successful, otherwise will rerun scf
         The ph calculation can be failed due to the following reasons:
         - the scf calculation is not successful
         - the ph calculation is not successful
         - the scf calculation is successful but the remote folder is not found and the ph can not be submitted
         """
-        return self.ctx.is_ph_failed
+        return self.ctx.should_run_ph
 
     def run_scf(self):
         """
@@ -110,6 +110,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         workchain = self.ctx.workchain_ph
 
         if not workchain.is_finished_ok:
+            # if the remote folder is empty, invalid the caching of the node and re-run scf calculation
             if self.ctx.scf_remote_folder.is_empty:
                 self.logger.warning(
                     f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
@@ -139,7 +140,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         )
         self.out("output_parameters", orm.Dict(dict=output_parameters).store())
 
-        self.ctx.is_ph_failed = False
+        self.ctx.should_run_ph = False
 
     def finalize(self):
         """set ecutwfc and ecutrho"""

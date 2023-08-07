@@ -88,7 +88,7 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
             if_(cls.should_run_seekpath)(
                 cls.run_seekpath,
             ),
-            while_(cls.bands_failed)(
+            while_(cls.should_run_band)(
                 cls.run_scf,
                 cls.inspect_scf,
                 cls.run_bands,
@@ -185,13 +185,14 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         self.ctx.current_number_of_bands = None
         self.ctx.bands_kpoints = self.inputs.get("bands_kpoints", None)
 
-        self.ctx.is_bands_failed = True
+        # Set to run for the first loop
+        self.ctx.should_run_band = True
 
-    def bands_failed(self):
+    def should_run_band(self):
         """The value will be set to `True` if bands calculation is failed because of the remote folder issue.
         Otherwise it keeps on trying to rerun the bands calculation until remote folder of preliminary scf is not found.
         """
-        return self.ctx.is_bands_failed
+        return self.ctx.should_run_band
 
     def should_run_relax(self):
         """If the 'relax' input namespace was specified, we relax the input structure."""
@@ -328,6 +329,8 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         workchain = self.ctx.workchain_bands
 
         if not workchain.is_finished_ok:
+            # The inner logic to detect if the failed bands calculation is due to the empty remote folder
+            # If so, we will invalid the caching of the node and re-run scf calculation.
             if self.ctx.current_folder.is_empty:
                 self.logger.warning(
                     f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
@@ -347,7 +350,8 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
                 )
                 return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
-        self.ctx.is_bands_failed = False
+        # The bands workchain finished successfully, so we can set the `should_run_band` flag to False
+        self.ctx.should_run_band = False
 
     def results(self):
         """Attach the desired output nodes directly as outputs of the workchain."""
