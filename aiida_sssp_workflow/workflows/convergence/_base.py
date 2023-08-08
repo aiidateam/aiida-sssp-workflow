@@ -253,7 +253,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         and reset pseudos to correspont elements name.
         """
         # ! only for GS configuration we set the starting magnetization and reset pseudos
-        if self.ctx.configuration == 'GS':
+        magnetization_on = False
+        if self.ctx.configuration == 'GS' and magnetization_on:
             self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
             self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)
 
@@ -357,6 +358,27 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             workchain = self.ctx.reference
         except AttributeError as e:
             raise RuntimeError('Reference evaluation is not triggered') from e
+
+        # check if the PwCalculation is from cached when the caching is enabled
+        # throw a warning if it is not from cached, it usually means the pw parameters are not the same
+        # and should be corrected. The warning also may happened when the calculation is rerun to produce
+        # the amend calculation for PH/Band calculation when the remote folder is cleaned, in this case
+        # the warning can be ignored.
+        # I did the check only for reference because for calculation on other sample points, the
+        # parameters are only different in ecutwfc and ecutrho, which is not a problem.
+        # This check should be skipped if it is a _Caching WorkChain.
+        # I use the caller_link_label to check if it is from prepare_pw_scf, which is the caller of first scf run that will produce the reference calculation and should be from cached.
+        from aiida.manage.caching import get_use_cache
+
+        identifier = "aiida.calculations:quantumespresso.pw"
+        if get_use_cache(identifier=identifier):
+            for child in workchain.called_descendants:
+                if child.process_label == 'PwCalculation':
+                    caller_link_label = child.caller.get_metadata_inputs().get('metadata', '').get('call_link_label', '')
+                    if caller_link_label == 'prepare_pw_scf' and not child.base.caching.is_created_from_cache:
+                        self.logger.warning(
+                        f'{workchain.process_label} pk={workchain.pk} for reference run is not from cache.'
+                    )
 
         if not workchain.is_finished_ok:
             self.report(

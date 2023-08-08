@@ -64,15 +64,18 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         super().extra_setup_for_magnetic_element()
         extra_pw_parameters_for_atom_magnetic_element = {
             self.ctx.element: {
-                "SYSTEM": {
-                    "nspin": 2,
-                    "starting_magnetization": {
-                        self.ctx.element: 0.5,
-                    },
-                },
+                # 2023-06-02: we decide to use non-magnetic calculation for magnetic element
+                # Because it gives fault convergence result that not compatible with other convergence tests, lead to very large
+                # convergence cutoff from cohesive energy tests.
+                # "SYSTEM": {
+                #     "nspin": 2,
+                #     "starting_magnetization": {
+                #         self.ctx.element: 0.5,
+                #     },
+                # },
                 "ELECTRONS": {
                     "diagonalization": "cg",
-                    "mixing_beta": 0.5,
+                    "mixing_beta": 0.3,
                     "electron_maxstep": 200,
                 },
             }
@@ -193,7 +196,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             "atom_parameters": orm.Dict(dict=atom_parameters),
             "vacuum_length": orm.Float(self.ctx.vacuum_length),
             "bulk": {
-                "metadata": {"call_link_label": "bulk_scf"},
+                "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
                 "pw": {
                     "code": self.inputs.code,
                     "parameters": orm.Dict(dict=bulk_parameters),
@@ -205,6 +208,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
             },
             "atom": {
+                # inputs passed to PwBaseWorkChain
                 "metadata": {"call_link_label": "atom_scf"},
                 "pw": {
                     "code": self.inputs.code,
@@ -215,8 +219,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                     "parallelization": orm.Dict(dict=atomic_parallelization),
                 },
                 "kpoints": atom_kpoints,
+                "clean_workdir": self.inputs.clean_workdir, # clean up the remote folder right after calc is finished
             },
-            "clean_workdir": self.inputs.clean_workdir,
+            "clean_workdir": self.inputs.clean_workdir, # atomit clean is controlled above, this clean happened when the whole workchain is finished
         }
 
         return inputs

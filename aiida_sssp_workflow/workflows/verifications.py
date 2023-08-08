@@ -298,10 +298,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
         from aiida.manage.caching import get_use_cache
 
         identifier = "aiida.calculations:quantumespresso.pw"
-        if not get_use_cache(identifier=identifier):
-            return False
-        else:
-            return True
+        return get_use_cache(identifier=identifier)
 
     def run_caching(self):
         """run pressure verification for caching"""

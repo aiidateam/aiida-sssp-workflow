@@ -190,7 +190,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
 
         inputs = {
             "scf": {
-                "metadata": {"call_link_label": "SCF"},
+                "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
                 "pw": {
                     "structure": self.ctx.structure,
                     "code": self.inputs.pw_code,

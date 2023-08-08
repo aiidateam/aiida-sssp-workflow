@@ -47,7 +47,8 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
         super().init_setup()
         self.ctx.extra_pw_parameters = {
             "CONTROL": {
-                "disk_io": "nowf",  # no wavefunction file
+                # no wavefunction file, this means no calculation will be from cache
+                "disk_io": "nowf",
             },
         }
 
@@ -130,10 +131,11 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
                     },
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
+                "clean_workdir": self.inputs.clean_workdir,
             },
             "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(self.ctx.configuration),
-            "clean_workdir": self.inputs.clean_workdir,
+            "clean_workdir": self.inputs.clean_workdir,  # should already cleaned by eos, here for safe
         }
 
         return inputs
