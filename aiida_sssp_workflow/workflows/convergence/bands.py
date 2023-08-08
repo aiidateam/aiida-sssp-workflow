@@ -137,6 +137,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         inputs = {
             "structure": self.ctx.structure,
             "scf": {
+                "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
                 "pw": {
                     "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,

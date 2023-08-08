@@ -134,7 +134,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
-        get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
+        get inputs for the evaluation PressureWorkChain by provide ecutwfc and ecutrho,
         all other parameters are fixed for the following steps
         """
         parameters = {
@@ -146,13 +146,13 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         inputs = {
+            "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
             "pw": {
                 "code": self.inputs.code,
                 "structure": self.ctx.structure,
                 "pseudos": self.ctx.pseudos,
                 "parameters": orm.Dict(dict=parameters),
                 "metadata": {
-                    "call_link_label": "pressure_SCF",
                     "options": self.ctx.options,
                 },
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
@@ -183,7 +183,14 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             },
         }
         parameters = update_dict(parameters, self.ctx.pw_parameters)
+
+        # It is important to set CONTROL here to distinguish from the caching calculation
+        # otherwise since we use clean_workdir for this workflow, it may clean the original
+        # folder (manually, since the clean_workdir is optimized to avoid this case, but I can not
+        # sure it won't happened if the remote folder is cleaned by hand) that still needed to be
+        # used for caching calculation.
         parameters["CONTROL"].pop("tstress", None)
+        parameters["CONTROL"]["disk_io"] = "nowf"
 
         # sparse kpoints and tetrahedra occupation in EOS reference calculation
         if self.ctx.element in RARE_EARTH_ELEMENTS:
@@ -211,11 +218,11 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 "pseudos": self.ctx.pseudos,
                 "parameters": orm.Dict(dict=parameters),
                 "metadata": {
-                    "options": self.ctx.options
+                    "options": self.ctx.options,
                 },
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
-            "clean_workdir": self.inputs.clean_workdir,
+            "clean_workdir": self.inputs.clean_workdir, # exposed from PwBaseWorkChain
         }
 
         running = self.submit(_EquationOfStateWorkChain, **inputs)

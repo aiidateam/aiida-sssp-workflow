@@ -211,7 +211,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
         self._CONV_THR = protocol["electron_conv_thr"]
-        self._DISK_IO = protocol["disk_io"]
         self._MIXING_BETA = protocol["mixing_beta"]
         self.ctx.kpoints_distance = self._KDISTANCE = protocol["kpoints_distance"]
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
@@ -232,7 +231,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         parameters = {
             "CONTROL": {
                 "calculation": "scf",
-                "disk_io": self._DISK_IO,
+                "disk_io": "nowf",  # safe to hard-code, this will never be the parent calculation of other calculations
             },
             "SYSTEM": {
                 "degauss": self._DEGAUSS,

@@ -35,6 +35,7 @@ class SelfCleanWorkChain(WorkChain):
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return
 
+        # The clen_wordir is modified to not clean the remote folder of the caching node.
         cleaned_calcs = operate_calcjobs(
             self.node, operator=clean_workdir, all_same_nodes=False
         )

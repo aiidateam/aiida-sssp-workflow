@@ -13,7 +13,11 @@ from aiida.engine import run_get_node, submit
 from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.cli import cmd_root
-from aiida_sssp_workflow.workflows.verifications import DEFAULT_PROPERTIES_LIST
+from aiida_sssp_workflow.workflows.verifications import (
+    DEFAULT_CONVERGENCE_PROPERTIES_LIST,
+    DEFAULT_MEASURE_PROPERTIES_LIST,
+    DEFAULT_PROPERTIES_LIST,
+)
 
 UpfData = DataFactory("pseudo.upf")
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
@@ -94,6 +98,12 @@ def launch(
     if not property:
         properties_list = DEFAULT_PROPERTIES_LIST
         extra_desc = "All properties"
+    elif len(property) == 1 and property[0] == "convergence":
+        properties_list = DEFAULT_CONVERGENCE_PROPERTIES_LIST
+        extra_desc = "Convergence"
+    elif len(property) == 1 and property[0] == "measure":
+        properties_list = DEFAULT_MEASURE_PROPERTIES_LIST
+        extra_desc = "Measure"
     else:
         properties_list = list(property)
         extra_desc = f"{properties_list}"

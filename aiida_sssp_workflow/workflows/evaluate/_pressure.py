@@ -39,7 +39,7 @@ class PressureWorkChain(_BaseEvaluateWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.expose_inputs(PwBaseWorkflow, include=['pw', 'kpoints_distance'])
+        spec.expose_inputs(PwBaseWorkflow, include=['pw', 'kpoints_distance', 'metadata'])
 
         spec.outline(
             cls.run_scf,
