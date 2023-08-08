@@ -188,6 +188,10 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         # Set to run for the first loop
         self.ctx.should_run_band = True
 
+        # The list of nodes that are invalided the caching of the node and re-run scf calculation. When the remote folder of parent calculation is empty, the caching is invalid, but since invalid caching is applied to all_same_nodes, we need to keep track of the invalid nodes and bring caching valid back to the node so the next run will still using the caching, otherwise the next parent calculation will be re-run again, which is not what we want.
+        # Warning!! experimental feature and will potentially cause "race condition" like behavior between workflows.
+        self.ctx.cache_invalid_list = []
+
     def should_run_band(self):
         """The value will be set to `True` if bands calculation is failed because of the remote folder issue.
         Otherwise it keeps on trying to rerun the bands calculation until remote folder of preliminary scf is not found.
@@ -279,6 +283,11 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
         self.ctx.current_folder = workchain.outputs.remote_folder
+        # the current_folder is set so can bring the caching invalid back to the node
+        while self.ctx.cache_invalid_list:
+            node = self.ctx.cache_invalid_list.pop()
+            node.is_valid_cache = True
+
         self.ctx.current_number_of_bands = (
             workchain.outputs.output_parameters.base.attributes.get("number_of_bands")
         )
@@ -343,6 +352,7 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
                 all_same_nodes = scf_pw_node.base.caching.get_all_same_nodes()
                 for node in all_same_nodes:
                     node.is_valid_cache = False
+                    self.ctx.cache_invalid_list.append(node.pk)
                 return
             else:
                 self.report(

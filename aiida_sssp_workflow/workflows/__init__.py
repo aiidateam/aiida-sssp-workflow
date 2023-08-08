@@ -1,11 +1,7 @@
 from aiida.engine import WorkChain
 from aiida.orm import Bool, CalcJobNode
 
-from aiida_sssp_workflow.workflows.common import (
-    clean_workdir,
-    invalid_cache,
-    operate_calcjobs,
-)
+from aiida_sssp_workflow.workflows.common import clean_workdir, operate_calcjobs
 
 
 class SelfCleanWorkChain(WorkChain):
