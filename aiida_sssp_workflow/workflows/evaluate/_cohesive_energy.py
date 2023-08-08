@@ -147,6 +147,8 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BULK_ENERGY
 
+        self._disable_cache(workchain_bulk_energy)
+
         self.ctx.bulk_energy = workchain_bulk_energy.outputs.output_parameters["energy"]
         calc_time = workchain_bulk_energy.outputs.output_parameters["wall_time_seconds"]
 

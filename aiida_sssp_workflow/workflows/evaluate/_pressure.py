@@ -71,6 +71,8 @@ class PressureWorkChain(_BaseEvaluateWorkChain):
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
+        self._disable_cache(workchain)
+
         output_trajectory = workchain.outputs.output_trajectory
         output_parameters = workchain.outputs.output_parameters
 

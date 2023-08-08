@@ -80,6 +80,8 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
+        self._disable_cache(workchain)
+
         try:
             remote_folder = self.ctx.scf_remote_folder = workchain.outputs.remote_folder
 
