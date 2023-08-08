@@ -27,7 +27,7 @@ class SelfCleanWorkChain(WorkChain):
         """
         super().on_terminated()
 
-        if self.inputs.clean_workdir.value is False:
+        if not self.inputs.clean_workdir.value:
             self.report(f"{type(self)}: remote folders will not be cleaned")
             return
 
