@@ -10,8 +10,8 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     HIGH_DUAL_ELEMENTS,
+    LANTHANIDE_ELEMENTS,
     MAGNETIC_ELEMENTS,
-    RARE_EARTH_ELEMENTS,
     convergence_analysis,
     get_default_configuration,
     get_magnetic_inputs,
@@ -88,8 +88,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
             ),
-            if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element,
+            if_(cls.is_lanthanide_element)(
+                cls.extra_setup_for_lanthanide_element,
             ),
             cls.setup_code_parameters_from_protocol,
             cls.setup_criteria_parameters_from_protocol,
@@ -262,11 +262,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             # required for O, Mn, Cr where the kind names varies for sites
             self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
 
-    def is_rare_earth_element(self):
+    def is_lanthanide_element(self):
         """Check if the element is rare earth"""
-        return self.ctx.element in RARE_EARTH_ELEMENTS
+        return self.ctx.element in LANTHANIDE_ELEMENTS
 
-    def extra_setup_for_rare_earth_element(self):
+    def extra_setup_for_lanthanide_element(self):
         """
         Extra setup for rare-earth element same as magnetic elements
 

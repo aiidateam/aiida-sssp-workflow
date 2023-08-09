@@ -9,9 +9,9 @@ from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     HIGH_DUAL_ELEMENTS,
+    LANTHANIDE_ELEMENTS,
     MAGNETIC_ELEMENTS,
     NONMETAL_ELEMENTS,
-    RARE_EARTH_ELEMENTS,
     get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
@@ -55,8 +55,8 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
             ),
-            if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element, ),
+            if_(cls.is_lanthanide_element)(
+                cls.extra_setup_for_lanthanide_element, ),
             cls.setup_pw_parameters_from_protocol,
             cls.run_bands_evaluation,
             cls.finalize,
@@ -97,11 +97,11 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
 
 
-    def is_rare_earth_element(self):
+    def is_lanthanide_element(self):
         """Check if the element is rare earth"""
-        return self.ctx.element in RARE_EARTH_ELEMENTS
+        return self.ctx.element in LANTHANIDE_ELEMENTS
 
-    def extra_setup_for_rare_earth_element(self):
+    def extra_setup_for_lanthanide_element(self):
         """Extra setup for rare earth element"""
         nbnd_factor = 2.0
         pseudo_N = get_pseudo_N()
@@ -175,7 +175,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ['nc', 'sl']:
             ecutrho = self.ctx.ecutwfc * 18
 
-        if element in RARE_EARTH_ELEMENTS:
+        if element in LANTHANIDE_ELEMENTS:
             # since nitrides is used, the pseudo of N is non-NC
             # The N.us.z_5.ld1.theose.v0 is used so set dual equal to 8
             ecutrho = self.ctx.ecutwfc * 8

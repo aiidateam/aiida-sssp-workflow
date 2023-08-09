@@ -104,8 +104,8 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
             },
         }
 
-    def extra_setup_for_rare_earth_element(self):
-        super().extra_setup_for_rare_earth_element()
+    def extra_setup_for_lanthanide_element(self):
+        super().extra_setup_for_lanthanide_element()
 
         extra_ph_parameters = {
             "INPUTPH": {

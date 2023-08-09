@@ -7,7 +7,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import LANTHANIDE_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
@@ -82,10 +82,10 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         }
         self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_magnetic_element, self.ctx.extra_pw_parameters_for_atom)
 
-    def extra_setup_for_rare_earth_element(self):
+    def extra_setup_for_lanthanide_element(self):
         """Extra setup for rare earth element, for atom especially"""
-        super().extra_setup_for_rare_earth_element()
-        extra_pw_parameters_for_atom_rare_earth_element = {
+        super().extra_setup_for_lanthanide_element()
+        extra_pw_parameters_for_atom_lanthanide_element = {
             self.ctx.element: {
                 "SYSTEM": {
                     "nspin": 2,
@@ -103,7 +103,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 },
             },
         }
-        self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_rare_earth_element, self.ctx.extra_pw_parameters_for_atom)
+        self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_lanthanide_element, self.ctx.extra_pw_parameters_for_atom)
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
@@ -180,7 +180,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             atomic_options = update_dict(atomic_options, {"resources": {"num_mpiprocs_per_machine": 32}})
 
         # atomic calculation for lanthanides require more time to finish.
-        if self.ctx.element in RARE_EARTH_ELEMENTS:
+        if self.ctx.element in LANTHANIDE_ELEMENTS:
             pw_max_walltime = self.ctx.options.get("max_wallclock_seconds", None)
             if pw_max_walltime:
                 atomic_options["max_wallclock_seconds"] = pw_max_walltime * 4

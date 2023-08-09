@@ -8,10 +8,10 @@ from aiida.plugins import DataFactory
 from aiida_sssp_workflow.utils import (
     ACTINIDE_ELEMENTS,
     HIGH_DUAL_ELEMENTS,
+    LANTHANIDE_ELEMENTS,
     MAGNETIC_ELEMENTS,
     NO_GS_CONF_ELEMENTS,
     OXIDE_CONFIGURATIONS,
-    RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
     get_magnetic_inputs,
     get_protocol,
@@ -53,8 +53,8 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
             ),
-            if_(cls.is_rare_earth_element)(
-                cls.extra_setup_for_rare_earth_element,
+            if_(cls.is_lanthanide_element)(
+                cls.extra_setup_for_lanthanide_element,
             ),
             if_(cls.is_actinide_element)(
                 cls.extra_setup_for_actinide_element,
@@ -131,7 +131,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         # set structures except RARE earth element and actinides elements with will be set independently
         # in sepecific step. Other wise, the gs structure is request but not provided, which
         # will raise error.
-        if self.ctx.element not in RARE_EARTH_ELEMENTS + ACTINIDE_ELEMENTS:
+        if self.ctx.element not in LANTHANIDE_ELEMENTS + ACTINIDE_ELEMENTS:
             self.ctx.structures = {}
             for configuration in self.ctx.configuration_list:
                 self.ctx.structures[configuration] = get_standard_structure(
@@ -162,15 +162,15 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             self.inputs.pseudo, self.ctx.structures["GS"]
         )
 
-    def is_rare_earth_element(self):
+    def is_lanthanide_element(self):
         """Check if the element is rare earth"""
-        return self.ctx.element in RARE_EARTH_ELEMENTS
+        return self.ctx.element in LANTHANIDE_ELEMENTS
 
     def is_actinide_element(self):
         """Check if the element is actinide"""
         return self.ctx.element in ACTINIDE_ELEMENTS
 
-    def extra_setup_for_rare_earth_element(self):
+    def extra_setup_for_lanthanide_element(self):
         """Extra setup for rare earth element"""
         nbnd_factor = self._NBANDS_FACTOR_FOR_REN
 
@@ -298,7 +298,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             # See https://github.com/aiidateam/aiida-sssp-workflow/issues/161
             # This is not easy to be set in the rare-earth step since it will
             # finally act on here
-            if self.ctx.element in RARE_EARTH_ELEMENTS:
+            if self.ctx.element in LANTHANIDE_ELEMENTS:
                 nbnd_factor = self._NBANDS_FACTOR_FOR_REN
                 pseudo_O = get_pseudo_O()
                 pseudo_RE = self.inputs.pseudo
