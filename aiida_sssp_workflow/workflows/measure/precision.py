@@ -38,9 +38,9 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
     # pylint: disable=too-many-instance-attributes
 
     _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
-    _UNARIE_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
+    _UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
 
-    _NBANDS_FACTOR_FOR_REN = 1.5
+    _NBANDS_FACTOR_FOR_LAN = 1.5
 
     @classmethod
     def define(cls, spec):
@@ -53,19 +53,13 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
             ),
-            if_(cls.is_lanthanide_element)(
-                cls.extra_setup_for_lanthanide_element,
-            ),
-            if_(cls.is_actinide_element)(
-                cls.extra_setup_for_actinide_element,
-            ),
             cls.setup_pw_parameters_from_protocol,
             cls.run_metric,
             cls.inspect_metric,
             cls.finalize,
         )
         # namespace for storing all detail of run on each configuration
-        for configuration in cls._OXIDE_CONFIGURATIONS + cls._UNARIE_CONFIGURATIONS + ["RE"]:
+        for configuration in cls._OXIDE_CONFIGURATIONS + cls._UNARIE_GS_CONFIGURATIONS + ["RE"]:
             spec.expose_outputs(MetricWorkChain, namespace=configuration,
                         namespace_options={
                             'help': f'Delta calculation result of {configuration} EOS.',
@@ -112,33 +106,36 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         # https://doi.org/10.1016/j.commatsci.2014.07.030 and from
         # common-workflow set from acwf paper xsf files all store in `statics/structures`.
 
-        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE, GS
+        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE (Lanthanide that will use RE-N), GS
         if self.ctx.element == "O":
             # For oxygen, still run for oxides but use only the pseudo.
             self.ctx.pseudos_oxide = {
                 self.ctx.element: self.inputs.pseudo,
             }
-        elif self.ctx.element in NO_GS_CONF_ELEMENTS:
+        elif self.ctx.element in NO_GS_CONF_ELEMENTS + ACTINIDE_ELEMENTS:
             # Don't have ground state structure for At, Fr, Ra
             self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
             )
+        elif self.ctx.element in LANTHANIDE_ELEMENTS:
+            self.ctx.configuration_list = (
+                self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS + ["RE"]
+            )
         else:
             self.ctx.configuration_list = (
-                self._OXIDE_CONFIGURATIONS + self._UNARIE_CONFIGURATIONS
+                self._OXIDE_CONFIGURATIONS + self._UNARIE_GS_CONFIGURATIONS
             )
 
         # set structures except RARE earth element and actinides elements with will be set independently
         # in sepecific step. Other wise, the gs structure is request but not provided, which
         # will raise error.
-        if self.ctx.element not in LANTHANIDE_ELEMENTS + ACTINIDE_ELEMENTS:
-            self.ctx.structures = {}
-            for configuration in self.ctx.configuration_list:
-                self.ctx.structures[configuration] = get_standard_structure(
-                    self.ctx.element,
-                    prop="delta",
-                    configuration=configuration,
-                )
+        self.ctx.structures = dict()
+        for configuration in self.ctx.configuration_list:
+            self.ctx.structures[configuration] = get_standard_structure(
+                self.ctx.element,
+                prop="delta",
+                configuration=configuration,
+            )
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
@@ -161,48 +158,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.pseudos_magnetic = reset_pseudos_for_magnetic(
             self.inputs.pseudo, self.ctx.structures["GS"]
         )
-
-    def is_lanthanide_element(self):
-        """Check if the element is rare earth"""
-        return self.ctx.element in LANTHANIDE_ELEMENTS
-
-    def is_actinide_element(self):
-        """Check if the element is actinide"""
-        return self.ctx.element in ACTINIDE_ELEMENTS
-
-    def extra_setup_for_lanthanide_element(self):
-        """Extra setup for rare earth element"""
-        nbnd_factor = self._NBANDS_FACTOR_FOR_REN
-
-        pseudo_N = get_pseudo_N()
-        pseudo_RE = self.inputs.pseudo
-        self.ctx.pseudos_nitride = {"N": pseudo_N, self.ctx.element: pseudo_RE}
-        nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
-        self.ctx.pw_nitride_parameters = get_extra_parameters_for_lanthanides(
-            self.ctx.element, nbnd
-        )
-
-        # set configuration list for rare earth
-        self.ctx.structures = {}
-        self.ctx.configuration_list = self._OXIDE_CONFIGURATIONS + ["RE"]
-        for configuration in self.ctx.configuration_list:
-            self.ctx.structures[configuration] = get_standard_structure(
-                self.ctx.element,
-                prop="delta",
-                configuration=configuration,
-            )
-
-    def extra_setup_for_actinide_element(self):
-        """Extra setup for actinide element"""
-        # set configuration list for actinide
-        self.ctx.structures = {}
-        self.ctx.configuration_list = self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
-        for configuration in self.ctx.configuration_list:
-            self.ctx.structures[configuration] = get_standard_structure(
-                self.ctx.element,
-                prop="delta",
-                configuration=configuration,
-            )
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -299,7 +254,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             # This is not easy to be set in the rare-earth step since it will
             # finally act on here
             if self.ctx.element in LANTHANIDE_ELEMENTS:
-                nbnd_factor = self._NBANDS_FACTOR_FOR_REN
+                nbnd_factor = self._NBANDS_FACTOR_FOR_LAN
                 pseudo_O = get_pseudo_O()
                 pseudo_RE = self.inputs.pseudo
                 nbnd = (
@@ -313,7 +268,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 )
                 pw_parameters["SYSTEM"]["nbnd"] = int(nbnd)
 
-        if configuration in self._UNARIE_CONFIGURATIONS:  # include regular 'GS'
+        if configuration in self._UNARIE_GS_CONFIGURATIONS:  # include regular 'GS'
             # pseudos for BCC, FCC, SC, Diamond and TYPYCAL configurations
             pseudos = self.ctx.pseudos_elementary
             pw_parameters = self.ctx.pw_parameters
@@ -331,7 +286,17 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             )
 
         if configuration == "RE":
+            nbnd_factor = self._NBANDS_FACTOR_FOR_LAN
+
+            pseudo_N = get_pseudo_N()
+            pseudo_RE = self.inputs.pseudo
+            nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
+            self.ctx.pw_nitride_parameters = get_extra_parameters_for_lanthanides(
+                self.ctx.element, nbnd
+            )
+
             # pseudos for nitrides
+            self.ctx.pseudos_nitride = {"N": pseudo_N, self.ctx.element: pseudo_RE}
             pseudos = self.ctx.pseudos_nitride
 
             parameters = {
