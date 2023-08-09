@@ -27,6 +27,8 @@ test:
     configurations:
         - XO2
         - BCC
+        - GS
+        - RE
 
 opsp:
     name: opsp

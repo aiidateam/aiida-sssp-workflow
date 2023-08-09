@@ -6,7 +6,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import LANTHANIDE_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
@@ -193,7 +193,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         parameters["CONTROL"]["disk_io"] = "nowf"
 
         # sparse kpoints and tetrahedra occupation in EOS reference calculation
-        if self.ctx.element in RARE_EARTH_ELEMENTS:
+        if self.ctx.element in LANTHANIDE_ELEMENTS:
             self.ctx.kpoints_distance = self._KDISTANCE + 0.05
             parameters["SYSTEM"].pop("smearing", None)
             parameters["SYSTEM"].pop("degauss", None)

@@ -13,8 +13,8 @@ from aiida.engine import calcfunction
 
 from aiida_sssp_workflow.calculations.wien2k_ref import WIEN2K_REF, WIEN2K_REN_REF
 from aiida_sssp_workflow.utils import (
+    LANTHANIDE_ELEMENTS,
     OXIDE_CONFIGURATIONS,
-    RARE_EARTH_ELEMENTS,
     UNARIE_CONFIGURATIONS,
 )
 
@@ -25,7 +25,7 @@ def helper_get_v0_b0_b1(element: str, structure: str):
     """get eos reference of element"""
     import re
 
-    if element in RARE_EARTH_ELEMENTS:
+    if element in LANTHANIDE_ELEMENTS:
         element_str = f"{element}N"
     else:
         element_str = element
@@ -37,7 +37,7 @@ def helper_get_v0_b0_b1(element: str, structure: str):
                         (?P<B1>\d*.\d*)""",
         re.VERBOSE,
     )
-    if element not in RARE_EARTH_ELEMENTS:
+    if element not in LANTHANIDE_ELEMENTS:
         match = regex.search(WIEN2K_REF)
         V0 = match.group("V0")
         B0 = match.group("B0")
@@ -84,7 +84,7 @@ def metric_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
     B1 = B1.value
     natoms = natoms.value
     if configuration == "RE":
-        assert element in RARE_EARTH_ELEMENTS
+        assert element in LANTHANIDE_ELEMENTS
 
         ref_json = "WIEN2K_LANN.json"
         conf_key = f"{element}N"

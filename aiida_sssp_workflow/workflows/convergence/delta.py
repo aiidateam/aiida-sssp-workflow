@@ -6,7 +6,7 @@ from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
-from aiida_sssp_workflow.utils import RARE_EARTH_ELEMENTS, update_dict
+from aiida_sssp_workflow.utils import LANTHANIDE_ELEMENTS, update_dict
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 
@@ -52,8 +52,8 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             },
         }
 
-    def extra_setup_for_rare_earth_element(self):
-        super().extra_setup_for_rare_earth_element()
+    def extra_setup_for_lanthanide_element(self):
+        super().extra_setup_for_lanthanide_element()
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
@@ -104,7 +104,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
         )  # this will rule this work chain out from caching
 
         # sparse kpoints and tetrahedra occupation in EOS reference calculation
-        if self.ctx.element in RARE_EARTH_ELEMENTS:
+        if self.ctx.element in LANTHANIDE_ELEMENTS:
             self.ctx.kpoints_distance = self._KDISTANCE + 0.05
             parameters["SYSTEM"].pop("smearing", None)
             parameters["SYSTEM"].pop("degauss", None)

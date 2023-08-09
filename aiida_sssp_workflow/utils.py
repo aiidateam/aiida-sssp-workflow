@@ -30,7 +30,7 @@ def get_protocol(category, name=None):
         return protocol_dict
 
 
-RARE_EARTH_ELEMENTS = [
+LANTHANIDE_ELEMENTS = [
     "La",
     "Ce",
     "Pr",
@@ -174,7 +174,7 @@ def get_standard_structure(
         configuration = configuration.upper()
 
     if configuration == "RE":
-        assert element in RARE_EARTH_ELEMENTS
+        assert element in LANTHANIDE_ELEMENTS
 
         # use RE-nitrides of Wenzovich paper
         # from typical (gs) cif folder
