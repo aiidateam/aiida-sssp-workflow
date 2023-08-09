@@ -159,6 +159,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
                     },
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
+                "clean_workdir": self.inputs.clean_workdir,
             },
             "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
             "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
@@ -166,7 +167,8 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             "run_bands_structure": orm.Bool(
                 False
             ),  # for convergence with no band structure evaluate
-            "clean_workdir": self.inputs.clean_workdir,
+            # Don't clean workdir for bands calculation, since it will race condition with the phonon workchain.
+            # "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

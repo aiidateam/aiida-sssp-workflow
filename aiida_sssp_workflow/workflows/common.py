@@ -101,14 +101,14 @@ def operate_calcjobs(wnode, operator, all_same_nodes=False):
     """
 
     cleaned_calcs = []
-    for descendant_node in wnode.called_descendants:
-        if isinstance(descendant_node, orm.CalcJobNode):
+    for child in wnode.called_descendants:
+        if isinstance(child, orm.CalcJobNode):
             # the nodes waid for operated.
-            nodes = descendant_node.get_all_same_nodes()
+            nodes = child.get_all_same_nodes()
             try:
                 if not all_same_nodes:
                     # only operated on this node
-                    nodes = [descendant_node]
+                    nodes = [child]
 
                 for n in nodes:
                     pk = operator(n)

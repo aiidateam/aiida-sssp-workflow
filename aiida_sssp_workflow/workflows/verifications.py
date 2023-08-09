@@ -36,13 +36,21 @@ def parse_pseudo_info(pseudo: UpfData):
     return orm.Dict(dict=info)
 
 
-DEFAULT_CONVERGENCE_PROPERTIES_LIST = [
-    "convergence.cohesive_energy",
+_REMOTE_FOLDER_DEPENDENT_CONVERENCE_PROPERTIES_LIST = [
+    "convergence.bands",
     "convergence.phonon_frequencies",
+]
+
+_REMOTE_FOLDER_INDEPENDENT_CONVERGENCE_PROPERTIES_LIST = [
+    "convergence.cohesive_energy",
     "convergence.pressure",
     "convergence.delta",
-    "convergence.bands",
 ]
+
+DEFAULT_CONVERGENCE_PROPERTIES_LIST = (
+    _REMOTE_FOLDER_DEPENDENT_CONVERENCE_PROPERTIES_LIST
+    + _REMOTE_FOLDER_INDEPENDENT_CONVERGENCE_PROPERTIES_LIST
+)
 
 DEFAULT_MEASURE_PROPERTIES_LIST = [
     "measure.precision",
@@ -99,17 +107,18 @@ class VerificationWorkChain(SelfCleanWorkChain):
             cls.setup_code_resource_options,
             cls.parse_pseudo,
             cls.init_setup,
-            if_(cls.is_verify_measure)(
-                cls.run_measure,
-                cls.inspect_measure,
-            ),
             if_(cls.is_verify_convergence)(
                 if_(cls.is_caching)(
                     cls.run_caching,
                     cls.inspect_caching,
                 ),
-                cls.run_convergence,
+                cls.run_remote_folder_dependent_convergence,
+                cls.run_remote_folder_independent_convergence,
                 cls.inspect_convergence,
+            ),
+            if_(cls.is_verify_measure)(
+                cls.run_measure,
+                cls.inspect_measure,
             ),
         )
         spec.output('pseudo_info', valid_type=orm.Dict, required=True,
@@ -251,31 +260,6 @@ class VerificationWorkChain(SelfCleanWorkChain):
         # For store the finished_ok workflow
         self.ctx.finished_ok_wf = {}
 
-    def is_verify_measure(self):
-        """
-        Whether to run measure (delta measure, bands distance} workflow.
-        """
-        for p in self.ctx.properties_list:
-            if "measure" in p:
-                return True
-
-        return False
-
-    def run_measure(self):
-        """Run delta measure sub-workflow"""
-        for property in DEFAULT_MEASURE_PROPERTIES_LIST:
-            property_name = property.split(".")[1]
-            if property in self.ctx.properties_list:
-                MeasureWorkflow = WorkflowFactory(f"sssp_workflow.{property}")
-
-                running = self.submit(
-                    MeasureWorkflow, **self.ctx["measure_inputs"][property_name]
-                )
-                self.report(f"Submit {property_name} measure workchain pk={running.pk}")
-
-                self.to_context(_=running)
-                self.ctx.workchains[f"{property}"] = running
-
     def inspect_measure(self):
         """Inspect delta measure results"""
         return self._report_and_results(wname_list=self._VALID_MEASURE_WF)
@@ -318,13 +302,10 @@ class VerificationWorkChain(SelfCleanWorkChain):
         if not workchain.is_finished_ok:
             return self.exit_codes.ERROR_CACHING_ON_BUT_FAILED
 
-    def run_convergence(self):
-        """
-        running all verification workflows
-        """
-        for property in DEFAULT_CONVERGENCE_PROPERTIES_LIST:
+    def _run_convergence(self, plist):
+        for property in self.ctx.properties_list:
             property_name = property.split(".")[1]
-            if property in self.ctx.properties_list:
+            if property in plist:
                 ConvergenceWorkflow = WorkflowFactory(f"sssp_workflow.{property}")
 
                 running = self.submit(
@@ -337,6 +318,18 @@ class VerificationWorkChain(SelfCleanWorkChain):
                 self.to_context(_=running)
                 self.ctx.workchains[f"{property}"] = running
 
+    def run_remote_folder_dependent_convergence(self):
+        """
+        running convergence workflow that requires remote_folder not cleaned, e.g. phonon_frequencies, bands
+        """
+        self._run_convergence(_REMOTE_FOLDER_DEPENDENT_CONVERENCE_PROPERTIES_LIST)
+
+    def run_remote_folder_independent_convergence(self):
+        """
+        running convergence workflow that requires remote_folder not cleaned, e.g. phonon_frequencies, bands
+        """
+        self._run_convergence(_REMOTE_FOLDER_INDEPENDENT_CONVERGENCE_PROPERTIES_LIST)
+
     def inspect_convergence(self):
         """
         inspect the convergence result
@@ -344,6 +337,31 @@ class VerificationWorkChain(SelfCleanWorkChain):
         the list set the avaliable convergence workchain that will be inspected
         """
         return self._report_and_results(wname_list=self._VALID_CONGENCENCE_WF)
+
+    def is_verify_measure(self):
+        """
+        Whether to run measure (delta measure, bands distance} workflow.
+        """
+        for p in self.ctx.properties_list:
+            if "measure" in p:
+                return True
+
+        return False
+
+    def run_measure(self):
+        """Run delta measure sub-workflow"""
+        for property in DEFAULT_MEASURE_PROPERTIES_LIST:
+            property_name = property.split(".")[1]
+            if property in self.ctx.properties_list:
+                MeasureWorkflow = WorkflowFactory(f"sssp_workflow.{property}")
+
+                running = self.submit(
+                    MeasureWorkflow, **self.ctx["measure_inputs"][property_name]
+                )
+                self.report(f"Submit {property_name} measure workchain pk={running.pk}")
+
+                self.to_context(_=running)
+                self.ctx.workchains[f"{property}"] = running
 
     def _report_and_results(self, wname_list):
         """result to respective output namespace"""
@@ -371,6 +389,5 @@ class VerificationWorkChain(SelfCleanWorkChain):
     def on_terminated(self):
         super().on_terminated()
 
-        if self.inputs.clean_workdir.value is False:
+        if not self.inputs.clean_workdir.value:
             self.report(f"{type(self)}: remote folders will not be cleaned")
-            return

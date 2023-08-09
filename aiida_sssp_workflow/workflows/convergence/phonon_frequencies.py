@@ -214,8 +214,10 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
                     },
                     "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
                 },
+                "clean_workdir": self.inputs.clean_workdir,
             },
-            "clean_workdir": self.inputs.clean_workdir,
+            # Don't clean phonon workchain workdir, since it race condition with the bands workchain
+            # "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

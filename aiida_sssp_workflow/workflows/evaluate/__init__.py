@@ -26,3 +26,13 @@ class _BaseEvaluateWorkChain(SelfCleanWorkChain):
         They are needed by the convergence workflow to read the cutoff pair
         of evalueation.
         """
+
+    def _disable_cache(self, workchain):
+        # I do not want SCF calc used for caching if it is a from cached
+        # calculation
+        for child in workchain.called_descendants:
+            if (
+                child.process_label == "PwCalculation"
+                and child.base.caching.is_created_from_cache
+            ):
+                child.is_valid_cache = False

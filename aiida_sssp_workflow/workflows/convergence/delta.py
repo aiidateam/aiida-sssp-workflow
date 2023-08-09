@@ -135,7 +135,7 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
             },
             "element": orm.Str(self.ctx.element),
             "configuration": orm.Str(self.ctx.configuration),
-            "clean_workdir": self.inputs.clean_workdir,  # should already cleaned by eos, here for safe
+            # "clean_workdir": self.inputs.clean_workdir,  # should already cleaned by eos, here for safe
         }
 
         return inputs

@@ -159,6 +159,8 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
 
+        self._disable_cache(workchain)
+
         self.ctx.ecutwfc = workchain.inputs.scf.pw.parameters["SYSTEM"]["ecutwfc"]
         self.ctx.ecutrho = workchain.inputs.scf.pw.parameters["SYSTEM"]["ecutrho"]
 
