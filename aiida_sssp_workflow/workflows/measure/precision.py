@@ -49,7 +49,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         super().define(spec)
 
         spec.outline(
-            cls.init_setup,
+            cls.setup,
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
             ),
@@ -79,41 +79,44 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                     message=f'The {MetricWorkChain.__name__} sub process failed.')
         # yapf: enable
 
-    def init_setup(self):
+    def setup(self):
         """
         This step contains all preparation before actaul setup, e.g. set
         the context of element, base_structure, base pw_parameters and pseudos.
         """
         # parse pseudo and output its header information
         content = self.inputs.pseudo.get_content()
-        element = parse_element(content)
-        pseudo_type = parse_pseudo_type(content)
-        self.ctx.element = element
-        self.ctx.pseudo_type = pseudo_type
-        self.ctx.pseudos_elementary = {element: self.inputs.pseudo}
-
-        pseudo_O = get_pseudo_O()
-
-        self.ctx.pseudos_oxide = {
-            element: self.inputs.pseudo,
-            "O": pseudo_O,
-        }
+        self.ctx.element = parse_element(content)
+        self.ctx.pseudo_type = parse_pseudo_type(content)
 
         self.ctx.pw_parameters = {}
+
+    def _setup_pseudo_and_configuration(self):
+        """Depend on the element set the proper pseudo and configuration list"""
+
+        # this is the pseudo dict for the element
+        self.ctx.pseudo_unary = {self.ctx.element: self.inputs.pseudo}
+
+        # for the oxide, need to pseudo of oxygen,
+        # the pseudo is the one select after the oxygen verification and
+        # store in the `statics/upf/O.**.upf`
+        pseudo_O = get_pseudo_O()
+        self.ctx.pseudos_oxide = {
+            self.ctx.element: self.inputs.pseudo,
+            "O": pseudo_O,
+        }
 
         # Structures for delta factor calculation as provided in
         # http:// molmod.ugent.be/deltacodesdft/
         # Exception for lanthanides use nitride structures from
         # https://doi.org/10.1016/j.commatsci.2014.07.030 and from
-        # common-workflow set from
-        # https://github.com/aiidateam/commonwf-oxides-scripts/tree/main/0-preliminary-do-not-run/cifs-set2
+        # common-workflow set from acwf paper xsf files all store in `statics/structures`.
 
-        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE
-        # parentatheses means not supported yet.
+        # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE, GS
         if self.ctx.element == "O":
-            # For oxygen, still run for oxides but use only the tested pseudo.
+            # For oxygen, still run for oxides but use only the pseudo.
             self.ctx.pseudos_oxide = {
-                element: self.inputs.pseudo,
+                self.ctx.element: self.inputs.pseudo,
             }
         elif self.ctx.element in NO_GS_CONF_ELEMENTS:
             # Don't have ground state structure for At, Fr, Ra
@@ -132,7 +135,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             self.ctx.structures = {}
             for configuration in self.ctx.configuration_list:
                 self.ctx.structures[configuration] = get_standard_structure(
-                    element,
+                    self.ctx.element,
                     prop="delta",
                     configuration=configuration,
                 )
