@@ -11,6 +11,15 @@ UpfData = DataFactory("pseudo.upf")
 
 
 class _BaseMeasureWorkChain(SelfCleanWorkChain):
+
+    # ECUT for oxygen, remember to update this if the oxygen pseudo is changed
+    _O_ECUTWFC = 75.0
+    _O_ECUTRHO = 600.0
+
+    # ECUT for nitrogen, remember to update this if the nitrogen pseudo is changed
+    _N_ECUTWFC = 80.0
+    _N_ECUTRHO = 320.0
+
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
@@ -22,8 +31,8 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
                     help='Pseudopotential to be verified')
         spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The protocol which define input calculation parameters.')
-        spec.input('cutoff_control', valid_type=orm.Str, default=lambda: orm.Str('standard'),
-                    help='The control protocol where define max_wfc.')
+        spec.input('wavefunction_cutoff', valid_type=orm.Float, required=True, help='The wavefunction cutoff.')
+        spec.input('charge_density_cutoff', valid_type=orm.Float, required=True, help='The charge density cutoff.')
         spec.input('options', valid_type=orm.Dict, required=True,
                     help='Optional `options` to use for the `PwCalculations`.')
         spec.input('parallelization', valid_type=orm.Dict, required=True,

@@ -135,6 +135,10 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
         self._setup_pseudo_and_configuration()
 
+        # set up the ecutwfc and ecutrho
+        self.ctx.ecutwfc = self.inputs.wavefunction_cutoff.value
+        self.ctx.ecutrho = self.inputs.charge_density_cutoff.value
+
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
         # pylint: disable=invalid-name, attribute-defined-outside-init
@@ -157,11 +161,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             if key not in clist:
                 self.ctx.structures.pop(key)
 
-        cutoff_control = get_protocol(
-            category="control", name=self.inputs.cutoff_control.value
-        )
-        self._ECUTWFC = cutoff_control["max_wfc"]
-
         parameters = {
             "CONTROL": {
                 "calculation": "scf",
@@ -177,8 +176,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 "mixing_beta": self._MIXING_BETA,
             },
         }
-
-        self.ctx.ecutwfc = self._ECUTWFC
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
@@ -222,8 +219,8 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
 
-            # Since non-NC oxygen pseudo is used
-            ecutrho = self.ctx.ecutwfc * 8
+            ecutwfc = max(self.ctx.ecutwfc, self._O_ECUTWFC)
+            ecutrho = max(self.ctx.ecutrho, self._O_ECUTRHO)
 
             # need also increase nbands for Rare-earth oxides.
             # See https://github.com/aiidateam/aiida-sssp-workflow/issues/161
@@ -249,10 +246,9 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             pseudos = self.ctx.pseudos_unary
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
-            if pseudo_type in ["nc", "sl"]:
-                ecutrho = self.ctx.ecutwfc * 4
-            else:
-                ecutrho = self.ctx.ecutwfc * 8
+
+            ecutwfc = self.ctx.ecutwfc
+            ecutrho = self.ctx.ecutrho
 
         if configuration == "GS" and self.ctx.element in MAGNETIC_ELEMENTS:
             # specific setting for magnetic elements gs since mag on
@@ -272,10 +268,8 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             pseudos = self.ctx.pseudos_magnetic
             pw_parameters = update_dict(self.ctx.pw_parameters, pw_magnetic_parameters)
 
-            if pseudo_type in ["nc", "sl"]:
-                ecutrho = self.ctx.ecutwfc * 4
-            else:
-                ecutrho = self.ctx.ecutwfc * 8
+            ecutwfc = self.ctx.ecutwfc
+            ecutrho = self.ctx.ecutrho
 
         if configuration == "RE":
             # pseudos for nitrides
@@ -302,16 +296,16 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             # sparse kpoints, we use tetrahedra occupation
             kpoints_distance = self.ctx.kpoints_distance + 0.1
 
-            # Since non-NC nitrogen pseudo is used
-            ecutrho = self.ctx.ecutwfc * 8
+            ecutwfc = self.ctx.ecutwfc
+            ecutrho = self.ctx.ecutrho
 
         if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ["nc", "sl"]:
             ecutrho = self.ctx.ecutwfc * 18
 
         parameters = {
             "SYSTEM": {
-                "ecutwfc": round(self.ctx.ecutwfc),
-                "ecutrho": round(ecutrho),
+                "ecutwfc": round(ecutwfc, 1),
+                "ecutrho": round(ecutrho, 1),
             },
         }
         parameters = update_dict(parameters, pw_parameters)

@@ -2,7 +2,6 @@
 precheck:
     description: run on 150 v.s 200 v.s 300 Ry wavefunction cutoff with fix dual to give sense whether 200 Ry enough
 
-    # max_wfc: 0 # Not used if run precision measurement veri with this protocol, just raise exception.
     wfc_scan: [150, 200, 300] # at fix rho
     nc_dual_scan: [] # set empty so rho test not run
     nonnc_dual_scan: []
@@ -11,7 +10,6 @@ precheck:
 standard:
     description: high wavefunction cutoff set and cutoffs dense interval therefore time consuming
 
-    max_wfc: 200 # The max wfc cut for precision measurement
     wfc_scan: [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 120, 150, 200] # at fix rho
     nc_dual_scan: [2.0, 2.5, 3.0, 3.5, 4.0] # at fix wfc
     nonnc_dual_scan: [6.0, 6.5, 7.0, 7.5, 8.0]
@@ -20,7 +18,6 @@ standard:
 quick:
     description: low wavefunction cutoff set and cutoffs sparse interval therefore can run on local
 
-    max_wfc: 200 # The max wfc cut for precision measurement
     wfc_scan: [30, 40, 50, 60, 75, 100, 150, 200] # at fix rho
     nc_dual_scan: [3.0, 3.5, 4.0] # at fix wfc
     nonnc_dual_scan: [6.0, 7.0, 8.0]
@@ -29,7 +26,6 @@ quick:
 test:
     description: test only
 
-    max_wfc: 35 # The max wfc cut for precision measurement
     wfc_scan: [30, 35] # at fix rho
     nc_dual_scan: [] # at fix wfc
     nonnc_dual_scan: [] # at fix rho
@@ -38,7 +34,6 @@ test:
 opsp:
     description: To running opsp verification, make the calculations finished fast.
 
-    max_wfc: 40 # The max wfc cut for precision measurement
     wfc_scan: [30, 35] # at fix rho
     nc_dual_scan: [2.0, 4.0] # at fix wfc
     nonnc_dual_scan: [6.0, 8.0]

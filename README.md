@@ -38,7 +38,12 @@ This what we call it residual volume is therefore a stiffness-agnostic value tha
 In convergence delta factor calculation, the GS configurations from Cottiner's paper are used.
 To have a uniform sence of precision through looking at delta factor, the value is defined as delta factor per atom.
 However, since it is hard to define delta per/atom for oxides, ACWF does not use per/atom value to represent results.
-To compatible with it, the precision verification also use the structure delta.
+It uses the nu factor which was defined in the ACWF paper.
+
+For the oxides, it needs oxygen pseudopotential first, same as nitrides.
+The verification needs to run for all know oxygen/nitrigen pseudopotentials filst. However, the cutoffs of them are not known and the cutoffs are input for the precision measure.
+So the very first run is the convergence test on all oxygen/nitrigen pseudopotentials.
+Once the recommended cutoffs are known, the precision measure can be run for all oxygen/nitrigen elements.
 
 In the convergence verification, there are many options to choose from for what configuration to use. But it is redundant to use all of them, we what the configuration that gives the largest recommended cutoff energy for the pseudopotential.
 After tests (show test results, which in `sssp-verify-scripts`), we found that the for non-magnetic elements, the Diamond configuration that gives the largest cutoff energy. For magnetic elements, the GS configuration calculation with magnetization turned on for the bulk (in cohesive energy which usually give the largest recommended cutoff, where the atomic calculation still don't have magnetization turned on and it is not needed because the pseudopotential is generated in the close shell approximiation (??)) that gives the largest cutoff energy.
@@ -190,4 +195,4 @@ MIT
 
 ## Contact
 
-📧 email: jusong.yu@epfl.ch
+📧 email: jusong.yu@psi.ch
