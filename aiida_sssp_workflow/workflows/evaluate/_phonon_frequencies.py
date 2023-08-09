@@ -50,6 +50,10 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
     def setup(self):
         self.ctx.should_run_ph = True
 
+        # The list of nodes that are invalided the caching of the node and re-run scf calculation. When the remote folder of parent calculation is empty, the caching is invalid, but since invalid caching is applied to all_same_nodes, we need to keep track of the invalid nodes and bring caching valid back to the node so the next run will still using the caching, otherwise the next parent calculation will be re-run again, which is not what we want.
+        # Warning!! experimental feature and will potentially cause "race condition" like behavior between workflows.
+        self.ctx.cache_invalid_list = []
+
     def should_run_ph(self):
         """will be True if ph calculation is successful, otherwise will rerun scf
         The ph calculation can be failed due to the following reasons:
@@ -80,8 +84,6 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
-        self._disable_cache(workchain)
-
         try:
             remote_folder = self.ctx.scf_remote_folder = workchain.outputs.remote_folder
 
@@ -89,6 +91,22 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         except NotExistentAttributeError:
             # set condition to False to break loop
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER_OUTPUT_OF_SCF
+
+        # When change caching below, also check _bands and _caching_wise_bandes
+        # the remote folder is set so can bring the caching invalid back to the node
+        while self.ctx.cache_invalid_list:
+            node_pk = self.ctx.cache_invalid_list.pop()
+            node = orm.load_node(node_pk)
+            node.is_valid_cache = True
+
+        # This need to happened after restore the caching to the node list above
+        # Because the caching control above is for when the workchain is running, while
+        # the disable cache of the workchain is a persistent change that will influence
+        # other workflow.
+        # Just as in the band evaluation workflow, the _caching_wise_bands did the caching remove
+        # and restore. When the inside workflow finished, the `_disable_cache` is in _bands and
+        # do the post-process to disable the cache of "cached-from" nodes.
+        self._disable_cache(workchain)
 
         self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
         self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
@@ -125,6 +143,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
                 all_same_nodes = pw_node.base.caching.get_all_same_nodes()
                 for node in all_same_nodes:
                     node.is_valid_cache = False
+                    self.ctx.cache_invalid_list.append(node.pk)
                 return
             else:
                 self.report(
