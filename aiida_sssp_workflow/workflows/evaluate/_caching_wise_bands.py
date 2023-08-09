@@ -285,7 +285,8 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         self.ctx.current_folder = workchain.outputs.remote_folder
         # the current_folder is set so can bring the caching invalid back to the node
         while self.ctx.cache_invalid_list:
-            node = self.ctx.cache_invalid_list.pop()
+            node_pk = self.ctx.cache_invalid_list.pop()
+            node = orm.load_node(node_pk)
             node.is_valid_cache = True
 
         self.ctx.current_number_of_bands = (
