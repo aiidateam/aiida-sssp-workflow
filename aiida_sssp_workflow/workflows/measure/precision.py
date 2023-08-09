@@ -50,9 +50,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
         spec.outline(
             cls.setup,
-            if_(cls.is_magnetic_element)(
-                cls.extra_setup_for_magnetic_element,
-            ),
             cls.setup_pw_parameters_from_protocol,
             cls.run_metric,
             cls.inspect_metric,
@@ -69,27 +66,14 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         spec.output('output_parameters',
                     help='The summary output parameters of all delta measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
-        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS',
-                    message=f'The {MetricWorkChain.__name__} sub process failed.')
+        spec.exit_code(401, 'ERROR_SUB_METRIC_WORKCHAIN_NOT_FINISHED_OK', message='The metric workchain of configuration {confs} not finished ok.')
         # yapf: enable
-
-    def setup(self):
-        """
-        This step contains all preparation before actaul setup, e.g. set
-        the context of element, base_structure, base pw_parameters and pseudos.
-        """
-        # parse pseudo and output its header information
-        content = self.inputs.pseudo.get_content()
-        self.ctx.element = parse_element(content)
-        self.ctx.pseudo_type = parse_pseudo_type(content)
-
-        self.ctx.pw_parameters = {}
 
     def _setup_pseudo_and_configuration(self):
         """Depend on the element set the proper pseudo and configuration list"""
 
         # this is the pseudo dict for the element
-        self.ctx.pseudo_unary = {self.ctx.element: self.inputs.pseudo}
+        self.ctx.pseudos_unary = {self.ctx.element: self.inputs.pseudo}
 
         # for the oxide, need to pseudo of oxygen,
         # the pseudo is the one select after the oxygen verification and
@@ -100,19 +84,19 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             "O": pseudo_O,
         }
 
+        # For oxygen, still run for oxides but use only the pseudo.
+        if self.ctx.element == "O":
+            self.ctx.pseudos_oxide = {
+                self.ctx.element: self.inputs.pseudo,
+            }
+
         # Structures for delta factor calculation as provided in
         # http:// molmod.ugent.be/deltacodesdft/
         # Exception for lanthanides use nitride structures from
         # https://doi.org/10.1016/j.commatsci.2014.07.030 and from
         # common-workflow set from acwf paper xsf files all store in `statics/structures`.
-
         # keys here are: BCC, FCC, SC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, RE (Lanthanide that will use RE-N), GS
-        if self.ctx.element == "O":
-            # For oxygen, still run for oxides but use only the pseudo.
-            self.ctx.pseudos_oxide = {
-                self.ctx.element: self.inputs.pseudo,
-            }
-        elif self.ctx.element in NO_GS_CONF_ELEMENTS + ACTINIDE_ELEMENTS:
+        if self.ctx.element in NO_GS_CONF_ELEMENTS + ACTINIDE_ELEMENTS:
             # Don't have ground state structure for At, Fr, Ra
             self.ctx.configuration_list = (
                 self._OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
@@ -137,27 +121,19 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 configuration=configuration,
             )
 
-    def is_magnetic_element(self):
-        """Check if the element is magnetic"""
-        return self.ctx.element in MAGNETIC_ELEMENTS
-
-    def extra_setup_for_magnetic_element(self):
+    def setup(self):
         """
-        Extra setup for magnetic element, set starting magnetization
-        and reset pseudos to correspont elements name.
-
-        ! only for TYPEICAL structure.
+        This step contains all preparation before actaul setup, e.g. set
+        the context of element, base_structure, base pw_parameters and pseudos.
         """
-        (
-            self.ctx.structures["GS"],
-            self.ctx.pw_magnetic_parameters,
-        ) = get_magnetic_inputs(self.ctx.structures["GS"])
+        # parse pseudo and output its header information
+        content = self.inputs.pseudo.get_content()
+        self.ctx.element = parse_element(content)
+        self.ctx.pseudo_type = parse_pseudo_type(content)
 
-        # override pseudos setting
-        # required for O, Mn, Cr where the kind names varies for sites
-        self.ctx.pseudos_magnetic = reset_pseudos_for_magnetic(
-            self.inputs.pseudo, self.ctx.structures["GS"]
-        )
+        self.ctx.pw_parameters = {}
+
+        self._setup_pseudo_and_configuration()
 
     def setup_pw_parameters_from_protocol(self):
         """Input validation"""
@@ -203,7 +179,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         }
 
         self.ctx.ecutwfc = self._ECUTWFC
-        self.ctx.ecutrho = self._ECUTWFC * 8
 
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
@@ -246,6 +221,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
             pseudos = self.ctx.pseudos_oxide
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
+
             # Since non-NC oxygen pseudo is used
             ecutrho = self.ctx.ecutwfc * 8
 
@@ -270,7 +246,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
         if configuration in self._UNARIE_GS_CONFIGURATIONS:  # include regular 'GS'
             # pseudos for BCC, FCC, SC, Diamond and TYPYCAL configurations
-            pseudos = self.ctx.pseudos_elementary
+            pseudos = self.ctx.pseudos_unary
             pw_parameters = self.ctx.pw_parameters
             kpoints_distance = self.ctx.kpoints_distance
             if pseudo_type in ["nc", "sl"]:
@@ -280,35 +256,52 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
         if configuration == "GS" and self.ctx.element in MAGNETIC_ELEMENTS:
             # specific setting for magnetic elements gs since mag on
-            pseudos = self.ctx.pseudos_magnetic
-            pw_parameters = update_dict(
-                self.ctx.pw_parameters, self.ctx.pw_magnetic_parameters
+
+            # reconstruct configuration, O1, O2 for sites
+            (
+                structure,
+                pw_magnetic_parameters,
+            ) = get_magnetic_inputs(structure)
+
+            # override pseudos setting
+            # required for O, Mn, Cr where the kind names varies for sites
+            self.ctx.pseudos_magnetic = reset_pseudos_for_magnetic(
+                self.inputs.pseudo, structure
             )
+
+            pseudos = self.ctx.pseudos_magnetic
+            pw_parameters = update_dict(self.ctx.pw_parameters, pw_magnetic_parameters)
+
+            if pseudo_type in ["nc", "sl"]:
+                ecutrho = self.ctx.ecutwfc * 4
+            else:
+                ecutrho = self.ctx.ecutwfc * 8
 
         if configuration == "RE":
-            nbnd_factor = self._NBANDS_FACTOR_FOR_LAN
-
+            # pseudos for nitrides
             pseudo_N = get_pseudo_N()
             pseudo_RE = self.inputs.pseudo
-            nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
-            self.ctx.pw_nitride_parameters = get_extra_parameters_for_lanthanides(
-                self.ctx.element, nbnd
-            )
-
-            # pseudos for nitrides
             self.ctx.pseudos_nitride = {"N": pseudo_N, self.ctx.element: pseudo_RE}
             pseudos = self.ctx.pseudos_nitride
 
-            parameters = {
-                "SYSTEM": {
-                    "occupations": "tetrahedra",
-                },
-                "ELECTRONS": {
-                    "conv_thr": self._CONV_THR,
-                },
-            }
-            pw_parameters = update_dict(parameters, self.ctx.pw_nitride_parameters)
+            # perticular parameters for RE-N
+            # Since the reference data is from https://doi.org/10.1016/j.commatsci.2014.07.030
+            # Here I need to use the same input parameters
+            nbnd_factor = self._NBANDS_FACTOR_FOR_LAN
+            nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
+
+            pw_parameters = self.ctx.pw_parameters
+            # Set the namespace directly will override the original value set in `self.ctx.pw_parameters`
+            pw_parameters = update_dict(
+                self.ctx.pw_parameters,
+                get_extra_parameters_for_lanthanides(self.ctx.element, nbnd),
+            )
+            pw_parameters["SYSTEM"]["occupations"] = "tetrahedra"
+            pw_parameters["SYSTEM"].pop("smearing")
+
+            # sparse kpoints, we use tetrahedra occupation
             kpoints_distance = self.ctx.kpoints_distance + 0.1
+
             # Since non-NC nitrogen pseudo is used
             ecutrho = self.ctx.ecutwfc * 8
 
@@ -368,7 +361,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
     def inspect_metric(self):
         """Inspect the results of MetricWorkChain"""
-        failed = []
+        failed_configuration_lst = list()
         for configuration in self.ctx.structures.keys():
             workchain = self.ctx[f"{configuration}_metric"]
 
@@ -376,7 +369,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 self.logger.warning(
                     f"MetricWorkChain of {configuration} failed with exit status {workchain.exit_status}"
                 )
-                failed.append(configuration)
+                failed_configuration_lst.append(configuration)
 
             self.out_many(
                 self.exposed_outputs(
@@ -386,9 +379,10 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 )
             )
 
-        if failed:
-            pass
-            # TODO ERROR
+        if failed_configuration_lst:
+            return self.exit_codes.ERROR_METRIC_WORKCHAIN_NOT_FINISHED_OK.format(
+                confs=f"{failed_configuration_lst}",
+            )
 
     def finalize(self):
         """calculate the delta factor"""
