@@ -91,8 +91,6 @@ def launch(
     daemon,
 ):
     """Launch the verification workchain."""
-    from aiida.orm import load_code
-
     # if the property is not specified, use the default list with all properties calculated.
     # otherwise, use the specified properties.
     if not property:
@@ -115,8 +113,10 @@ def launch(
 
     computer = pw_code.computer.label
     label, _ = os.path.splitext(basename)
+    if configuration is None:
+        conf_label = "default"
     label = orm.Str(
-        f"({protocol}-{criteria}-{cutoff_control} at {computer} - {configuration}) {label}"
+        f"({protocol}-{criteria}-{cutoff_control} at {computer} - {conf_label}) {label}"
     )
 
     with open(pseudo, "rb") as stream:
