@@ -89,7 +89,7 @@ class VerificationWorkChain(SelfCleanWorkChain):
                     exclude=['code', 'pseudo', 'options', 'parallelization', 'clean_workdir'])
         spec.input('pw_code', valid_type=orm.AbstractCode,
                     help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('ph_code', valid_type=orm.AbstractCode,
+        spec.input('ph_code', valid_type=orm.AbstractCode, required=False,
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
@@ -199,10 +199,8 @@ class VerificationWorkChain(SelfCleanWorkChain):
         measure_inputs["code"] = self.inputs.pw_code
         measure_inputs["options"] = self.inputs.options
         measure_inputs["parallelization"] = self.inputs.parallelization
-        measure_inputs["wavefunction_cutoff"] = self.inputs.wavefunction_cutoff.value
-        measure_inputs[
-            "charge_density_cutoff"
-        ] = self.inputs.charge_density_cutoff.value
+        measure_inputs["wavefunction_cutoff"] = self.inputs.wavefunction_cutoff
+        measure_inputs["charge_density_cutoff"] = self.inputs.charge_density_cutoff
 
         measure_inputs["clean_workdir"] = self.inputs.clean_workdir
 
@@ -217,6 +215,8 @@ class VerificationWorkChain(SelfCleanWorkChain):
         # 3. pressue
         # 4. delta
         # 5. bands distance
+        self.ctx.convergence_inputs = dict()
+
         convergence_inputs = self.exposed_inputs(
             _BaseConvergenceWorkChain, namespace="convergence"
         )
@@ -227,28 +227,32 @@ class VerificationWorkChain(SelfCleanWorkChain):
 
         convergence_inputs["clean_workdir"] = self.inputs.clean_workdir
 
+        for prop in ["cohesive_energy", "phonon_frequencies", "bands"]:
+            self.ctx.convergence_inputs[prop] = convergence_inputs.copy()
+
         # Here, the shallow copy can be used since the type of convergence_inputs
         # is AttributesDict.
         # The deepcopy can't be used, since it will create new data node.
-        inputs_phonon_frequencies = convergence_inputs.copy()
-        inputs_phonon_frequencies.pop("code", None)
-        inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code
-        inputs_phonon_frequencies["ph_code"] = self.inputs.ph_code
+        if "convergence.phonon_frequencies" in self.ctx.properties_list:
+            inputs_phonon_frequencies = convergence_inputs.copy()
+            inputs_phonon_frequencies.pop("code", None)
+            inputs_phonon_frequencies["pw_code"] = self.inputs.pw_code
+            inputs_phonon_frequencies["ph_code"] = self.inputs.ph_code
+            inputs_phonon_frequencies["clean_workdir"] = orm.Bool(
+                False
+            )  # For phonon frequencies convergence workflow, the clean dir is taken care by the the finalize step of the verification workflow.
 
-        # For phonon frequencies and bands convergence workflow, the clean dir is taken care by the the finalize step
-        # of the verification workflow.
-        inputs_bands = convergence_inputs.copy()
+            self.ctx.convergence_inputs[
+                "phonon_frequencies"
+            ] = inputs_phonon_frequencies
 
-        inputs_phonon_frequencies["clean_workdir"] = orm.Bool(False)
-        inputs_bands["clean_workdir"] = orm.Bool(False)
+        if "convergence.bands" in self.ctx.properties_list:
+            inputs_bands = convergence_inputs.copy()
+            inputs_bands["clean_workdir"] = orm.Bool(
+                False
+            )  # For bands convergence workflow, the clean dir is taken care by the the finalize step of the verification workflow.
 
-        self.ctx.convergence_inputs = {
-            "cohesive_energy": convergence_inputs.copy(),
-            "phonon_frequencies": inputs_phonon_frequencies,
-            "pressure": convergence_inputs.copy(),
-            "delta": convergence_inputs.copy(),
-            "bands": convergence_inputs.copy(),
-        }
+            self.ctx.convergence_inputs["bands"] = inputs_bands
 
         # Caching inputs setting
         # The running strategy of caching is:
@@ -263,10 +267,10 @@ class VerificationWorkChain(SelfCleanWorkChain):
         )  # shouldn't clean until last, default of _caching but do it here explicitly
 
         # to collect workchains in a dict
-        self.ctx.workchains = {}
+        self.ctx.workchains = dict()
 
         # For store the finished_ok workflow
-        self.ctx.finished_ok_wf = {}
+        self.ctx.finished_ok_wf = dict()
 
     def inspect_measure(self):
         """Inspect delta measure results"""
