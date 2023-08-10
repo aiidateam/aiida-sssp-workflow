@@ -66,11 +66,11 @@
     },
     "Co": {
         "bands": "GS",
-        "convergence": "Diamond"
+        "convergence": "GS"
     },
     "Cr": {
         "bands": "GS",
-        "convergence": "Diamond"
+        "convergence": "GS"
     },
     "Cs": {
         "bands": "GS",
@@ -94,7 +94,7 @@
     },
     "Fe": {
         "bands": "GS",
-        "convergence": "Diamond"
+        "convergence": "GS"
     },
     "F": {
         "bands": "GS",
@@ -170,7 +170,7 @@
     },
     "Mn": {
         "bands": "GS",
-        "convergence": "Diamond"
+        "convergence": "GS"
     },
     "Mo": {
         "bands": "GS",
@@ -198,11 +198,11 @@
     },
     "Ni": {
         "bands": "GS",
-        "convergence": "Diamond"
+        "convergence": "GS"
     },
     "O": {
         "bands": "GS",
-        "convergence": "Diamond"
+        "convergence": "GS"
     },
     "Os": {
         "bands": "GS",

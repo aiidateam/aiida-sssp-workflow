@@ -73,6 +73,11 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
     default=True,
     help="Launch the verfication to daemon by submit or run directly.",
 )
+@click.option(
+    "comment",
+    "--comment",
+    help="Add a comment word as the prefix the workchain description.",
+)
 @click.argument("pseudo", type=click.Path(exists=True))
 def launch(
     pw_code,
@@ -89,6 +94,7 @@ def launch(
     pseudo,
     clean_workdir,
     daemon,
+    comment,
 ):
     """Launch the verification workchain."""
     # if the property is not specified, use the default list with all properties calculated.
@@ -113,8 +119,7 @@ def launch(
 
     computer = pw_code.computer.label
     label, _ = os.path.splitext(basename)
-    if configuration is None:
-        conf_label = "default"
+    conf_label = configuration or "default"
     label = orm.Str(
         f"({protocol}-{criteria}-{cutoff_control} at {computer} - {conf_label}) {label}"
     )
@@ -159,7 +164,8 @@ def launch(
     else:
         _, node = run_get_node(VerificationWorkChain, **inputs)
 
-    node.description = f"{label.value} ({extra_desc})"
+    description = f"{label.value} ({extra_desc})"
+    node.description = f"({comment}) {description}" if comment else description
 
     click.echo(node)
     click.echo(f"calculated on property: {'/'.join(properties_list)}")

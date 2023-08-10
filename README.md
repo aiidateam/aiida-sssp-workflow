@@ -40,6 +40,9 @@ To have a uniform sence of precision through looking at delta factor, the value 
 However, since it is hard to define delta per/atom for oxides, ACWF does not use per/atom value to represent results.
 To compatible with it, the precision verification also use the structure delta.
 
+In the convergence verification, there are many options to choose from for what configuration to use. But it is redundant to use all of them, we what the configuration that gives the largest recommended cutoff energy for the pseudopotential.
+After tests (show test results, which in `sssp-verify-scripts`), we found that the for non-magnetic elements, the Diamond configuration that gives the largest cutoff energy. For magnetic elements, the GS configuration calculation with magnetization turned on for the bulk (in cohesive energy which usually give the largest recommended cutoff, where the atomic calculation still don't have magnetization turned on and it is not needed because the pseudopotential is generated in the close shell approximiation (??)) that gives the largest cutoff energy.
+
 ## Phonon frequencies specification
 
 For some elements, we have neglected the first n frequencies in the summation above, because the frequencies are negative and/or with strong oscillations as function of the cutoff for all the considered pseudos). We have neglected the first 4 frequencies for H and I, 12 for N and Cl, 6 for O and ??SiF4 (which replaces F)??.
