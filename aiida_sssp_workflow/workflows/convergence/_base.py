@@ -253,7 +253,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         and reset pseudos to correspont elements name.
         """
         # ! only for GS configuration we set the starting magnetization and reset pseudos
-        magnetization_on = False
+        # From the test, I confirm that for Oxygen the magnetic GS structure give the largest recommonded cutoff,
+        # which means it is essential to take into account the maganetization for the convergence otherwise
+        # will give fault recommended cutoff which is too small for the magnetization elements.
+        # So the `magnetization_on` is set to `True`.
+        magnetization_on = True # For experiment purpose, turn on/off magnetization
         if self.ctx.configuration == 'GS' and magnetization_on:
             self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
             self.ctx.extra_pw_parameters = update_dict(self.ctx.extra_pw_parameters, magnetic_extra_parameters)

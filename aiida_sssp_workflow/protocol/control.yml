@@ -32,7 +32,7 @@ test:
     max_wfc: 35 # The max wfc cut for precision measurement
     wfc_scan: [30, 35] # at fix rho
     nc_dual_scan: [] # at fix wfc
-    nonnc_dual_scan: [6.0, 8.0]
+    nonnc_dual_scan: [] # at fix rho
     nonnc_high_dual_scan: [8.0, 12.0]
 
 opsp:
