@@ -170,7 +170,11 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         # -1 colume for the highest eigenvalue of every kpoints
         # which might not be belong to one band if there are degeneracy
         # not enough until eigenvalues of all kpoints are greater than shift value.
-        highest_band = bands[:, -1]
+        if bands.ndim == 2:
+            highest_band = bands[:, -1]
+        elif bands.ndim == 3:
+            # for magnetization structure, the bands are 3d array.
+            highest_band = bands[:, :, -1]
 
         if np.all(highest_band > fermi_energy + self.inputs.fermi_shift.value):
             self.ctx.should_run_bands = False

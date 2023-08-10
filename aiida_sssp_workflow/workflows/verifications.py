@@ -93,6 +93,10 @@ class VerificationWorkChain(SelfCleanWorkChain):
                     help='The `ph.x` code use for the `PhCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
+        spec.input('wavefunction_cutoff', valid_type=orm.Float, required=False, default=lambda: orm.Float(100.0),
+                    help='The wavefunction cutoff for the Measure properties.')
+        spec.input('charge_density_cutoff', valid_type=orm.Float, required=False, default=lambda: orm.Float(800.0),
+                    help='The charge density cutoff for the Measure properties.')
         spec.input('label', valid_type=orm.Str, required=False,
                     help='label store for display as extra attributes.')
         spec.input('properties_list', valid_type=orm.List,
@@ -195,6 +199,10 @@ class VerificationWorkChain(SelfCleanWorkChain):
         measure_inputs["code"] = self.inputs.pw_code
         measure_inputs["options"] = self.inputs.options
         measure_inputs["parallelization"] = self.inputs.parallelization
+        measure_inputs["wavefunction_cutoff"] = self.inputs.wavefunction_cutoff.value
+        measure_inputs[
+            "charge_density_cutoff"
+        ] = self.inputs.charge_density_cutoff.value
 
         measure_inputs["clean_workdir"] = self.inputs.clean_workdir
 
