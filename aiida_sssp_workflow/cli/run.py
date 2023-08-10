@@ -9,6 +9,7 @@ import aiida
 import click
 from aiida import orm
 from aiida.cmdline.params import options, types
+from aiida.cmdline.utils import echo
 from aiida.engine import run_get_node, submit
 from aiida.plugins import DataFactory, WorkflowFactory
 
@@ -27,12 +28,13 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 
 
 @cmd_root.command("launch")
+@click.argument("pseudo", type=click.Path(exists=True))
 @options.OverridableOption(
     "--pw-code", "pw_code", type=types.CodeParamType(entry_point="quantumespresso.pw")
 )(required=True)
 @options.OverridableOption(
     "--ph-code", "ph_code", type=types.CodeParamType(entry_point="quantumespresso.ph")
-)(required=True)
+)(required=False)
 @click.option(
     "--property",
     multiple=True,
@@ -42,22 +44,8 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option(
     "protocol",
     "--protocol",
-    default="standard",
-    help="Protocol to use for the verification.",
-)
-@click.option(
-    "cutoff_control",
-    "--cutoff-control",
-    default="standard",
-    help="Control of convergence.",
-)
-@click.option(
-    "criteria", "--criteria", default="efficiency", help="Criteria of convergence."
-)
-@click.option(
-    "configuration",
-    "--configuration",
-    help="(convergence only) Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, GS.",
+    default="acwf",
+    help="Protocol to use for the verification, (acwf, test).",
 )
 @click.option("withmpi", "--withmpi", default=True, help="Run with mpi.")
 @click.option("npool", "--npool", default=1, help="Number of pool.")
@@ -78,12 +66,39 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
     "--comment",
     help="Add a comment word as the prefix the workchain description.",
 )
-@click.argument("pseudo", type=click.Path(exists=True))
+# ecutwfc and ecutrho are for measure workflows only
+@click.option(
+    "ecutwfc",
+    "--ecutwfc",
+    help="Cutoff energy for wavefunctions in Rydberg.",
+)
+@click.option(
+    "ecutrho",
+    "--ecutrho",
+    help="Cutoff energy for charge density in Rydberg.",
+)
+# cutoff_control, criteria, configuration is for convergence workflows only
+@click.option(
+    "cutoff_control",
+    "--cutoff-control",
+    help="Cutoff control for convergence workflow, (standard, quick, opsp).",
+)
+@click.option(
+    "criteria", "--criteria", help="Criteria for convergence (efficiency, precision)."
+)
+# configuration is hard coded for convergence workflow, but here is an interface for experiment purpose
+@click.option(
+    "configuration",
+    "--configuration",
+    help="(convergence test only) Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, GS, RE",
+)
 def launch(
     pw_code,
     ph_code,
     property,
     protocol,
+    ecutwfc,
+    ecutrho,
     cutoff_control,
     criteria,
     configuration,
@@ -112,8 +127,41 @@ def launch(
         properties_list = list(property)
         extra_desc = f"{properties_list}"
 
+    # validate the options are all provide for the property
+    is_convergence = False
+    is_measure = False
+    is_ph = False
+    for prop in properties_list:
+        if prop.startswith("convergence"):
+            is_convergence = True
+        if prop.startswith("measure"):
+            is_measure = True
+        if "phonon_frequencies" in prop:
+            is_ph = True
+
+    # raise error if the options are not provided
+    if is_convergence and not (cutoff_control and criteria):
+        echo.echo_critical(
+            "cutoff_control, criteria must be provided for convergence workflow."
+        )
+
+    if is_measure and not (ecutwfc and ecutrho):
+        echo.echo_critical("ecutwfc and ecutrho must be provided for measure workflow.")
+
+    if is_ph and not ph_code:
+        echo.echo_critical("ph_code must be provided for phonon frequencies.")
+
+    # raise warning if the options are over provided, e.g. cutoff_control is provided for measure workflow
+    if is_measure and (cutoff_control or criteria or configuration):
+        echo.echo_warning(
+            "cutoff_control, criteria, configuration are not used for measure workflow."
+        )
+
+    if is_convergence and (ecutwfc or ecutrho):
+        echo.echo_warning("ecutwfc and ecutrho are not used for convergence workflow.")
+
     _profile = aiida.load_profile()
-    click.echo(f"Current profile: {_profile.name}")
+    echo.echo_info(f"Current profile: {_profile.name}")
 
     basename = os.path.basename(pseudo)
 
@@ -130,7 +178,8 @@ def launch(
     inputs = {
         "measure": {
             "protocol": orm.Str(protocol),
-            "cutoff_control": orm.Str(cutoff_control),
+            "wavefunction_cutoff": orm.Float(ecutwfc),
+            "charge_density_cutoff": orm.Float(ecutrho),
         },
         "convergence": {
             "protocol": orm.Str(protocol),
@@ -138,7 +187,6 @@ def launch(
             "criteria": orm.Str(criteria),
         },
         "pw_code": pw_code,
-        "ph_code": ph_code,
         "pseudo": pseudo,
         "label": label,
         "properties_list": orm.List(properties_list),
@@ -156,6 +204,9 @@ def launch(
         "clean_workdir": orm.Bool(clean_workdir),
     }
 
+    if is_ph:
+        inputs["ph_code"] = ph_code
+
     if configuration is not None:
         inputs["convergence"]["configuration"] = orm.Str(configuration)
 
@@ -167,8 +218,8 @@ def launch(
     description = f"{label.value} ({extra_desc})"
     node.description = f"({comment}) {description}" if comment else description
 
-    click.echo(node)
-    click.echo(f"calculated on property: {'/'.join(properties_list)}")
+    echo.echo_info(node)
+    echo.echo_success(f"calculated on property: {'/'.join(properties_list)}")
 
 
 if __name__ == "__main__":

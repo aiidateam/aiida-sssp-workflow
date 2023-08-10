@@ -74,8 +74,6 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
     # pylint: disable=too-many-instance-attributes
 
-    _RY_TO_EV = 13.6056980659
-
     _PROPERTY_NAME = "bands"
     _EVALUATE_WORKCHAIN = BandsWorkChain
     _MEASURE_OUT_PROPERTY = "eta_c"
@@ -186,7 +184,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             sample_band_parameters,
             reference_band_structure,
             reference_band_parameters,
-            smearing=orm.Float(self.ctx.degauss * self._RY_TO_EV),
+            smearing=orm.Float(self.ctx.degauss),
             fermi_shift=orm.Float(self.ctx.fermi_shift),
             do_smearing=orm.Bool(True),
             spin=orm.Bool(spin),

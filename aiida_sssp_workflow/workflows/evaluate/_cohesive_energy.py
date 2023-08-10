@@ -122,7 +122,6 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
         self.to_context(workchain_bulk_energy=running_bulk_energy)
 
         for element, structure in self.ctx.d_element_structure.items():
-
             atom_inputs = self.exposed_inputs(PwBaseWorkflow, namespace="atom")
             atom_inputs["pw"]["structure"] = structure
             atom_inputs["pw"]["pseudos"] = {

@@ -20,7 +20,7 @@ repos:
           - id: flynt
 
     - repo: https://github.com/psf/black
-      rev: 22.3.0
+      rev: 23.3.0
       hooks:
           - id: black
             language_version: python3 # Should be a command that runs python3.6+
@@ -33,8 +33,6 @@ repos:
                     aiida_sssp_workflow/workflows/measure/bands.py |
                     aiida_sssp_workflow/workflows/convergence/_base.py
                 )$
-          - id: black-jupyter
-            exclude: *exclude_pre_commit_black_hooks
 
     - repo: https://github.com/PyCQA/flake8
       rev: 4.0.1

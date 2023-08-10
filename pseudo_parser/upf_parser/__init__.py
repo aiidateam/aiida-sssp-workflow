@@ -37,7 +37,6 @@ def parse_element(content: str):
     :return: the symbol of the element following the IUPAC naming standard.
     """
     for regex in [REGEX_ELEMENT_V2, REGEX_ELEMENT_V1]:
-
         match = regex.search(content)
 
         if match:
@@ -52,7 +51,6 @@ def parse_z_valence(content: str) -> int:
     :return: the Z valence.
     """
     for regex in [REGEX_Z_VALENCE_V2, REGEX_Z_VALENCE_V1]:
-
         match = regex.search(content)
 
         if match:
@@ -82,7 +80,6 @@ def parse_pseudo_type(content: str) -> str:
     :return: the pseudo type str.
     """
     for regex in [REGEX_PSEUDO_TYPE_V2, REGEX_PSEUDO_TYPE_V1]:
-
         match = regex.search(content)
 
         if match:

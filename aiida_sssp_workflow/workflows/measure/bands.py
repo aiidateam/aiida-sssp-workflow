@@ -8,7 +8,6 @@ from aiida.engine import ToContext, if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
-    HIGH_DUAL_ELEMENTS,
     LANTHANIDE_ELEMENTS,
     MAGNETIC_ELEMENTS,
     NONMETAL_ELEMENTS,
@@ -20,7 +19,6 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
-    get_pseudo_element_and_type,
     get_pseudo_N,
 )
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
@@ -42,7 +40,6 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
     WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
     """
-    _RY_TO_EV = 13.6056980659
 
     @classmethod
     def define(cls, spec):
@@ -51,7 +48,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         super().define(spec)
 
         spec.outline(
-            cls.init_setup,
+            cls.setup,
             if_(cls.is_magnetic_element)(
                 cls.extra_setup_for_magnetic_element,
             ),
@@ -64,7 +61,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
         spec.expose_outputs(BandsWorkChain)
 
-    def init_setup(self):
+    def setup(self):
         """
         This step contains all preparation before actaul setup, e.g. set
         the context of element, base_structure, base pw_parameters and pseudos.
@@ -82,6 +79,10 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
         # extra setting for bands convergence
         self.ctx.is_metal = element not in NONMETAL_ELEMENTS
+
+        # set up the ecutwfc and ecutrho
+        self.ctx.ecutwfc = self.inputs.wavefunction_cutoff.value
+        self.ctx.ecutrho = self.inputs.charge_density_cutoff.value
 
     def is_magnetic_element(self):
         """Check if the element is magnetic"""
@@ -126,12 +127,6 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         self._INIT_NBANDS_FACTOR = protocol['init_nbands_factor']
         self._FERMI_SHIFT = protocol['fermi_shift']
 
-        cutoff_control = get_protocol(
-            category="control", name=self.inputs.cutoff_control.value
-        )
-        self._ECUTWFC = cutoff_control["max_wfc"]
-
-        self.ctx.ecutwfc = self._ECUTWFC
         self.ctx.init_nbands_factor = self._INIT_NBANDS_FACTOR
         self.ctx.fermi_shift = self._FERMI_SHIFT
 
@@ -154,8 +149,6 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             },
         }
 
-        self.ctx.ecutwfc = self._ECUTWFC
-
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
         self.logger.info(
@@ -166,24 +159,12 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         """
         get inputs for the bands evaluation with given pseudo
         """
-        element, pseudo_type = get_pseudo_element_and_type(self.inputs.pseudo)
-        if pseudo_type in ['nc', 'sl']:
-            ecutrho = self.ctx.ecutwfc * 4
-        else:
-            ecutrho = self.ctx.ecutwfc * 8
-
-        if element in HIGH_DUAL_ELEMENTS and pseudo_type not in ['nc', 'sl']:
-            ecutrho = self.ctx.ecutwfc * 18
-
-        if element in LANTHANIDE_ELEMENTS:
-            # since nitrides is used, the pseudo of N is non-NC
-            # The N.us.z_5.ld1.theose.v0 is used so set dual equal to 8
-            ecutrho = self.ctx.ecutwfc * 8
+        ecutwfc, ecutrho = self._get_pw_cutoff(self.ctx.structure, self.ctx.ecutwfc, self.ctx.ecutrho)
 
         parameters = {
             "SYSTEM": {
-                "ecutwfc": round(self.ctx.ecutwfc),
-                "ecutrho": round(ecutrho),
+                "ecutwfc": round(ecutwfc, 1),
+                "ecutrho": round(ecutrho, 1),
             },
         }
         parameters = update_dict(parameters, self.ctx.pw_parameters)

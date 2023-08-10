@@ -171,7 +171,7 @@ def calculate_eta_and_max_diff(
 def get_bands_distance(
     bandsdata_a: dict,
     bandsdata_b: dict,
-    smearing: float,
+    smearing: float,  # from degauss
     fermi_shift: float,
     do_smearing: bool,
     spin: bool,
@@ -189,6 +189,9 @@ def get_bands_distance(
 
     First aligh the number of two bands, e.g tranctrate the overceed nubmer of bands
     """
+    _RY_TO_EV = 13.6056980659
+    smearing = smearing * _RY_TO_EV
+
     # post process to deserial list to numpy arrar
     for key in ["bands", "kpoints", "weights"]:
         bandsdata_a[key] = np.asarray(bandsdata_a[key])
