@@ -100,13 +100,13 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         self.ctx.degauss = self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
-        self._CONV_THR = protocol["electron_conv_thr"]
+        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
         self.ctx.kpoints_distance_scf = protocol["kpoints_distance_scf"]
         self.ctx.kpoints_distance_bands = protocol["kpoints_distance_bands"]
 
         # Set context parameters
         self.ctx.pw_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
+            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR_PER_ATOM
         )
 
         self.ctx.fermi_shift = protocol["fermi_shift"]
@@ -137,7 +137,6 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         inputs = {
             "structure": self.ctx.structure,
             "scf": {
-                "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
                 "pw": {
                     "code": self.inputs.code,
                     "pseudos": self.ctx.pseudos,
@@ -159,7 +158,6 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
                     },
                     "parallelization": orm.Dict(dict=self.ctx.parallelization),
                 },
-                "clean_workdir": self.inputs.clean_workdir,
             },
             "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
             "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
@@ -167,8 +165,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
             "run_bands_structure": orm.Bool(
                 False
             ),  # for convergence with no band structure evaluate
-            # Don't clean workdir for bands calculation, since it will race condition with the phonon workchain.
-            # "clean_workdir": self.inputs.clean_workdir,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

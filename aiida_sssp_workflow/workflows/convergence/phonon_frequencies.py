@@ -104,8 +104,8 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
             },
         }
 
-    def extra_setup_for_lanthanide_element(self):
-        super().extra_setup_for_lanthanide_element()
+    def extra_setup_for_rare_earth_element(self):
+        super().extra_setup_for_rare_earth_element()
 
         extra_ph_parameters = {
             "INPUTPH": {
@@ -128,7 +128,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
-        self._CONV_THR = protocol["electron_conv_thr"]
+        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
         self._KDISTANCE = protocol["kpoints_distance"]
 
         # PH
@@ -139,7 +139,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         self.ctx.qpoints_list = self._QPOINTS_LIST
 
         self.ctx.pw_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
+            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR_PER_ATOM
         )
 
         self.ctx.ph_parameters = {
@@ -190,7 +190,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
 
         inputs = {
             "scf": {
-                "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
+                "metadata": {"call_link_label": "SCF"},
                 "pw": {
                     "structure": self.ctx.structure,
                     "code": self.inputs.pw_code,
@@ -214,10 +214,8 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
                     },
                     "settings": orm.Dict(dict={"CMDLINE": cmdline_list}),
                 },
-                "clean_workdir": self.inputs.clean_workdir,
             },
-            # Don't clean phonon workchain workdir, since it race condition with the bands workchain
-            # "clean_workdir": self.inputs.clean_workdir,
+            "clean_workdir": self.inputs.clean_workdir,
         }
 
         return inputs

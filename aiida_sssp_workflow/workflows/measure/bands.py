@@ -121,7 +121,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         self._DEGAUSS = protocol['degauss']
         self._OCCUPATIONS = protocol['occupations']
         self._SMEARING = protocol['smearing']
-        self._CONV_THR = protocol['electron_conv_thr']
+        self._CONV_THR_PER_ATOM = protocol['conv_thr_per_atom']
 
         self._INIT_NBANDS_FACTOR = protocol['init_nbands_factor']
         self._FERMI_SHIFT = protocol['fermi_shift']
@@ -147,7 +147,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
                 "smearing": self._SMEARING,
             },
             "ELECTRONS": {
-                "conv_thr": self._CONV_THR,
+                "conv_thr": self._CONV_THR_PER_ATOM,
             },
             "CONTROL": {
                 "calculation": "scf",

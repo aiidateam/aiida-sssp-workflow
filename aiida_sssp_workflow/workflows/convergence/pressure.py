@@ -115,14 +115,14 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
-        self._CONV_THR = protocol["electron_conv_thr"]
+        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
         self._KDISTANCE = protocol["kpoints_distance"]
 
         self._EOS_SCALE_COUNT = protocol["scale_count"]
         self._EOS_SCALE_INCREMENT = protocol["scale_increment"]
 
         self.ctx.pw_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
+            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR_PER_ATOM
         )
 
         # set extra pw parameters for eos only
@@ -198,11 +198,6 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             parameters["SYSTEM"].pop("smearing", None)
             parameters["SYSTEM"].pop("degauss", None)
             parameters["SYSTEM"]["occupations"] = "tetrahedra"
-
-        natoms = len(self.ctx.structure.sites)
-        parameters["ELECTRONS"]["conv_thr"] = (
-            parameters["ELECTRONS"]["conv_thr"] * natoms
-        )
 
         parameters["ELECTRONS"]["mixing_beta"] = self.ctx.mixing_beta
 
