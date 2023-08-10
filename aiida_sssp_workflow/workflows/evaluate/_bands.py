@@ -176,7 +176,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
             self.ctx.should_run_bands = False
         else:
             self.report(
-                f"highest band eigenvalue above fermi is {min(highest_band) - fermi_energy}, not enough, you want {self.inputs.fermi_shift.value}."
+                f"highest band eigenvalue above fermi is {highest_band.min() - fermi_energy}, not enough, you want {self.inputs.fermi_shift.value}."
             )
 
         self.ctx.ecutwfc = workchain.inputs.scf.pw.parameters["SYSTEM"]["ecutwfc"]
