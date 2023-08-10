@@ -80,7 +80,10 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 },
             }
         }
-        self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_magnetic_element, self.ctx.extra_pw_parameters_for_atom)
+        self.ctx.extra_pw_parameters_for_atom = update_dict(
+            extra_pw_parameters_for_atom_magnetic_element,
+            self.ctx.extra_pw_parameters_for_atom,
+        )
 
     def extra_setup_for_lanthanide_element(self):
         """Extra setup for rare earth element, for atom especially"""
@@ -103,7 +106,10 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 },
             },
         }
-        self.ctx.extra_pw_parameters_for_atom = update_dict(extra_pw_parameters_for_atom_lanthanide_element, self.ctx.extra_pw_parameters_for_atom)
+        self.ctx.extra_pw_parameters_for_atom = update_dict(
+            extra_pw_parameters_for_atom_lanthanide_element,
+            self.ctx.extra_pw_parameters_for_atom,
+        )
 
     def setup_code_parameters_from_protocol(self):
         """Input validation"""
@@ -124,7 +130,10 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
 
         # Set context parameters
         self.ctx.bulk_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS, self._OCCUPATIONS, self._BULK_SMEARING, self._CONV_THR_PER_ATOM
+            self._DEGAUSS,
+            self._OCCUPATIONS,
+            self._BULK_SMEARING,
+            self._CONV_THR_PER_ATOM,
         )
         base_atom_pw_parameters = {
             "SYSTEM": {
@@ -177,7 +186,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         if atomic_options["resources"]["num_mpiprocs_per_machine"] > 32:
             # copy is a shallow copy, so using update_dict.
             # if simply assign the value will change also the original dict
-            atomic_options = update_dict(atomic_options, {"resources": {"num_mpiprocs_per_machine": 32}})
+            atomic_options = update_dict(
+                atomic_options, {"resources": {"num_mpiprocs_per_machine": 32}}
+            )
 
         # atomic calculation for lanthanides require more time to finish.
         if self.ctx.element in LANTHANIDE_ELEMENTS:
@@ -188,7 +199,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         # atom_parameters update with ecutwfc and ecutrho
         atom_parameters = update_dict(self.ctx.atom_parameters, {})
         for element in atom_parameters.keys():
-            atom_parameters[element] = update_dict(atom_parameters[element], update_parameters)
+            atom_parameters[element] = update_dict(
+                atom_parameters[element], update_parameters
+            )
 
         inputs = {
             "pseudos": self.ctx.pseudos,
@@ -196,7 +209,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             "atom_parameters": orm.Dict(dict=atom_parameters),
             "vacuum_length": orm.Float(self.ctx.vacuum_length),
             "bulk": {
-                "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
+                "metadata": {
+                    "call_link_label": "prepare_pw_scf"
+                },  # used for checking if caching is working
                 "pw": {
                     "code": self.inputs.code,
                     "parameters": orm.Dict(dict=bulk_parameters),
@@ -219,9 +234,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                     "parallelization": orm.Dict(dict=atomic_parallelization),
                 },
                 "kpoints": atom_kpoints,
-                "clean_workdir": self.inputs.clean_workdir, # clean up the remote folder right after calc is finished
+                "clean_workdir": self.inputs.clean_workdir,  # clean up the remote folder right after calc is finished
             },
-            "clean_workdir": self.inputs.clean_workdir, # atomit clean is controlled above, this clean happened when the whole workchain is finished
+            "clean_workdir": self.inputs.clean_workdir,  # atomit clean is controlled above, this clean happened when the whole workchain is finished
         }
 
         return inputs

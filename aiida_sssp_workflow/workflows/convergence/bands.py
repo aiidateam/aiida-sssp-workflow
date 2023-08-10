@@ -27,7 +27,8 @@ def helper_bands_distence_difference(
     spin: orm.Bool,
 ):
     """The helper function to calculate the bands distance between two band structures.
-    The function is called in last step of convergence workflow to get the bands distance."""
+    The function is called in last step of convergence workflow to get the bands distance.
+    """
 
     # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
     bandsdata_a = {

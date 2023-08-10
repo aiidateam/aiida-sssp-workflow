@@ -130,7 +130,9 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
 
         self.ctx.kpoints_distance = self._KDISTANCE
 
-        self.logger.info(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
+        self.logger.info(
+            f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
+        )
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
@@ -146,7 +148,9 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
         parameters = update_dict(parameters, self.ctx.pw_parameters)
 
         inputs = {
-            "metadata": {"call_link_label": "prepare_pw_scf"}, # used for checking if caching is working
+            "metadata": {
+                "call_link_label": "prepare_pw_scf"
+            },  # used for checking if caching is working
             "pw": {
                 "code": self.inputs.code,
                 "structure": self.ctx.structure,
@@ -201,7 +205,6 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
 
         parameters["ELECTRONS"]["mixing_beta"] = self.ctx.mixing_beta
 
-
         inputs = {
             "metadata": {"call_link_label": "pressure_ref_EOS"},
             "structure": self.ctx.structure,
@@ -217,7 +220,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
                 },
                 "parallelization": orm.Dict(dict=self.ctx.parallelization),
             },
-            "clean_workdir": self.inputs.clean_workdir, # exposed from PwBaseWorkChain
+            "clean_workdir": self.inputs.clean_workdir,  # exposed from PwBaseWorkChain
         }
 
         running = self.submit(_EquationOfStateWorkChain, **inputs)

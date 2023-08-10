@@ -24,7 +24,7 @@ from aiida_sssp_workflow.workflows.common import (
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
 
-UpfData = DataFactory('pseudo.upf')
+UpfData = DataFactory("pseudo.upf")
 
 
 def validate_input_pseudos(d_pseudos, _):
@@ -32,7 +32,7 @@ def validate_input_pseudos(d_pseudos, _):
     element = set(pseudo.element for pseudo in d_pseudos.values())
 
     if len(element) > 1:
-        return f'The pseudos corespond to different elements {element}.'
+        return f"The pseudos corespond to different elements {element}."
 
 
 class BandsMeasureWorkChain(_BaseMeasureWorkChain):
@@ -90,13 +90,18 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
     def extra_setup_for_magnetic_element(self):
         """Extra setup for magnetic element"""
-        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(self.ctx.structure)
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, magnetic_extra_parameters)
+        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(
+            self.ctx.structure
+        )
+        self.ctx.pw_parameters = update_dict(
+            self.ctx.pw_parameters, magnetic_extra_parameters
+        )
 
         # override pseudos setting
         # required for O, Mn, Cr where the kind names varies for sites
-        self.ctx.pseudos = reset_pseudos_for_magnetic(self.inputs.pseudo, self.ctx.structure)
-
+        self.ctx.pseudos = reset_pseudos_for_magnetic(
+            self.inputs.pseudo, self.ctx.structure
+        )
 
     def is_lanthanide_element(self):
         """Check if the element is rare earth"""
@@ -106,7 +111,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         """Extra setup for rare earth element"""
         nbnd_factor = 2.0
         pseudo_N = get_pseudo_N()
-        self.ctx.pseudos['N'] = pseudo_N
+        self.ctx.pseudos["N"] = pseudo_N
         pseudo_RE = self.inputs.pseudo
         nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
         pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
@@ -119,21 +124,22 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
         # Read from protocol if parameters not set from inputs
         protocol = get_protocol(category="bands", name=self.inputs.protocol.value)
-        self._DEGAUSS = protocol['degauss']
-        self._OCCUPATIONS = protocol['occupations']
-        self._SMEARING = protocol['smearing']
-        self._CONV_THR_PER_ATOM = protocol['conv_thr_per_atom']
+        self._DEGAUSS = protocol["degauss"]
+        self._OCCUPATIONS = protocol["occupations"]
+        self._SMEARING = protocol["smearing"]
+        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
 
-        self._INIT_NBANDS_FACTOR = protocol['init_nbands_factor']
-        self._FERMI_SHIFT = protocol['fermi_shift']
+        self._INIT_NBANDS_FACTOR = protocol["init_nbands_factor"]
+        self._FERMI_SHIFT = protocol["fermi_shift"]
 
         self.ctx.init_nbands_factor = self._INIT_NBANDS_FACTOR
         self.ctx.fermi_shift = self._FERMI_SHIFT
 
-        self.ctx.kpoints_distance_scf = protocol['kpoints_distance_scf']
-        self.ctx.kpoints_distance_bands = protocol['kpoints_distance_bands']
-        self.ctx.kpoints_distance_band_structure = protocol['kpoints_distance_band_structure']
-
+        self.ctx.kpoints_distance_scf = protocol["kpoints_distance_scf"]
+        self.ctx.kpoints_distance_bands = protocol["kpoints_distance_bands"]
+        self.ctx.kpoints_distance_band_structure = protocol[
+            "kpoints_distance_band_structure"
+        ]
 
         parameters = {
             "SYSTEM": {
@@ -152,14 +158,16 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
         self.logger.info(
-            f'The pw parameters for convergence is: {self.ctx.pw_parameters}'
+            f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
         )
 
     def _get_inputs(self, pseudos):
         """
         get inputs for the bands evaluation with given pseudo
         """
-        ecutwfc, ecutrho = self._get_pw_cutoff(self.ctx.structure, self.ctx.ecutwfc, self.ctx.ecutrho)
+        ecutwfc, ecutrho = self._get_pw_cutoff(
+            self.ctx.structure, self.ctx.ecutwfc, self.ctx.ecutrho
+        )
 
         parameters = {
             "SYSTEM": {
@@ -202,7 +210,9 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
             "fermi_shift": orm.Float(self.ctx.fermi_shift),
             "run_bands_structure": orm.Bool(True),
-            "kpoints_distance_band_structure": orm.Float(self.ctx.kpoints_distance_band_structure),
+            "kpoints_distance_band_structure": orm.Float(
+                self.ctx.kpoints_distance_band_structure
+            ),
             "clean_workdir": self.inputs.clean_workdir,
         }
 
@@ -214,14 +224,10 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
 
         running = self.submit(BandsWorkChain, **inputs)
 
-        self.report(
-            f'launching BandsWorkChain<{running.pk}>'
-        )
+        self.report(f"launching BandsWorkChain<{running.pk}>")
 
         return ToContext(bands=running)
 
     def finalize(self):
         """inspect bands run results"""
-        self.out_many(
-            self.exposed_outputs(self.ctx.bands, BandsWorkChain)
-        )
+        self.out_many(self.exposed_outputs(self.ctx.bands, BandsWorkChain))
