@@ -18,7 +18,10 @@ UpfData = DataFactory("pseudo.upf")
 
 @calcfunction
 def helper_phonon_frequencies_difference(
-    element: orm.Str, input_parameters: orm.Dict, ref_parameters: orm.Dict
+    element: orm.Str,
+    configuration: orm.Str,
+    input_parameters: orm.Dict,
+    ref_parameters: orm.Dict,
 ) -> orm.Dict:
     """
     The phonon frequencies are calculated at BZ boundary qpoint (1/2, 1/2, 1/2).
@@ -37,12 +40,18 @@ def helper_phonon_frequencies_difference(
 
     # set strat_idx the idx of frequencies start to count
     element = element.value
-    if element == "N" or element == "Cl":
-        start_idx = 12
-    elif element == "H" or element == "I":
-        start_idx = 4
-    elif element == "O":
-        start_idx = 6
+    configuration = configuration.value
+    if configuration == "GS":
+        # leftover setting from SSSP v1
+        # Otherwise the phonon frequencies calculated at BZ boundary qpoint (1/2, 1/2, 1/2) are not converged.
+        if element == "N" or element == "Cl":
+            start_idx = 12
+        elif element == "H" or element == "I":
+            start_idx = 4
+        elif element == "O":
+            start_idx = 6
+        else:
+            start_idx = 0
     else:
         start_idx = 0
 
@@ -236,5 +245,8 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         reference_output = reference_node.outputs.output_parameters
 
         return helper_phonon_frequencies_difference(
-            orm.Str(self.ctx.element), sample_output, reference_output
+            orm.Str(self.ctx.element),
+            orm.Str(self.ctx.configuration),
+            sample_output,
+            reference_output,
         ).get_dict()
