@@ -37,11 +37,11 @@ def helper_phonon_frequencies_difference(
 
     # set strat_idx the idx of frequencies start to count
     element = element.value
-    if element == 'N' or element == 'Cl':
+    if element == "N" or element == "Cl":
         start_idx = 12
-    elif element == 'H' or element == 'I':
+    elif element == "H" or element == "I":
         start_idx = 4
-    elif element == 'O':
+    elif element == "O":
         start_idx = 6
     else:
         start_idx = 0
@@ -154,8 +154,12 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         )
         self.ctx.kpoints_distance = self._KDISTANCE
 
-        self.logger.info(f"The pw parameters for convergence is: {self.ctx.pw_parameters}")
-        self.logger.info(f"The ph parameters for convergence is: {self.ctx.ph_parameters}")
+        self.logger.info(
+            f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
+        )
+        self.logger.info(
+            f"The ph parameters for convergence is: {self.ctx.ph_parameters}"
+        )
 
     def _get_inputs(self, ecutwfc, ecutrho):
         """
