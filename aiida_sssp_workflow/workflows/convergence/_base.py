@@ -292,12 +292,15 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             **protocol.get(self._PROPERTY_NAME, dict()),    # if _PROPERTY_NAME not set, simply use base
         }
 
-    def _get_pw_base_parameters(self, degauss, occupations, smearing, conv_thr):
+    def _get_pw_base_parameters(self, degauss: float, occupations: float, smearing: float, conv_thr_per_atom: float):
         """Return base pw parameters dict for all convengence bulk workflow
         Unchanged dict for caching purpose
-
-        TODO: move this method out of class
         """
+        # etot_conv_thr is extensive, like the total energy so we need to scale it with the number of atoms
+        natoms = len(self.ctx.structure.sites)
+        etot_conv_thr = (
+            conv_thr_per_atom * natoms
+        )
         parameters = {
             'SYSTEM': {
                 'degauss': degauss,
@@ -305,7 +308,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 'smearing': smearing,
             },
             'ELECTRONS': {
-                'conv_thr': conv_thr,
+                'conv_thr': etot_conv_thr,
             },
             'CONTROL': {
                 'calculation': 'scf',

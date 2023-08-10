@@ -7,7 +7,7 @@ acwf:
         occupations: smearing
         degauss: 0.0045
         smearing: fd
-        electron_conv_thr: 1.0e-10
+        conv_thr_per_atom: 1.0e-10
         kpoints_distance: 0.15
 
     cohesive_energy:
@@ -45,7 +45,7 @@ moderate:
         occupations: smearing
         degauss: 0.01
         smearing: cold
-        electron_conv_thr: 1.0e-10
+        conv_thr_per_atom: 1.0e-10
         kpoints_distance: 0.15
 
     cohesive_energy:
@@ -82,7 +82,7 @@ test:
         occupations: smearing
         degauss: 0.01
         smearing: cold
-        electron_conv_thr: 1.0e-6
+        conv_thr_per_atom: 1.0e-6
         kpoints_distance: 0.5
 
     cohesive_energy:

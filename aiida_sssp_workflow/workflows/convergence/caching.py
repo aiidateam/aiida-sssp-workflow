@@ -73,11 +73,14 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
-        self._CONV_THR = protocol["electron_conv_thr"]
+        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
         self.ctx.kpoints_distance = self._KDISTANCE = protocol["kpoints_distance"]
 
         self.ctx.pw_base_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR
+            self._DEGAUSS,
+            self._OCCUPATIONS,
+            self._SMEARING,
+            self._CONV_THR_PER_ATOM,
         )
 
     def _get_inputs(self, ecutwfc, ecutrho) -> dict:

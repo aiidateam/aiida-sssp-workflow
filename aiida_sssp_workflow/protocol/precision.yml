@@ -6,7 +6,7 @@ acwf:
     occupations: smearing
     degauss: 0.0045
     smearing: fd
-    electron_conv_thr: 1.0e-10
+    conv_thr_per_atom: 1.0e-10
     kpoints_distance: 0.10
     mixing_beta: 0.4
     scale_count: 7
@@ -19,7 +19,7 @@ test:
     occupations: smearing
     degauss: 0.0045
     smearing: fd
-    electron_conv_thr: 1.0e-6
+    conv_thr_per_atom: 1.0e-6
     kpoints_distance: 0.5
     mixing_beta: 0.4
     scale_count: 5
@@ -37,7 +37,7 @@ opsp:
     occupations: smearing
     degauss: 0.0045
     smearing: fd
-    electron_conv_thr: 1.0e-8
+    conv_thr_per_atom: 1.0e-8
     kpoints_distance: 0.2
     mixing_beta: 0.4
     scale_count: 7
@@ -53,7 +53,7 @@ opsp-full:
     occupations: smearing
     degauss: 0.0045
     smearing: fd
-    electron_conv_thr: 1.0e-8
+    conv_thr_per_atom: 1.0e-8
     kpoints_distance: 0.2
     mixing_beta: 0.4
     scale_count: 7

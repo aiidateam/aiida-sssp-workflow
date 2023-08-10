@@ -144,7 +144,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         self._DEGAUSS = protocol["degauss"]
         self._OCCUPATIONS = protocol["occupations"]
         self._SMEARING = protocol["smearing"]
-        self._CONV_THR = protocol["electron_conv_thr"]
+        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
         self._MIXING_BETA = protocol["mixing_beta"]
         self.ctx.kpoints_distance = self._KDISTANCE = protocol["kpoints_distance"]
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
@@ -173,7 +173,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 "smearing": self._SMEARING,
             },
             "ELECTRONS": {
-                "conv_thr": self._CONV_THR,
+                "conv_thr": self._CONV_THR_PER_ATOM,
                 "mixing_beta": self._MIXING_BETA,
             },
         }
