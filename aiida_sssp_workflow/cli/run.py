@@ -168,9 +168,12 @@ def launch(
     computer = pw_code.computer.label
     label, _ = os.path.splitext(basename)
     conf_label = configuration or "default"
-    label = orm.Str(
-        f"({protocol}-{criteria}-{cutoff_control} at {computer} - {conf_label}) {label}"
+    pre_label = (
+        f"{protocol}"
+        if not is_convergence
+        else f"{protocol}-{criteria}-{cutoff_control}"
     )
+    label = orm.Str(f"({pre_label} at {computer} - {conf_label}) {label}")
 
     with open(pseudo, "rb") as stream:
         pseudo = UpfData(stream)
