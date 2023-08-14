@@ -18,13 +18,13 @@ def helper_delta_difference(
     input_parameters: orm.Dict, ref_parameters: orm.Dict
 ) -> orm.Dict:
     """calculate the delta difference from parameters"""
-    res_delta = input_parameters["delta"]
-    ref_delta = ref_parameters["delta"]
+    res_delta = input_parameters["delta/natoms"]
+    ref_delta = ref_parameters["delta/natoms"]
     absolute_diff = abs(res_delta - ref_delta)
     relative_diff = abs((res_delta - ref_delta) / ref_delta) * 100
 
     res = {
-        "delta": res_delta,
+        "delta/natoms": res_delta,
         "absolute_diff": absolute_diff,
         "relative_diff": relative_diff,
         "delta_unit": "meV",
