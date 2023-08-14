@@ -65,13 +65,14 @@ class PressureWorkChain(_BaseEvaluateWorkChain):
         """inspect the result of scf calculation."""
         workchain = self.ctx.workchain_scf
 
+        if workchain.is_finished:
+            self._disable_cache(workchain)
+
         if not workchain.is_finished_ok:
             self.report(
                 f"PwBaseWorkChain for pressure evaluation failed with exit status {workchain.exit_status}"
             )
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
-
-        self._disable_cache(workchain)
 
         output_trajectory = workchain.outputs.output_trajectory
         output_parameters = workchain.outputs.output_parameters

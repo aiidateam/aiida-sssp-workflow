@@ -276,6 +276,17 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         """Verify that the PwBaseWorkChain for the scf run finished successfully."""
         workchain = self.ctx.workchain_scf
 
+        # duplicate of _disable_cache of _BaseEvaluateWorkChain
+        # I do not want SCF calc used for caching if it is a from cached calculation
+        # right after!@@!
+        if workchain.is_finished:
+            for child in workchain.called_descendants:
+                if (
+                    child.process_label == "PwCalculation"
+                    and child.base.caching.is_created_from_cache
+                ):
+                    child.is_valid_cache = False
+
         if not workchain.is_finished_ok:
             self.report(
                 f"scf PwBaseWorkChain failed with exit status {workchain.exit_status}"
@@ -341,7 +352,11 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
         if not workchain.is_finished_ok:
             # The inner logic to detect if the failed bands calculation is due to the empty remote folder
             # If so, we will invalid the caching of the node and re-run scf calculation.
-            if self.ctx.current_folder.is_empty:
+            # !!! This empty check is not a good way to detect the remote folder issue, but it is the only way I can think of now.
+            # !!! If the SSH connection is lost, the exception will be raised and the workchain will be terminated.
+            # Therefore use cleaned flag to detect the remote folder issue this didn't require SSH connection. But will not work if the remote folder is cleaned by other means.
+            is_cleaned = self.ctx.current_folder.base.extras.get("cleaned", False)
+            if is_cleaned:
                 self.logger.warning(
                     f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
                 )
