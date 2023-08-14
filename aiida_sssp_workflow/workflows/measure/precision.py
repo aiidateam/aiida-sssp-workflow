@@ -66,7 +66,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         spec.output('output_parameters',
                     help='The summary output parameters of all delta measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
-        spec.exit_code(401, 'ERROR_SUB_METRIC_WORKCHAIN_NOT_FINISHED_OK', message='The metric workchain of configuration {confs} not finished ok.')
+        spec.exit_code(401, 'ERROR_METRIC_WORKCHAIN_NOT_FINISHED_OK', message='The metric workchain of configuration {confs} not finished ok.')
         # yapf: enable
 
     def _setup_pseudo_and_configuration(self):
