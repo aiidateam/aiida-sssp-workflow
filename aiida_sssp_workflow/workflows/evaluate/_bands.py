@@ -154,14 +154,15 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         """
         workchain = self.ctx.workchain_bands
 
+        if workchain.is_finished:
+            self._disable_cache(workchain)
+
         if not workchain.is_finished_ok:
             self.logger.warning(
                 f"PwBandsWorkChain for bands evaluation failed with exit status {workchain.exit_status}"
             )
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_BANDS
-
-        self._disable_cache(workchain)
 
         # Check if the bands are enough to cover the desired fermi shift
         fermi_energy = workchain.outputs.band_parameters["fermi_energy"]

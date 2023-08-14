@@ -77,6 +77,9 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         """inspect the result of scf calculation if fail do not continue."""
         workchain = self.ctx.workchain_scf
 
+        if workchain.is_finished:
+            self._disable_cache(workchain)
+
         if not workchain.is_finished_ok:
             self.logger.warning(
                 f"PwBaseWorkChain failed with exit status {workchain.exit_status}"
@@ -87,7 +90,9 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         try:
             remote_folder = self.ctx.scf_remote_folder = workchain.outputs.remote_folder
 
-            self.report(f"Is remote folder empty? {remote_folder.is_empty}")
+            self.report(
+                f"Is remote folder cleaned? {remote_folder.extras.get('cleaned', False)}"
+            )
         except NotExistentAttributeError:
             # set condition to False to break loop
             return self.exit_codes.ERROR_NO_REMOTE_FOLDER_OUTPUT_OF_SCF
@@ -98,15 +103,6 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
             node_pk = self.ctx.cache_invalid_list.pop()
             node = orm.load_node(node_pk)
             node.is_valid_cache = True
-
-        # This need to happened after restore the caching to the node list above
-        # Because the caching control above is for when the workchain is running, while
-        # the disable cache of the workchain is a persistent change that will influence
-        # other workflow.
-        # Just as in the band evaluation workflow, the _caching_wise_bands did the caching remove
-        # and restore. When the inside workflow finished, the `_disable_cache` is in _bands and
-        # do the post-process to disable the cache of "cached-from" nodes.
-        self._disable_cache(workchain)
 
         self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
         self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
@@ -131,7 +127,8 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
 
         if not workchain.is_finished_ok:
             # if the remote folder is empty, invalid the caching of the node and re-run scf calculation
-            if self.ctx.scf_remote_folder.is_empty:
+            is_cleaned = self.ctx.scf_remote_folder.base.extras.get("cleaned", False)
+            if is_cleaned:
                 self.logger.warning(
                     f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
                 )
