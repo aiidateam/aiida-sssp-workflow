@@ -47,6 +47,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
+        spec.input('configurations', valid_type=orm.List, required=False)
 
         spec.outline(
             cls.setup,
@@ -154,13 +155,6 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.scale_count = self._SCALE_COUNT = protocol["scale_count"]
         self.ctx.scale_increment = self._SCALE_INCREMENT = protocol["scale_increment"]
 
-        # narrow the configuration list by protocol
-        # this is used for test protocol which only has limited configurations to be verified
-        clist = protocol.get("configurations", self.ctx.configuration_list)
-        for key in list(self.ctx.structures.keys()):
-            if key not in clist:
-                self.ctx.structures.pop(key)
-
         parameters = {
             "CONTROL": {
                 "calculation": "scf",
@@ -180,6 +174,18 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
 
         self.logger.info(f"The pw parameters for EOS step is: {self.ctx.pw_parameters}")
+
+    def setup_configurations(self):
+        # narrow the configuration list by protocol
+        # this is used for test protocol which only has limited configurations to be verified
+        if "configurations" in self.inputs:
+            clist = self.inputs.configurations.get_list()
+        else:
+            clist = self.ctx.configuration_list
+
+        for key in list(self.ctx.structures.keys()):
+            if key not in clist:
+                self.ctx.structures.pop(key)
 
     @staticmethod
     def _compute_nelectrons_of_oxide(configuration, z_O, z_X):
