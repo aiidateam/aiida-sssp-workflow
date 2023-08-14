@@ -47,11 +47,11 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.input('configurations', valid_type=orm.List, required=False)
 
         spec.outline(
             cls.setup,
             cls.setup_pw_parameters_from_protocol,
+            cls.setup_configurations,
             cls.run_metric,
             cls.inspect_metric,
             cls.finalize,

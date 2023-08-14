@@ -33,6 +33,7 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
         spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The protocol which define input calculation parameters.')
         spec.input('wavefunction_cutoff', valid_type=orm.Float, required=True, help='The wavefunction cutoff.')
+        spec.input('configurations', valid_type=orm.List, required=False)
         spec.input('charge_density_cutoff', valid_type=orm.Float, required=True, help='The charge density cutoff.')
         spec.input('options', valid_type=orm.Dict, required=True,
                     help='Optional `options` to use for the `PwCalculations`.')

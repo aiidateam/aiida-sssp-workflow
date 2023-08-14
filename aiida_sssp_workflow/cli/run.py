@@ -212,6 +212,7 @@ def launch(
 
     if configuration is not None:
         inputs["convergence"]["configuration"] = orm.Str(configuration)
+        inputs["measure"]["configurations"] = orm.List(list=[configuration])
 
     if daemon:
         node = submit(VerificationWorkChain, **inputs)
