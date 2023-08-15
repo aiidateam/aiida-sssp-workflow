@@ -24,11 +24,6 @@ test:
     mixing_beta: 0.4
     scale_count: 5
     scale_increment: 0.02
-    configurations:
-        - XO2
-        - BCC
-        - GS
-        - RE
 
 opsp:
     name: opsp
@@ -42,9 +37,6 @@ opsp:
     mixing_beta: 0.4
     scale_count: 7
     scale_increment: 0.02
-    configurations:
-        - XO
-        - BCC
 
 opsp-full:
     name: opsp-full
