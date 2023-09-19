@@ -621,6 +621,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             ecutwfc_list.append(child_node.outputs.ecutwfc.value)
             ecutrho_list.append(child_node.outputs.ecutrho.value)
 
+            # the helper_compare_result_extract_fun must be implemented in subclass and it can return empty dict, which will be ignored.
+            # The empty dict is used to skip the result of specific convergence test that give no result or irrational result.
             res = self.helper_compare_result_extract_fun(
                 child_node, reference_node, **kwargs
             )
