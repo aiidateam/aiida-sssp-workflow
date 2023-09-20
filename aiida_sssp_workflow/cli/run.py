@@ -90,7 +90,9 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option(
     "configuration",
     "--configuration",
-    help="(convergence test only) Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, GS, RE",
+    multiple=True,
+    default=(),
+    help="Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, GS, RE",
 )
 def launch(
     pw_code,
@@ -152,9 +154,12 @@ def launch(
         echo.echo_critical("ph_code must be provided for phonon frequencies.")
 
     # raise warning if the options are over provided, e.g. cutoff_control is provided for measure workflow
-    if is_measure and (cutoff_control or criteria or configuration):
-        echo.echo_warning(
-            "cutoff_control, criteria, configuration are not used for measure workflow."
+    if is_measure and (cutoff_control or criteria):
+        echo.echo_warning("cutoff_control, criteria are not used for measure workflow.")
+
+    if is_convergence and len(configuration) > 1:
+        echo.echo_critical(
+            "Only one configuration is allowed for convergence workflow."
         )
 
     if is_convergence and (ecutwfc or ecutrho):
@@ -167,7 +172,17 @@ def launch(
 
     computer = pw_code.computer.label
     label, _ = os.path.splitext(basename)
-    conf_label = configuration or "default"
+
+    # convert configuration to list
+    configuration = list(configuration)
+
+    if len(configuration) == 0:
+        conf_label = "default"
+    elif len(configuration) == 1:
+        conf_label = configuration[0]
+    else:
+        conf_label = "/".join(configuration)
+
     pre_label = (
         f"{protocol}"
         if not is_convergence
@@ -210,9 +225,13 @@ def launch(
     if is_ph:
         inputs["ph_code"] = ph_code
 
-    if configuration is not None:
-        inputs["convergence"]["configuration"] = orm.Str(configuration)
-        inputs["measure"]["configurations"] = orm.List(list=[configuration])
+    if len(configuration) == 0:
+        pass
+    elif len(configuration) == 1:
+        inputs["convergence"]["configuration"] = orm.Str(configuration[0])
+        inputs["measure"]["configurations"] = orm.List(list=configuration)
+    else:
+        inputs["measure"]["configurations"] = orm.List(list=configuration)
 
     if daemon:
         node = submit(VerificationWorkChain, **inputs)
