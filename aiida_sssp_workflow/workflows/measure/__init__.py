@@ -14,12 +14,14 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
     """Base Measure Workchain since bands measure and precision measure share same input ports"""
 
     # ECUT for oxygen, remember to update this if the oxygen pseudo is changed
+    # Currently the oxygen pseudo is `O.paw.z_6.ld1.psl.v0.1.upf`
     _O_ECUTWFC = 75.0
-    _O_ECUTRHO = 600.0
+    _O_ECUTRHO = 560.0
 
     # ECUT for nitrogen, remember to update this if the nitrogen pseudo is changed
-    _N_ECUTWFC = 80.0
-    _N_ECUTRHO = 320.0
+    # Currently the nitrogen pseudo is `N.us.z_5.ld1.psl.v0.1.upf`
+    _N_ECUTWFC = 55.0
+    _N_ECUTRHO = 330.0
 
     @classmethod
     def define(cls, spec):

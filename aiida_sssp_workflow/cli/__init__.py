@@ -17,4 +17,5 @@ def cmd_root():
 
 
 from .extract import extract
+from .inspect import inspect
 from .run import launch

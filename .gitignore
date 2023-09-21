@@ -3,7 +3,6 @@
 *.swp
 ~*
 *~
-*.pdf
 .project
 *.egg*
 .DS_Store
@@ -15,3 +14,7 @@ build/
 dist/
 run_demos
 pip-wheel-metadata/
+
+# plot output for test
+*.pdf
+*_precision_summary.json
