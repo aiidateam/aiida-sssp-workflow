@@ -40,6 +40,8 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
                     help='The output of metric factor measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
 
+        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS', message='The `eos` sub process failed without return the fit value.')
+
         # yapf: enable
 
     def _get_inputs(self):
@@ -82,7 +84,7 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
         self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
         self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
-        output_bmf = self.outputs["eos"].get("output_birch_murnaghan_fit")
+        output_bmf = self.outputs.get("eos", {}).get("output_birch_murnaghan_fit")
 
         if output_bmf is not None:
             inputs = {
@@ -102,3 +104,5 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
             )
             output_parameters = orm.Dict(dict={})
             self.out("output_parameters", output_parameters.store())
+
+            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
