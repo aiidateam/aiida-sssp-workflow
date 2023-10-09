@@ -9,6 +9,7 @@ import numpy as np
 from aiida import orm
 
 from aiida_sssp_workflow.cli import cmd_root
+from aiida_sssp_workflow.utils import HIGH_DUAL_ELEMENTS, get_protocol
 
 
 def birch_murnaghan(V, E0, V0, B0, B01):
@@ -141,6 +142,57 @@ def inspect(node, output):
             # fig to pdf
             fig.tight_layout()
             fig.savefig(f"{output}_precision.pdf", bbox_inches="tight")
+
+    if "convergence" in wf_node.outputs:
+        for property in [
+            "bands",
+            "cohesive_energy",
+            "pressure",
+            "delta",
+            "phonon_frequencies",
+        ]:
+            # print summary of the convergence to a json file
+            convergence = wf_node.outputs.convergence[property]
+
+            cutoff_control_protocol = wf_node.inputs.convergence.cutoff_control.value
+            cutoff_control = get_protocol("control", name=cutoff_control_protocol)
+            wfc_scan = cutoff_control["wfc_scan"]
+            # See if all the scans are finished by compare the list with the list of control protocol
+            ecutwfc_list = convergence.output_parameters_wfc_test.get_dict().get(
+                "ecutwfc"
+            )
+            wfc_scan_healthy = len(ecutwfc_list) / len(wfc_scan)
+
+            # if only first two scan values are not in the list, it is still regarted as 100% healthy
+            # Since it is because the first two ecutwfc values are too small for some elements
+            if wfc_scan_healthy != 1 and (
+                wfc_scan[0] not in ecutwfc_list or wfc_scan[1] not in ecutwfc_list
+            ):
+                wfc_scan_healthy = 1
+
+            ecutrho_test_list = convergence.output_parameters_rho_test.get_dict().get(
+                "ecutrho"
+            )
+
+            element = wf_node.outputs.pseudo_info.get_dict().get("element")
+            pp_type = wf_node.outputs.pseudo_info.get_dict().get("pp_type")
+            if pp_type in ["nc", "sl"]:
+                expected_len_dual_scan = cutoff_control["nc_dual_scan"]
+            else:
+                if element in HIGH_DUAL_ELEMENTS:
+                    expected_len_dual_scan = cutoff_control["nonnc_high_dual_scan"]
+                else:
+                    expected_len_dual_scan = cutoff_control["nonnc_dual_scan"]
+
+            # minus one for the reference value
+            rho_scan_healthy = (len(ecutrho_test_list) - 1) / len(
+                expected_len_dual_scan
+            )
+
+            click.secho(
+                f"Convergence scan healthy check for {property}: wavefunction scan = {round(wfc_scan_healthy*100, 2)}%, charge density scan = {round(rho_scan_healthy*100, 2)}%",
+                fg="green",
+            )
 
 
 if __name__ == "__main__":
