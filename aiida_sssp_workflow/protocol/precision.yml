@@ -7,7 +7,7 @@ acwf:
     degauss: 0.0045
     smearing: fd
     conv_thr_per_atom: 1.0e-10
-    kpoints_distance: 0.10
+    kpoints_distance: 0.06
     mixing_beta: 0.4
     scale_count: 7
     scale_increment: 0.02

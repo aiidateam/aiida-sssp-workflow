@@ -38,7 +38,11 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
     # pylint: disable=too-many-instance-attributes
 
     _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
-    _UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
+
+    #_UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
+    # For now, we decide not include the GS configuration since the reference data from sci 2016 paper use
+    # the different parameters compared with the aiida common workflow. So the result will be different.
+    _UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS
 
     _NBANDS_FACTOR_FOR_LAN = 1.5
 

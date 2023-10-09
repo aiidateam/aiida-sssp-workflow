@@ -91,9 +91,12 @@ def inspect(node, output):
             precision = wf_node.outputs.measure.precision
 
             # print summary of the precision to a json file
-            d_str = json.dumps(precision.output_parameters.get_dict(), indent=4)
-            with open(f"{output}_precision_summary.json", "w") as f:
-                f.write(d_str)
+            try:
+                d_str = json.dumps(precision.output_parameters.get_dict(), indent=4)
+                with open(f"{output}_precision_summary.json", "w") as f:
+                    f.write(d_str)
+            except:
+                pass
 
             # if there are 5 plots, need 3 rows, since the output_parametres is in the dict len(precision) / 2 is the number of rows
             rows = len(precision) // 2
@@ -105,6 +108,9 @@ def inspect(node, output):
             i = 0
             for conf, res in precision.items():
                 if conf == "output_parameters":
+                    continue
+
+                if res.output_parameters.get_dict() == {}:
                     continue
 
                 # Plot EOS curve
