@@ -4,12 +4,19 @@ A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
 from aiida import orm
-from aiida.engine import append_, calcfunction
-from aiida.plugins import DataFactory, WorkflowFactory
+from aiida.engine import (
+    CalcJob,
+    ProcessHandlerReport,
+    append_,
+    calcfunction,
+    process_handler,
+)
+from aiida.plugins import DataFactory
+from aiida_quantumespresso.common.types import RestartType
+from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 
 from . import _BaseEvaluateWorkChain
 
-PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
 UpfData = DataFactory("pseudo.upf")
 
 
@@ -39,6 +46,70 @@ def create_isolate_atom(
     return structure
 
 
+class PwBaseWorkChainWithMemoryHandler(PwBaseWorkChain):
+    """Add memory handler to PwBaseWorkChain to use large memory resource"""
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        spec.input(
+            "pw_code_large_memory",
+            valid_type=orm.Code,
+            required=False,
+            help="The `pw.x` code use for the `PwCalculation` with large memory resource.",
+        )
+
+    @process_handler(
+        priority=601,
+        exit_codes=[
+            CalcJob.exit_codes.ERROR_SCHEDULER_OUT_OF_MEMORY,
+        ],
+    )
+    def handle_out_of_memory(self, calculation):
+        """Handle out of memory error by using the code with large memory resource if provided"""
+        if "pw_code_large_memory" in self.inputs:
+            # use code with large memory resource
+            pw_code_large_memory = self.inputs.pw_code_large_memory
+            self.ctx.inputs.code = pw_code_large_memory
+
+            action = f"Use code {self.inputs.pw_code_large_memory} with large memory resource"
+
+            self.set_restart_type(RestartType.FROM_SCRATCH)
+            self.report_error_handled(calculation, action)
+            return ProcessHandlerReport(True)
+        else:
+            self.ctx.current_num_machines = self.ctx.inputs.metadata.options.get(
+                "resources", {}
+            ).get("num_machines", 1)
+
+            if self.ctx.current_num_machines > 4:
+                self.report(
+                    "The number of machines is larger than 4, the calculation will be terminated."
+                )
+                return ProcessHandlerReport(
+                    False, CalcJob.exit_codes.ERROR_SCHEDULER_OUT_OF_MEMORY
+                )
+
+            action = f"Increase the number of machines from {self.ctx.current_num_machines} to {self.ctx.current_num_machines + 1}"
+            self.ctx.inputs.metadata.options["resources"]["num_machines"] = (
+                self.ctx.current_num_machines + 1
+            )
+            # for atomic calculation, the num_mpiprocs_per_machine is set, but increase the number of machines
+            # will cause too many mpi processes, so pop the num_mpiprocs_per_machine and use the `tot_num_mpiprocs`.
+            num_mpiprocs_per_machine = self.ctx.inputs.metadata.options[
+                "resources"
+            ].pop("num_mpiprocs_per_machine")
+            if num_mpiprocs_per_machine:
+                self.ctx.inputs.metadata.options["resources"][
+                    "tot_num_mpiprocs"
+                ] = num_mpiprocs_per_machine
+
+            self.set_restart_type(RestartType.FROM_SCRATCH)
+            self.report_error_handled(calculation, action)
+
+            return ProcessHandlerReport(True)
+
+
 class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
     """WorkChain to calculate cohisive energy of input structure"""
 
@@ -55,8 +126,8 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
                     help='parameters for pwscf of atom calculation for each element in structure.')
         spec.input('vacuum_length', valid_type=orm.Float,
                     help='The length of cubic cell in isolate atom calculation.')
-        spec.expose_inputs(PwBaseWorkflow, namespace="bulk", exclude=["pw.structure", "pw.pseudos"])
-        spec.expose_inputs(PwBaseWorkflow, namespace="atom", exclude=["pw.structure", "pw.pseudos"])
+        spec.expose_inputs(PwBaseWorkChain, namespace="bulk", exclude=["pw.structure", "pw.pseudos"])
+        spec.expose_inputs(PwBaseWorkChainWithMemoryHandler, namespace="atom", exclude=["pw.structure", "pw.pseudos"])
 
         spec.outline(
             cls.validate_structure,
@@ -111,18 +182,20 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
 
     def run_energy(self):
         """set the inputs and submit atom/bulk energy evaluation parallel"""
-        bulk_inputs = self.exposed_inputs(PwBaseWorkflow, namespace="bulk")
+        bulk_inputs = self.exposed_inputs(PwBaseWorkChain, namespace="bulk")
         bulk_inputs["pw"]["structure"] = self.inputs.structure
         bulk_inputs["pw"]["pseudos"] = self.inputs.pseudos
 
-        running_bulk_energy = self.submit(PwBaseWorkflow, **bulk_inputs)
+        running_bulk_energy = self.submit(PwBaseWorkChain, **bulk_inputs)
         self.report(
             f"Submit SCF calculation of bulk {self.inputs.structure.get_description()}"
         )
         self.to_context(workchain_bulk_energy=running_bulk_energy)
 
         for element, structure in self.ctx.d_element_structure.items():
-            atom_inputs = self.exposed_inputs(PwBaseWorkflow, namespace="atom")
+            atom_inputs = self.exposed_inputs(
+                PwBaseWorkChainWithMemoryHandler, namespace="atom"
+            )
             atom_inputs["pw"]["structure"] = structure
             atom_inputs["pw"]["pseudos"] = {
                 element: self._get_pseudo(element, self.inputs.pseudos),
@@ -131,7 +204,9 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
                 dict=self.inputs.atom_parameters[element]
             )
 
-            running_atom_energy = self.submit(PwBaseWorkflow, **atom_inputs)
+            running_atom_energy = self.submit(
+                PwBaseWorkChainWithMemoryHandler, **atom_inputs
+            )
             self.logger.info(f"Submit atomic SCF of {element}.")
             self.to_context(workchain_atom_children=append_(running_atom_energy))
 

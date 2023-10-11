@@ -33,6 +33,11 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
     "--pw-code", "pw_code", type=types.CodeParamType(entry_point="quantumespresso.pw")
 )(required=True)
 @options.OverridableOption(
+    "--pw-code-large-memory",
+    "pw_code_large_memory",
+    type=types.CodeParamType(entry_point="quantumespresso.pw"),
+)(required=False)
+@options.OverridableOption(
     "--ph-code", "ph_code", type=types.CodeParamType(entry_point="quantumespresso.ph")
 )(required=False)
 @click.option(
@@ -97,6 +102,7 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 def launch(
     pw_code,
     ph_code,
+    pw_code_large_memory,
     property,
     protocol,
     ecutwfc,
@@ -156,6 +162,12 @@ def launch(
     # raise warning if the options are over provided, e.g. cutoff_control is provided for measure workflow
     if is_measure and (cutoff_control or criteria):
         echo.echo_warning("cutoff_control, criteria are not used for measure workflow.")
+
+    # raise warning if pw_code_large_memory is provided for not include cohesive energy convergence workflow
+    if pw_code_large_memory and (
+        not is_convergence or "convergence.cohesive_energy" not in properties_list
+    ):
+        echo.echo_warning("pw_code_large_memory is not used for this workflow.")
 
     if is_convergence and len(configuration) > 1:
         echo.echo_critical(
@@ -224,6 +236,9 @@ def launch(
 
     if is_ph:
         inputs["ph_code"] = ph_code
+
+    if pw_code_large_memory:
+        inputs["pw_code_large_memory"] = pw_code_large_memory
 
     if len(configuration) == 0:
         pass

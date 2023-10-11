@@ -39,7 +39,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
 
     _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
 
-    #_UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
+    # _UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS + ["GS"]
     # For now, we decide not include the GS configuration since the reference data from sci 2016 paper use
     # the different parameters compared with the aiida common workflow. So the result will be different.
     _UNARIE_GS_CONFIGURATIONS = UNARIE_CONFIGURATIONS

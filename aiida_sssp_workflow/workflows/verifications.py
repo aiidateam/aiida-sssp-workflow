@@ -87,6 +87,8 @@ class VerificationWorkChain(SelfCleanWorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('ph_code', valid_type=orm.AbstractCode, required=False,
                     help='The `ph.x` code use for the `PhCalculation`.')
+        spec.input('pw_code_large_memory', valid_type=orm.AbstractCode, required=False,
+                    help='The `pw.x` code use for the `PwCalculation` require large memory.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
         spec.input('wavefunction_cutoff', valid_type=orm.Float, required=False, default=lambda: orm.Float(100.0),
@@ -221,8 +223,19 @@ class VerificationWorkChain(SelfCleanWorkChain):
 
         convergence_inputs["clean_workdir"] = self.inputs.clean_workdir
 
-        for prop in ["cohesive_energy", "delta", "pressure"]:
+        for prop in ["delta", "pressure"]:
             self.ctx.convergence_inputs[prop] = convergence_inputs.copy()
+
+        # The cohesive energy evaluation may hit the ran out of memory issue,
+        # so use the pw_code_large_memory if provided.
+        if "convergence.cohesive_energy" in self.ctx.properties_list:
+            inputs_cohesive_energy = convergence_inputs.copy()
+            if "pw_code_large_memory" in self.inputs:
+                inputs_cohesive_energy[
+                    "pw_code_large_memory"
+                ] = self.inputs.pw_code_large_memory
+
+            self.ctx.convergence_inputs["cohesive_energy"] = inputs_cohesive_energy
 
         # Here, the shallow copy can be used since the type of convergence_inputs
         # is AttributesDict.

@@ -46,6 +46,16 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
     _EVALUATE_WORKCHAIN = CohesiveEnergyWorkChain
     _MEASURE_OUT_PROPERTY = "absolute_diff"
 
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        spec.input(
+            "pw_code_large_memory",
+            valid_type=orm.AbstractCode,
+            required=False,
+            help="The `pw.x` code use for the `PwCalculation` require large memory.",
+        )
+
     def init_setup(self):
         super().init_setup()
         self.ctx.extra_pw_parameters = {
@@ -67,6 +77,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 # 2023-08-02: we decide to use non-magnetic calculation for magnetic element
                 # Because it gives fault convergence result that not compatible with other convergence tests, lead to very large
                 # convergence cutoff from cohesive energy tests.
+                # XXX: (double check) Meanwhile, the pseudopotential is generated in terms of non-magnetic configuration (???).
                 # "SYSTEM": {
                 #     "nspin": 2,
                 #     "starting_magnetization": {
@@ -74,8 +85,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
                 #     },
                 # },
                 "ELECTRONS": {
-                    "diagonalization": "cg",
-                    "mixing_beta": 0.3,
+                    # 2023-10-10: using cg with mixing_beta 0.3 for magnetic element will lead to "Error in routine efermig (1):"
+                    # "diagonalization": "cg",
+                    # "mixing_beta": 0.3,
                     "electron_maxstep": 200,
                 },
             }
@@ -90,18 +102,19 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         super().extra_setup_for_lanthanide_element()
         extra_pw_parameters_for_atom_lanthanide_element = {
             self.ctx.element: {
-                "SYSTEM": {
-                    "nspin": 2,
-                    "starting_magnetization": {
-                        self.ctx.element: 0.5,
-                    },
-                    # Need high number of bands to make atom calculation of lanthanoids
-                    # converged.
-                    "nbnd": int(self.inputs.pseudo.z_valence * 3),
-                },
+                # 2023-08-02: we decide to use non-magnetic calculation for magnetic element (see above), lanthanide element also use non-magnetic calculation
+                # "SYSTEM": {
+                #     "nspin": 2,
+                #     "starting_magnetization": {
+                #         self.ctx.element: 0.5,
+                #     },
+                #     # Need high number of bands to make atom calculation of lanthanoids
+                #     # converged.
+                #     "nbnd": int(self.inputs.pseudo.z_valence * 3),
+                # },
                 "ELECTRONS": {
-                    "diagonalization": "cg",
-                    "mixing_beta": 0.3,  # even small mixing_beta value
+                    # "diagonalization": "cg",
+                    # "mixing_beta": 0.3,  # even smaller mixing_beta value
                     "electron_maxstep": 200,
                 },
             },
@@ -181,13 +194,13 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         atomic_parallelization = update_dict(atomic_parallelization, {"npool": 1})
         atomic_parallelization = update_dict(atomic_parallelization, {"ndiag": 1})
 
-        # atomic option if mpiprocs too many confine it too no larger than 32 procs
+        # atomic option if mpiprocs too many confine it too no larger than 36 procs
         atomic_options = update_dict(self.ctx.options, {})
-        if atomic_options["resources"]["num_mpiprocs_per_machine"] > 32:
+        if atomic_options["resources"]["num_mpiprocs_per_machine"] > 36:
             # copy is a shallow copy, so using update_dict.
             # if simply assign the value will change also the original dict
             atomic_options = update_dict(
-                atomic_options, {"resources": {"num_mpiprocs_per_machine": 32}}
+                atomic_options, {"resources": {"num_mpiprocs_per_machine": 36}}
             )
 
         # atomic calculation for lanthanides require more time to finish.
@@ -238,6 +251,9 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             },
             "clean_workdir": self.inputs.clean_workdir,  # atomit clean is controlled above, this clean happened when the whole workchain is finished
         }
+
+        if "pw_code_large_memory" in self.inputs:
+            inputs["atom"]["pw_code_large_memory"] = self.inputs.pw_code_large_memory
 
         return inputs
 

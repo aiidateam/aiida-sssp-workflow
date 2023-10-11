@@ -215,7 +215,14 @@ def inspect(node, output):
             "phonon_frequencies",
         ]:
             # print summary of the convergence to a json file
-            convergence = wf_node.outputs.convergence[property]
+            try:
+                convergence = wf_node.outputs.convergence[property]
+            except KeyError:
+                click.secho(
+                    f"Property {property} is not calculated for this workflow",
+                    fg="red",
+                )
+                continue
 
             cutoff_control_protocol = wf_node.inputs.convergence.cutoff_control.value
             cutoff_control = get_protocol("control", name=cutoff_control_protocol)

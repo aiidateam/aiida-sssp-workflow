@@ -115,7 +115,7 @@ The `options` dict has the format of:
 {
     "resources": {
         "num_machines": 1,
-        "num_mpiprocs_per_machine": 32,
+        "num_mpiprocs_per_machine": 36,
     },
     "max_wallclock_seconds": 1800,  # 30 min
     "withmpi": True,
