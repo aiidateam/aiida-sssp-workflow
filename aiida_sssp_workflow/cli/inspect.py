@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """CLI to inspect the results of the workflow"""
 import json
+from pathlib import Path
 
 import click
 import matplotlib.pyplot as plt
@@ -388,7 +389,8 @@ def inspect(node, output):
             fontsize=10,
         )
         fig.subplots_adjust(top=0.92)
-        fig.savefig(f"{output}_convergence.pdf", bbox_inches="tight")
+        fpath = Path.cwd() / f"{output}_convergence.pdf"
+        fig.savefig(fpath.name, bbox_inches="tight")
 
 
 if __name__ == "__main__":
