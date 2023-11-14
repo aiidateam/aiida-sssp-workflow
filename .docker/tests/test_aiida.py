@@ -22,5 +22,9 @@ def test_computer_setup_success(aiida_exec, container_user):
     assert "Failed" not in output
 
 
-def test_run_real_sssp_computation(aiida_exec, container_user):
-    pass
+# def test_run_real_sssp_measure_precision_verification(aiida_exec, container_user):
+#    cmd = "aiida-sssp-workflow launch --property measure.precision --pw-code pw-7.1@localhost --ecutwfc 30 --ecutrho 240 --protocol test --configuration BCC --withmpi True --num-mpiprocs 1 --npool 1 --no-daemon -- /opt/examples/Si.paw.z_4.ld1.psl.v1.0.0-high.upf"
+#
+#    output = aiida_exec(cmd, user=container_user).decode().strip()
+#
+#    print(output)

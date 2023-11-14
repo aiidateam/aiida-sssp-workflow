@@ -18,4 +18,8 @@ RUN mamba install -y -c conda-forge qe=${QE_VERSION} && \
 
 COPY scripts/60-code-setup.sh /etc/init/run-before-daemon-start/
 
+# Static example upf files
+RUN mkdir -p /opt/examples
+COPY _static/ /opt/examples
+
 USER ${SYSTEM_UID}
