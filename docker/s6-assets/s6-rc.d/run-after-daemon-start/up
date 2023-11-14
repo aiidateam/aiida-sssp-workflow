@@ -1,4 +1,0 @@
-#!/command/execlineb -S0
-
-foreground { s6-echo "Calling /etc/init/run-after-daemon-start" }
-/etc/init/run-after-daemon-start.sh
