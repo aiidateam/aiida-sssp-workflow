@@ -1,6 +1,9 @@
 site_name: Solid State Standard Pseudopotential Toolkit
 nav:
   - Home: index.md
-  - Tutorial: tutorial.md
   - Specification: spec.md
-  - GUI App: gui.md
+  - Web App: gui.md
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico

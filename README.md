@@ -1,5 +1,7 @@
 # SSSP workflow
 
+[![Documentation Status](https://readthedocs.org/projects/aiida-sssp-workflow/badge/?version=latest)](https://aiida-sssp-workflow.readthedocs.io/en/latest/?badge=latest)
+
 ## For maintainers
 
 To create a new release, clone the repository, install development dependencies with `pip install '.[dev]'`, and then execute `bumpver update`.

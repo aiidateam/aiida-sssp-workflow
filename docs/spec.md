@@ -1,5 +1,7 @@
 # Verification protocol
 
+(TODO: moved from README.md, need to be updated)
+
 This document describes the verification protocol of the SSSP workflow.
 
 ## Initial dual (E_rho/E_wfc) for convergence test
