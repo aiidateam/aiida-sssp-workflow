@@ -1,6 +1,4 @@
-========
-Tutorial
-========
+# Tutorial
 
 Running verification workflows for a given pseudopotential. The complete verification
 workflow contain a delta factor calculation, a band structure calculation and

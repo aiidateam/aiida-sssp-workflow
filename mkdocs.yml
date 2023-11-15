@@ -1,0 +1,6 @@
+site_name: Solid State Standard Pseudopotential Toolkit
+nav:
+  - Home: index.md
+  - Tutorial: tutorial.md
+  - Specification: spec.md
+  - GUI App: gui.md
