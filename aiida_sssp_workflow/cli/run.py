@@ -32,6 +32,12 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @options.OverridableOption(
     "--pw-code", "pw_code", type=types.CodeParamType(entry_point="quantumespresso.pw")
 )(required=True)
+@click.option(
+    "--oxygen-pseudo",
+    "oxygen_pseudo",
+    type=click.Path(exists=True),
+    help="Oxygen pseudo to use for oxides precision measure workflow.",
+)
 @options.OverridableOption(
     "--pw-code-large-memory",
     "pw_code_large_memory",
@@ -115,6 +121,7 @@ def launch(
     walltime,
     num_mpiprocs,
     pseudo,
+    oxygen_pseudo,
     clean_workdir,
     daemon,
     comment,
@@ -239,6 +246,12 @@ def launch(
 
     if pw_code_large_memory:
         inputs["pw_code_large_memory"] = pw_code_large_memory
+
+    if oxygen_pseudo:
+        with open(oxygen_pseudo, "rb") as stream:
+            oxygen_pseudo = UpfData(stream)
+
+        inputs["measure"]["oxygen_pseudo"] = oxygen_pseudo
 
     if len(configuration) == 0:
         pass
