@@ -32,6 +32,9 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
+        spec.input('oxygen_pseudo', valid_type=UpfData, required=False)
+        spec.input('oxygen_ecutwfc', valid_type=orm.Float, required=False)
+        spec.input('oxygen_ecutrho', valid_type=orm.Float, required=False)
         spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The protocol which define input calculation parameters.')
         spec.input('wavefunction_cutoff', valid_type=orm.Float, required=True, help='The wavefunction cutoff.')
@@ -48,10 +51,17 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
         """Get cutoff pair, if strcture contains oxygen or nitrogen, need
         to use the max between pseudo cutoff and the O/N cutoff.
         """
+        if "oxygen_pseudo" in self.inputs:
+            o_ecutwfc = self.inputs.oxygen_ecutwfc.value
+            o_ecutrho = self.inputs.oxygen_ecutrho.value
+        else:
+            o_ecutwfc = self._O_ECUTWFC
+            o_ecutrho = self._O_ECUTRHO
+
         elements = set(structure.get_symbols_set())
         if "O" in elements:
-            ecutwfc = max(ecutwfc, self._O_ECUTWFC)
-            ecutrho = max(ecutrho, self._O_ECUTRHO)
+            ecutwfc = max(ecutwfc, o_ecutwfc)
+            ecutrho = max(ecutrho, o_ecutrho)
 
         if "N" in elements:
             ecutwfc = max(ecutwfc, self._N_ECUTWFC)

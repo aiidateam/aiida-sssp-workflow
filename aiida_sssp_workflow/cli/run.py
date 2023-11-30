@@ -32,6 +32,24 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @options.OverridableOption(
     "--pw-code", "pw_code", type=types.CodeParamType(entry_point="quantumespresso.pw")
 )(required=True)
+@click.option(
+    "--oxygen-pseudo",
+    "oxygen_pseudo",
+    type=click.Path(exists=True),
+    help="Oxygen pseudo to use for oxides precision measure workflow.",
+)
+@click.option(
+    "--oxygen-ecutwfc",
+    "oxygen_ecutwfc",
+    type=click.FLOAT,
+    help="Oxygen ecutwfc to use for oxides precision measure workflow.",
+)
+@click.option(
+    "--oxygen-ecutrho",
+    "oxygen_ecutrho",
+    type=click.FLOAT,
+    help="Oxygen ecutrho to use for oxides precision measure workflow.",
+)
 @options.OverridableOption(
     "--pw-code-large-memory",
     "pw_code_large_memory",
@@ -115,6 +133,9 @@ def launch(
     walltime,
     num_mpiprocs,
     pseudo,
+    oxygen_pseudo,
+    oxygen_ecutwfc,
+    oxygen_ecutrho,
     clean_workdir,
     daemon,
     comment,
@@ -239,6 +260,19 @@ def launch(
 
     if pw_code_large_memory:
         inputs["pw_code_large_memory"] = pw_code_large_memory
+
+    if oxygen_pseudo:
+        if not (oxygen_ecutwfc and oxygen_ecutrho):
+            echo.echo_critical(
+                "oxygen_ecutwfc and oxygen_ecutrho must be provided if using custmized oxygen pseudo."
+            )
+
+        with open(oxygen_pseudo, "rb") as stream:
+            oxygen_pseudo = UpfData(stream)
+
+        inputs["measure"]["oxygen_pseudo"] = oxygen_pseudo
+        inputs["measure"]["oxygen_ecutwfc"] = orm.Float(oxygen_ecutwfc)
+        inputs["measure"]["oxygen_ecutrho"] = orm.Float(oxygen_ecutrho)
 
     if len(configuration) == 0:
         pass

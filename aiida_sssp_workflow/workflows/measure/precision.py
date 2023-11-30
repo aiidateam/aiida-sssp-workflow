@@ -83,7 +83,10 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
         # for the oxide, need to pseudo of oxygen,
         # the pseudo is the one select after the oxygen verification and
         # store in the `statics/upf/O.**.upf`
-        pseudo_O = get_pseudo_O()
+        if "oxygen_pseudo" in self.inputs:
+            pseudo_O = self.inputs.oxygen_pseudo
+        else:
+            pseudo_O = get_pseudo_O()
         self.ctx.pseudos_oxide = {
             self.ctx.element: self.inputs.pseudo,
             "O": pseudo_O,
