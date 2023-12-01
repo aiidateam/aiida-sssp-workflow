@@ -37,7 +37,7 @@ If you are using Windows, open the Docker desktop and search for the `aiida-sssp
 Then you can run the following command to run the workflow:
 
 ```bash
-wget -c https://raw.githubusercontent.com/unkcpz/sssp-verify-scripts/main/libraries-pbe/PAW-PSL1.0.0-high/Si.paw.z_4.ld1.psl.v1.0.0-high.upfwget -c
+wget -c https://raw.githubusercontent.com/unkcpz/sssp-verify-scripts/main/libraries-pbe/PAW-PSL1.0.0-high/Si.paw.z_4.ld1.psl.v1.0.0-high.upf
 aiida-sssp-workflow launch --property convergence --pw-code pw-7.2@localhost --ph-code ph-7.2@localhost --protocol test --cutoff-control test --criteria efficiency --withmpi True --num-mpiprocs 2 --npool 1 -- Si.paw.z_4.ld1.psl.v1.0.0-high.upf
 ```
 
