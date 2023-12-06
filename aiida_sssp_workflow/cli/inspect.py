@@ -245,9 +245,9 @@ def analyze(group, output):
     )
 
     nodes_lst = group_node_query.all(flat=True)
+    width = 0.6 / len(nodes_lst)
 
     for i, node in enumerate(nodes_lst):
-        width = 0.6 / len(nodes_lst)
         pseudo_info = parse_label(node.base.extras.all["label"].split(" ")[-1])
 
         # TODO assert element should not change
@@ -273,20 +273,27 @@ def analyze(group, output):
         )
         ax.set_title(f"X={element}")
 
-    ax.axhline(y=0.1, linestyle="--", color="green", label="~0.1 excellent")
-    ax.axhline(y=0.33, linestyle="--", color="red", label="~0.33 good")
-    ax.legend(loc="upper left", prop={"size": 10})
-    ax.set_ylabel("ν -facto")
-    ax.set_ylim([0, 0.6])
-    ax.set_xticks(range(len(ACWF_CONFIGURATIONS)))
+    d = 0.01  # offset for the text
+
+    ax.axhline(y=0.1, linestyle="--", color="green")
+    ax.text(0 - d, 0.1 + d, "0.1 excellent agreement", color="black")
+    ax.axhline(y=0.33, linestyle="--", color="red")
+    ax.text(0 - d, 0.33 + d, "0.33 good agreement", color="black")
+    ax.legend(loc="upper right", prop={"size": 10})
+    ax.set_ylabel("ν -factor")
+    ax.set_ylim([0, 0.5])
+
+    xticks_shift = len(nodes_lst) * width / 2
+    xticks = [i + xticks_shift for i in range(len(ACWF_CONFIGURATIONS))]
+    ax.set_xticks(xticks)
     ax.set_xticklabels(ACWF_CONFIGURATIONS)
 
     # fig to pdf
     fig.tight_layout()
-    fig.suptitle(
-        f"Comparison on {element}",
-        fontsize=10,
-    )
+    # fig.suptitle(
+    #    f"Comparison on {element}",
+    #    fontsize=10,
+    # )
     fig.subplots_adjust(top=0.92)
     fpath = Path.cwd() / f"{output}_{element}_fight.pdf"
     fig.savefig(fpath.name, bbox_inches="tight")

@@ -4,7 +4,7 @@ hostname: "eiger.cscs.ch"
 description: Eiger is the production partition on Alps, the HPE Cray EX Supercomputer large mem nodes.
 transport: "core.ssh"
 scheduler: "core.slurm"
-work_dir: "/scratch/e1000/{username}/aiida/"
+work_dir: "/capstor/scratch/cscs/{username}/aiida/"
 shebang: "#!/bin/bash"
 mpirun_command: "srun -n {tot_num_mpiprocs}"
 mpiprocs_per_machine: 128
