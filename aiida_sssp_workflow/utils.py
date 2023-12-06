@@ -96,6 +96,7 @@ HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
 
 OXIDE_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
 UNARIE_CONFIGURATIONS = ["BCC", "FCC", "SC", "Diamond"]
+ACWF_CONFIGURATIONS = OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
 
 
 def update_dict(d, u):
@@ -228,6 +229,31 @@ def get_standard_structure(
             raise ValueError(f"Unknown file type {Path(path).suffix}")
 
     return structure
+
+
+def parse_label(label):
+    """parse standard pseudo label to dict of pseudo info"""
+    element, type, z, tool, family, *version = label.split(".")
+    version = ".".join(version)
+
+    if type == "nc":
+        full_type = "NC"
+    if type == "us":
+        full_type = "Ultrasoft"
+    if type == "paw":
+        full_type = "PAW"
+
+    return {
+        "element": element,
+        "type": type,
+        "z": z,
+        "tool": tool,
+        "family": family,
+        "version": version,
+        "representive_label": f"{z}|{full_type}|{family}|{tool}|{version}",
+        "concise_label": f"{z}|{type}|{family}|{version}",
+        "full_label": f"{element}|{z}|{full_type}|{family}|{tool}|{version}",
+    }
 
 
 def parse_upf(upf_content: str) -> dict:
