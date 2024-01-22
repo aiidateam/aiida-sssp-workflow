@@ -66,7 +66,9 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
 
     # maximum number of bands factor increase loop
     # to prevent the infinite loop in bands evaluation
-    _MAX_NUM_BANDS_FACTOR = 5
+    # If start from 1.5, and increase 2.0 every time, it will reach 11.5 at most.
+    _MAX_INCREMENT_BANDS_FACTOR = 10
+    _BANDS_FACTOR_INCREASE_STEP = 2.0
 
     @classmethod
     def define(cls, spec):
@@ -108,7 +110,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_BANDS',
                     message='The `PwBandsWorkChain` sub process failed.')
         spec.exit_code(203, 'ERROR_REACH_MAX_BANDS_FACTOR_INCREASE_LOOP',
-                    message=f'The maximum number={cls._MAX_NUM_BANDS_FACTOR} of bands factor'
+                    message=f'The maximum number={cls._MAX_INCREMENT_BANDS_FACTOR} of bands factor'
                             'increase loop reached, but still cannot get enough bands.')
         spec.exit_code(204, 'ERROR_KPOINTS_DISTANCE_BAND_STRUCTURE_NOT_SET',
                     message=f'kpoints distance is not set in inputs.')
@@ -197,11 +199,11 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         #
         # If the bands evaluation failed it will keeps on increasing the `nbands_factor`
         # which lead to the infinite loop to this work chain.
-        # Here I work around it by giving maximum nbands_factor loop to _MAX_NUM_BANDS_FACTOR=5.
+        # Here I work around it by giving maximum nbands_factor loop to _MAX_INCREMENT_BANDS_FACTOR=10.
         # And add a `break_increase_nbands` to break and get out from `should_run_bands` immediately.
         if (
             self.ctx.nbands_factor
-            > self.inputs.init_nbands_factor.value + self._MAX_NUM_BANDS_FACTOR
+            > self.inputs.init_nbands_factor.value + self._MAX_INCREMENT_BANDS_FACTOR
         ):
             return self.exit_codes.ERROR_REACH_MAX_BANDS_FACTOR_INCREASE_LOOP
 
@@ -210,9 +212,9 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
             # I should not increase it anyway because this ctx is used
             # for the input of band structure calculation.
             self.report(
-                f"increasing nbands_factor to from {self.ctx.nbands_factor} to {self.ctx.nbands_factor + 1.0}"
+                f"increasing nbands_factor to from {self.ctx.nbands_factor} to {self.ctx.nbands_factor + self._BANDS_FACTOR_INCREASE_STEP}"
             )
-            self.ctx.nbands_factor += 1.0
+            self.ctx.nbands_factor += self._BANDS_FACTOR_INCREASE_STEP
 
     def should_run_band_structure(self):
         """whether run band structure"""

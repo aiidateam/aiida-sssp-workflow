@@ -15,7 +15,7 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
 
     # ECUT for oxygen, remember to update this if the oxygen pseudo is changed
     # Currently the oxygen pseudo is `O.paw.z_6.ld1.psl.v0.1.upf`
-    _O_ECUTWFC = 75.0
+    _O_ECUTWFC = 70.0
     _O_ECUTRHO = 560.0
 
     # ECUT for nitrogen, remember to update this if the nitrogen pseudo is changed
