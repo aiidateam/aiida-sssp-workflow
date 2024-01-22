@@ -228,7 +228,10 @@ def convergence_plot(
 @cmd_root.command("analyze")
 @click.argument("group")  # The group to inspect, name or pk of the group
 @click.option("--output", "-o", default="output", help="The output file name")
-def analyze(group, output):
+@click.option(
+    "--ylimit", "-y", default=0.5, help="The y limit for the plot", type=float
+)
+def analyze(group, output, ylimit):
     """Render the plot for the given pseudos and measure type."""
     from aiida_sssp_workflow.utils import ACWF_CONFIGURATIONS, parse_label
 
@@ -281,7 +284,7 @@ def analyze(group, output):
     ax.text(0 - d, 0.33 + d, "0.33 good agreement", color="black")
     ax.legend(loc="upper right", prop={"size": 10})
     ax.set_ylabel("ν -factor")
-    ax.set_ylim([0, 0.5])
+    ax.set_ylim([0, ylimit])
 
     xticks_shift = len(nodes_lst) * width / 2
     xticks = [i + xticks_shift for i in range(len(ACWF_CONFIGURATIONS))]
@@ -367,7 +370,10 @@ def inspect(node, output):
         # A4 canvas for plot
         # landscape mode, shoulder to shoulder for ecutwfc and ecutrho for each property
         # five rows for five properties
-        rows = len(wf_node.outputs.convergence)
+
+        # always plot 5 rows if the result is not accessable, add a text to indicate the property is not calculated
+        # rows = len(wf_node.outputs.convergence)
+        rows = 5
         fig, axs = plt.subplots(
             rows,
             2,
@@ -378,12 +384,19 @@ def inspect(node, output):
         subplot_index = 0
 
         for property in [
-            "bands",
-            "cohesive_energy",
             "pressure",
             "delta",
             "phonon_frequencies",
+            "cohesive_energy",
+            "bands",
         ]:
+            # plot to the ax
+            # ax1 on the left for ecutwfc
+            # ax2 on the right for ecutrho
+            # the ratio of the width is 3:1
+            ax1 = axs.flat[subplot_index]
+            ax2 = axs.flat[subplot_index + 1]
+
             # print summary of the convergence to a json file
             try:
                 convergence = wf_node.outputs.convergence[property]
@@ -392,6 +405,18 @@ def inspect(node, output):
                     f"Property {property} is not calculated for this workflow",
                     fg="red",
                 )
+                # add to ax1 and ax2 with a red text to indicate the property is not calculated
+                ax1.text(
+                    0.5,
+                    0.5,
+                    f"Convergence test of {property} is not run or failed.",
+                    color="red",
+                )
+                ax1.set_axis_off()
+                ax2.set_axis_off()
+                # jump to the next row
+                subplot_index += 2
+
                 continue
 
             cutoff_control_protocol = wf_node.inputs.convergence.cutoff_control.value
@@ -442,13 +467,6 @@ def inspect(node, output):
             property_summary["rho_scan_healthy"] = rho_scan_healthy
 
             convergence_summary[property] = property_summary
-
-            # plot to the ax
-            # ax1 on the left for ecutwfc
-            # ax2 on the right for ecutrho
-            # the ratio of the width is 3:1
-            ax1 = axs.flat[subplot_index]
-            ax2 = axs.flat[subplot_index + 1]
 
             # data preparation
             # Will only plot the measured properties e.g. for bands it is the eta_c

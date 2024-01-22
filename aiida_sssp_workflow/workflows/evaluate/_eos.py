@@ -141,7 +141,7 @@ class _EquationOfStateWorkChain(WorkChain):
         self.out("output_volume_energy", output_volume_energy)
 
         output_birch_murnaghan_fit, node = run_get_node(
-            birch_murnaghan_fit, output_volume_energy
+            birch_murnaghan_fit, volume_energy=output_volume_energy
         )
 
         if not node.is_finished_ok:
