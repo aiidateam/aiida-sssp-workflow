@@ -29,15 +29,16 @@ def get_extra_parameters_for_lanthanides(element, nbnd) -> dict:
     """
     extra_parameters = {
         "SYSTEM": {
-            "nspin": 2,
-            "starting_magnetization": {
-                element: 0.5,
-            },
+            # update on 2024-03-27: remove the magnetization for RE
+            # "nspin": 2,
+            # "starting_magnetization": {
+            #    element: 0.5,
+            # },
             "nbnd": int(nbnd),
         },
         "ELECTRONS": {
+            # It usually takes more steps to converge the SCF for lanthanides and actinides
             "diagonalization": "cg",
-            "mixing_beta": 0.5,
             "electron_maxstep": 200,
         },
     }

@@ -260,13 +260,24 @@ def analyze(group, output, ylimit):
         for configuration in ACWF_CONFIGURATIONS:
             res = node.outputs.measure.precision[configuration]["output_parameters"]
 
-            nu = res["rel_errors_vec_length"]
-            y_nu.append(nu)
+            try:
+                nu = res["rel_errors_vec_length"]
+            except KeyError:
+                y_nu.append(None)
+            else:
+                y_nu.append(nu)
 
-        x = np.arange(len(ACWF_CONFIGURATIONS))
+        xs = np.arange(len(ACWF_CONFIGURATIONS))
+
+        # Find index where y_nu is None
+        none_index = [i for i, x in enumerate(y_nu) if x is None]
+
+        # Remove None from y_nu and xs
+        y_nu = np.array([x for x in y_nu if x is not None])
+        xs = np.array([x for i, x in enumerate(xs) if i not in none_index])
 
         ax.bar(
-            x + width * i,
+            xs + width * i,
             y_nu,
             width,
             color=cmap(pseudo_info),
@@ -274,7 +285,6 @@ def analyze(group, output, ylimit):
             linewidth=1,
             label=pseudo_info["representive_label"],
         )
-        ax.set_title(f"X={element}")
 
     d = 0.01  # offset for the text
 
@@ -285,6 +295,7 @@ def analyze(group, output, ylimit):
     ax.legend(loc="upper right", prop={"size": 10})
     ax.set_ylabel("ν -factor")
     ax.set_ylim([0, ylimit])
+    ax.set_title(f"X={element}")
 
     xticks_shift = len(nodes_lst) * width / 2
     xticks = [i + xticks_shift for i in range(len(ACWF_CONFIGURATIONS))]

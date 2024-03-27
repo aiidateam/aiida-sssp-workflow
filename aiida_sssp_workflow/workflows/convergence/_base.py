@@ -297,10 +297,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         Otherwise it is hard to get converged in scf calculation.
         """
         nbnd_factor = self._NBANDS_FACTOR_FOR_REN
-        pseudo_N = get_pseudo_N()
-        self.ctx.pseudos["N"] = pseudo_N
         pseudo_RE = self.inputs.pseudo
-        nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
+        nbnd = nbnd_factor * pseudo_RE.z_valence
         self.ctx.extra_pw_parameters = get_extra_parameters_for_lanthanides(
             self.ctx.element, nbnd
         )
