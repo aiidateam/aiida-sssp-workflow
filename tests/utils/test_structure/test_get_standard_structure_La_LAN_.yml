@@ -5,12 +5,12 @@
   #\n#  For information on this file format, follow the CIF links at\n#  http://www.iucr.org\n\
   ##########################################################################\n\ndata_0\n\
   \nloop_\n  _atom_site_label\n  _atom_site_fract_x\n  _atom_site_fract_y\n  _atom_site_fract_z\n\
-  \  _atom_site_type_symbol\n         Te1       0.0       0.0       0.0       Te \
-  \       \n         O1        0.5       0.5       0.5       O \n_cell_angle_alpha\
+  \  _atom_site_type_symbol\n         La1       0.0       0.0       0.0       La \
+  \       \n         N1        0.5       0.5       0.5       N \n_cell_angle_alpha\
   \                       59.99999999999999\n_cell_angle_beta                    \
   \    59.99999999999999\n_cell_angle_gamma                       59.99999999999999\n\
-  _cell_length_a                          3.667854151447403\n_cell_length_b      \
-  \                    3.667854151447403\n_cell_length_c                         \
-  \ 3.667854151447403\nloop_\n  _symmetry_equiv_pos_as_xyz\n         'x, y, z' \n\
+  _cell_length_a                          3.758950000000038\n_cell_length_b      \
+  \                    3.758950000000038\n_cell_length_c                         \
+  \ 3.758950000000038\nloop_\n  _symmetry_equiv_pos_as_xyz\n         'x, y, z' \n\
   _symmetry_int_tables_number             1\n_symmetry_space_group_name_H-M      \
   \    'P 1'"

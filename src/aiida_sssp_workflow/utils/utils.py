@@ -27,11 +27,6 @@ def get_protocol(category, name=None):
         return protocol_dict
 
 
-OXIDE_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
-UNARIE_CONFIGURATIONS = ["BCC", "FCC", "SC", "Diamond"]
-ACWF_CONFIGURATIONS = OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
-
-
 def update_dict(d, u):
     """update dict by7 another dict, update include all hierarchy
     return the update dict instead of change the input dict"""
