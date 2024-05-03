@@ -26,7 +26,7 @@ def parse(content: str):
     """parse all"""
     return {
         "element": parse_element(content),
-        "pp_type": parse_pseudo_type(content),
+        "type": parse_pseudo_type(content),
         "z_valence": parse_z_valence(content),
     }
 

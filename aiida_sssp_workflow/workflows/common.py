@@ -4,18 +4,7 @@ from typing import Optional
 from aiida import orm
 from aiida.plugins import DataFactory
 
-from pseudo_parser.upf_parser import parse_element, parse_pseudo_type
-
 UpfData = DataFactory("pseudo.upf")
-
-
-def get_pseudo_element_and_type(pseudo):
-    """Giving a pseudo, return element and pseudo type as tuple"""
-    content = pseudo.get_content()
-    element = parse_element(content)
-    pseudo_type = parse_pseudo_type(content)
-
-    return element, pseudo_type
 
 
 def get_extra_parameters_for_lanthanides(element, nbnd) -> dict:

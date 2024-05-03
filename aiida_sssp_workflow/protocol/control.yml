@@ -7,6 +7,14 @@ precheck:
     nonnc_dual_scan: []
     nonnc_high_dual_scan: []
 
+refined:
+    description: Very dense interval from 20 Ry -> 200 Ry with 5 Ry step, only for wavefunction cutoff
+
+    wfc_scan: [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200] # at fix dual
+    nc_dual_scan: [] # at fix wfc
+    nonnc_dual_scan: [] # at fix rho
+    nonnc_high_dual_scan: []
+
 standard:
     description: high wavefunction cutoff set and cutoffs dense interval therefore time consuming
 

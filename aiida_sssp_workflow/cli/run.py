@@ -73,7 +73,13 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option("withmpi", "--withmpi", default=True, help="Run with mpi.")
 @click.option("npool", "--npool", default=1, help="Number of pool.")
 @click.option("walltime", "--walltime", default=3600, help="Walltime.")
-@click.option("num_mpiprocs", "--num-mpiprocs", default=1, help="Number of mpiprocs.")
+@click.option(
+    "resources",
+    "--resources",
+    multiple=True,
+    type=(str, str),
+    help="key value pairs pass to resource setting.",
+)
 @click.option(
     "--clean-workdir/--no-clean-workdir",
     default=True,
@@ -131,7 +137,7 @@ def launch(
     withmpi,
     npool,
     walltime,
-    num_mpiprocs,
+    resources,
     pseudo,
     oxygen_pseudo,
     oxygen_ecutwfc,
@@ -226,6 +232,10 @@ def launch(
     with open(pseudo, "rb") as stream:
         pseudo = UpfData(stream)
 
+    resources = dict(resources)
+    if "num_machines" not in resources:
+        resources["num_machines"] = 1
+
     inputs = {
         "measure": {
             "protocol": orm.Str(protocol),
@@ -243,10 +253,7 @@ def launch(
         "properties_list": orm.List(properties_list),
         "options": orm.Dict(
             dict={
-                "resources": {
-                    "num_machines": 1,
-                    "num_mpiprocs_per_machine": num_mpiprocs,
-                },
+                "resources": resources,
                 "max_wallclock_seconds": walltime,
                 "withmpi": withmpi,
             }

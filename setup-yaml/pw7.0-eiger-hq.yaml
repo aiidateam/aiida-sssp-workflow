@@ -1,0 +1,12 @@
+---
+label: "pw-7.0"
+description: Quantum ESPRESSO pw.x v7.0 Compiled with CpeIntel v21.12
+default_calc_job_plugin: "quantumespresso.pw"
+computer: "eiger-hq"
+filepath_executable: "/capstor/apps/cscs/eiger/easybuild/software/QuantumESPRESSO/7.0-cpeIntel-22.05/bin/pw.x"
+prepend_text: |
+  module load cray/22.05  cpeIntel/22.05
+  module load QuantumESPRESSO/7.0
+
+  export OMP_NUM_THREADS=1
+append_text: " "

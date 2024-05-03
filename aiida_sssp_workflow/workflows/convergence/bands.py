@@ -16,7 +16,7 @@ UpfData = DataFactory("pseudo.upf")
 
 
 @calcfunction
-def helper_bands_distence_difference(
+def helper_bands_distance_difference(
     band_structure_a: orm.BandsData,
     band_parameters_a: orm.Dict,
     band_structure_b: orm.BandsData,

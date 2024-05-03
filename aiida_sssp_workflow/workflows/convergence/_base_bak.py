@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Base convergence workchain
+Base legacy work chain
 """
 from abc import ABCMeta, abstractmethod
 
@@ -48,109 +48,153 @@ class abstract_attribute(object):
         )
 
 
-class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
-    """Base convergence workchain class for wavefunction cutoff convergence test.
-    This is a abstract class and should be subclassed to implement the methods for specific convergence workflow.
-    The work chain will run on a series of wavefunction cutoffs on the same dual for charge density cutoff.
-    The convergence will be measured by the property defined in the convergence protocol.
-    The target property is defined in the `_PROPERTY_NAME` class attribute by the class that inherit this base class.
-    """
+class _BaseConvergenceWorkChain(SelfCleanWorkChain):
+    """Base convergence workchain"""
 
+    # pylint: disable=too-many-instance-attributes
     __metaclass__ = ABCMeta
 
     _PROPERTY_NAME = abstract_attribute()  # used to get convergence protocol
     _EVALUATE_WORKCHAIN = abstract_attribute()
+    _MEASURE_OUT_PROPERTY = abstract_attribute()
+
+    # Default set to True, override it in subclass to turn it off
+    _RUN_WFC_TEST = True
+    _RUN_RHO_TEST = True
+
+    _NBANDS_FACTOR_FOR_REN = 1.5
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.input(
-            "pseudo",
-            valid_type=UpfData,
-            required=True,
-            help="Pseudopotential to be verified",
-        )
-        spec.input(
-            "protocol",
-            valid_type=orm.Str,
-            required=True,
-            help="The calculation protocol to use for the workchain.",
-        )
-        spec.input(
-            "cutoff_control",
-            valid_type=orm.Str,
-            required=True,
-            help="The cutoff control protocol for the workchain.",
-        )
-        # TODO: the cutoffs can be set as a list of integers, which will be used as the ecutwfc list.
-        spec.input("configuration", valid_type=orm.Str, required=False)
-
-        # Optional inputs for resources control
-        # They are directly passed as the CalcJob inputs.
-        spec.input(
-            "options", valid_type=orm.Dict, required=False, help="Optional `options`."
-        )
-        spec.input(
-            "parallelization",
-            valid_type=orm.Dict,
-            required=False,
-            help="Parallelization options",
-        )
+        # yapf: disable
+        spec.input('pseudo', valid_type=UpfData, required=True,
+                    help='Pseudopotential to be verified')
+        spec.input('protocol', valid_type=orm.Str, required=True,
+                    help='The calculation protocol to use for the workchain.')
+        spec.input('cutoff_control', valid_type=orm.Str, required=True,
+                    help='The cutoff control protocol for the workchain.')
+        spec.input('criteria', valid_type=orm.Str, required=True,
+                    help='Criteria for convergence measurement to give recommend cutoff pair.')
+        spec.input('configuration', valid_type=orm.Str, required=False)
+        spec.input('preset_ecutwfc', valid_type=orm.Int, required=False,
+                    help='Preset wavefunction cutoff will be used for charge density cutoff test and wavefunction test will be skipped.')
+        spec.input('options', valid_type=orm.Dict, required=False,
+                    help='Optional `options`.')
+        spec.input('parallelization', valid_type=orm.Dict, required=False,
+                    help='Parallelization options')
 
         spec.outline(
-            cls.setup_pseudos,
-            cls.setup_structure,
-            cls.setup_calc_parameters,
-            cls.setup_resource_options,
+            cls.init_setup,
+            if_(cls.is_magnetic_element)(
+                cls.extra_setup_for_magnetic_element,
+            ),
+            if_(cls.is_lanthanide_element)(
+                cls.extra_setup_for_lanthanide_element,
+            ),
+            cls.setup_code_parameters_from_protocol,
+            cls.setup_criteria_parameters_from_protocol,
+            cls.setup_code_resource_options,
             cls.run_reference,
             cls.inspect_reference,
-            cls.run_convergence,
-            cls.inspect_convergence,
+            if_(cls._is_run_wfc_convergence_test)(
+                cls.run_wfc_convergence_test,
+                cls.inspect_wfc_convergence_test,
+            ),
+            if_(cls._is_run_rho_convergence_test)(
+                cls.run_rho_convergence_test,
+                cls.inspect_rho_convergence_test,
+            ),
             cls.finalize,
         )
 
-        spec.output(
-            "output_parameters",
-            valid_type=orm.Dict,
-            required=True,
-            help="The output parameters of convergence.",
-        )
+        spec.output('output_parameters_wfc_test', valid_type=orm.Dict, required=False,
+                    help='The output parameters include results of all wfc test calculations.')
+        spec.output('output_parameters_rho_test', valid_type=orm.Dict, required=False,
+                    help='The output parameters include results of all rho test calculations.')
 
-        spec.exit_code(
-            401,
-            "ERROR_REFERENCE_CALCULATION_FAILED",
-            message="The reference calculation failed.",
-        )
-        spec.exit_code(
-            402,
-            "ERROR_SUB_PROCESS_FAILED",
-            message="The sub process for `{label}` did not finish successfully.",
-        )
+        spec.exit_code(401, 'ERROR_REFERENCE_CALCULATION_FAILED',
+            message='The reference calculation failed.')
+        spec.exit_code(402, 'ERROR_SUB_PROCESS_FAILED',
+            message='The sub process for `{label}` did not finish successfully.')
+        # yapy: enable
+
+    @abstractmethod
+    def helper_compare_result_extract_fun(
+        self, sample_node, reference_node, **kwargs
+    ) -> dict:
+        """
+        Must be implemented for specific convergence workflow to extrac the result
+        Expected to return a dict of result.
+
+        Get the node of sample and reference as input. Extract the parameters for
+        properties extract helper function.
+        """
+
+    @abstractmethod
+    def get_result_metadata(self):
+        """
+        define a dict of which is the metadata of the results, e.g. the unit of the properties
+        return a list type.
+
+        This dict will be merged into the final `output_parameters` results.
+        For different convergence workflow, you may want to add different metadata
+        into output.
+
+        for example:
+
+        return {
+            'absolute_unit': 'meV/atom',
+            'relative_unit': '%',
+        }
+        """
 
     @abstractmethod
     def _get_inputs(self, ecutwfc: int, ecutrho: int) -> dict:
-        """Generate inputs for the evaluate workflow.
-        It must compatible with inputs format of every evaluate workflow.
+        """generate inputs for the evaluate workflow
+        Must compatible with inputs format of every evaluate workflow.
         This is used in actual submit of reference and convergence tests.
 
-        Since the ecutwfc and ecutrho has less points set to be a float with decimals.
+        Since the ecutwfc and ecutrho has less point set to be a float with decimals.
         Therefore, always pass round to nearst int inputs for ecutwfc and ecutrho.
         It also bring the advantage that the inputs to final calcjob always the same
-        for these two inputs and therefore caching will be properly triggered.
+        for these two inputs and caching will properly triggered.
         """
+        # TODO: there can be a validation of inputs and the evaluate workflow inputs ports
 
-    def setup_pseudos(self):
-        """Setup pseudos"""
-        pseudo_info = extract_pseudo_info(
-            self.inputs.pseudo.get_content(),
-        )
-        self.ctx.element = pseudo_info.element
-        self.ctx.pseudo_type = pseudo_info.type
-        self.ctx.pseudos = {self.ctx.element: self.inputs.pseudo}
+    def _is_run_wfc_convergence_test(self):
+        """If running wavefunction convergence test
+        default True, override class attribute `_RUN_WFC_TEST`
+        in subclass to supress running it
+
+        If 'preset_ecutwfc' is set in inputs will use that value and
+        skip the wavefunction cutoff test.
+        """
+        if "preset_ecutwfc" in self.inputs:
+            self.ctx.wfc_cutoff = self.inputs.preset_ecutwfc.value
+            assert self.ctx.wfc_cutoff < self.ctx.reference_ecutwfc
+
+            self.ctx.output_parameters["wavefunction_cutoff"] = self.ctx.wfc_cutoff
+
+            return False
+        else:
+            return self._RUN_WFC_TEST
+
+    def _is_run_rho_convergence_test(self):
+        """If running charge density convergence test
+        default True, override class attribute `_RUN_RHO_TEST` in
+        subclass to supress running it
+
+        Also if self.ctx.dual_scan_list is empty means it is not set
+        in control.yml protocol file. Most likely run the 200vs300_ref_check
+        protocol.
+        """
+        return self._RUN_RHO_TEST and len(self.ctx.dual_scan_list) > 0
 
     def init_setup(self):
-        """This step contains all the preparations before actaul setup,
-        e.g. set the context of element, base_structure, base pw_parameters and pseudos.
+        """
+        This step contains all preparation before actaul setup, e.g. set
+        the context of element, base_structure, base pw_parameters and pseudos.
         """
         # init output_parameters to store output
         self.ctx.output_parameters = {}
@@ -207,6 +251,53 @@ class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
         # For configuration that contains O, which is the configuration from ACWF set, we need to add O pseudo
         if "O" in self.ctx.structure.get_kind_names() and self.ctx.element != "O":
             self.ctx.pseudos["O"] = get_pseudo_O()
+
+    def is_magnetic_element(self):
+        """Check if the element is magnetic"""
+        return self.ctx.element in MAGNETIC_ELEMENTS
+
+    def extra_setup_for_magnetic_element(self):
+        """
+        Extra setup for magnetic element, set starting magnetization
+        and reset pseudos to correspont elements name.
+        """
+        # ! only for GS configuration we set the starting magnetization and reset pseudos
+        # From the test, I confirm that for Oxygen the magnetic GS structure give the largest recommonded cutoff,
+        # which means it is essential to take into account the maganetization for the convergence otherwise
+        # will give fault recommended cutoff which is too small for the magnetization elements.
+        # So the `magnetization_on` is set to `True`.
+        magnetization_on = True  # For experiment purpose, turn on/off magnetization
+        if self.ctx.configuration == "GS" and magnetization_on:
+            self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(
+                self.ctx.structure
+            )
+            self.ctx.extra_pw_parameters = update_dict(
+                self.ctx.extra_pw_parameters, magnetic_extra_parameters
+            )
+
+            # override pseudos setting
+            # required for O, Mn, Cr where the kind names varies for sites
+            self.ctx.pseudos = reset_pseudos_for_magnetic(
+                self.inputs.pseudo, self.ctx.structure
+            )
+
+    def is_lanthanide_element(self):
+        """Check if the element is rare earth"""
+        return self.ctx.element in LANTHANIDE_ELEMENTS
+
+    def extra_setup_for_lanthanide_element(self):
+        """
+        Extra setup for rare-earth element same as magnetic elements
+
+        We use nitrdes configuration for the convergence verification of rare-earth elements.
+        Otherwise it is hard to get converged in scf calculation.
+        """
+        nbnd_factor = self._NBANDS_FACTOR_FOR_REN
+        pseudo_RE = self.inputs.pseudo
+        nbnd = nbnd_factor * pseudo_RE.z_valence
+        self.ctx.extra_pw_parameters = get_extra_parameters_for_lanthanides(
+            self.ctx.element, nbnd
+        )
 
     def setup_code_parameters_from_protocol(self):
         """unzip and parse protocol parameters to context"""

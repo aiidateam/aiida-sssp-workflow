@@ -37,7 +37,7 @@ def helper_delta_difference(
     return orm.Dict(dict=res)
 
 
-class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
+class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on delta factor of input structure"""
 
     # pylint: disable=too-many-instance-attributes
@@ -45,6 +45,15 @@ class ConvergenceDeltaWorkChain(_BaseConvergenceWorkChain):
     _PROPERTY_NAME = "delta"
     _EVALUATE_WORKCHAIN = MetricWorkChain
     _MEASURE_OUT_PROPERTY = "absolute_diff"
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        spec.input(
+            "code",
+            valid_type=orm.AbstractCode,
+            help="The `pw.x` code use for the `PwCalculation`.",
+        )
 
     def init_setup(self):
         super().init_setup()
