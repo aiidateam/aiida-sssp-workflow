@@ -4,6 +4,7 @@ Refactor from calcDelta.py v3.1 write by Kurt Lejaeghere
 Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for
 Molecular Modeling (CMM), Ghent University, Ghent, Belgium
 """
+
 import importlib
 import json
 

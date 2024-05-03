@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """CLI to inspect the results of the workflow"""
+
 import json
 import random
 from pathlib import Path
@@ -154,7 +155,7 @@ def eos_plot(
     ax.plot(dense_volumes, ae_eos_fit_energy, "--r", label="AE")
     ax.axvline(V0, linestyle="--", color="gray")
 
-    ax.plot(dense_volumes, psp_eos_fit_energy, "-b", label=f"Pseudo")
+    ax.plot(dense_volumes, psp_eos_fit_energy, "-b", label="Pseudo")
     ax.fill_between(
         dense_volumes,
         ae_eos_fit_energy,
@@ -328,7 +329,7 @@ def inspect(node, output):
                 d_str = json.dumps(precision.output_parameters.get_dict(), indent=4)
                 with open(f"{output}_precision_summary.json", "w") as f:
                     f.write(d_str)
-            except:
+            except KeyError:
                 pass
 
             # if there are 5 plots, need 3 rows, since the output_parametres is in the dict len(precision) / 2 is the number of rows
@@ -575,7 +576,7 @@ def inspect(node, output):
             d_str = json.dumps(convergence_summary, indent=4)
             with open(f"{output}_convergence_summary.json", "w") as f:
                 f.write(d_str)
-        except:
+        except KeyError:
             pass
 
         # fig to pdf

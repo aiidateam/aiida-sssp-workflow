@@ -2,6 +2,7 @@
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
+
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory

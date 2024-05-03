@@ -4,6 +4,7 @@ Birch-Murnaghan fit as calcfunction refactor from eosfit.py v3.1 write by Kurt L
 Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for
 Molecular Modeling (CMM), Ghent University, Ghent, Belgium
 """
+
 from aiida import orm
 from aiida.engine import ExitCode, calcfunction
 

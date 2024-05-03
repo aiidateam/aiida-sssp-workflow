@@ -2,6 +2,7 @@
 This class makes it able to expose precision measure and bands measure inputs to verification
 workchain.
 """
+
 from aiida import orm
 from aiida.plugins import DataFactory
 

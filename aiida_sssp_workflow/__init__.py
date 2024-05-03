@@ -1,8 +1,3 @@
 # -*- coding: utf-8 -*-
-"""
-aiida_sssp_workflow
 
-SSSP verification workflows
-"""
-
-from .version import __version__
+__version__ = "4.2.3"

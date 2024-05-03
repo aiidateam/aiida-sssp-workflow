@@ -5,6 +5,7 @@ Will in here refactoring it so no need to use the aiida datatype as inputs.
 
 calculate bands distance
 """
+
 import numpy as np
 
 # from aiida_sssp_workflow.efermi import find_efermi
@@ -204,8 +205,9 @@ def get_bands_distance(
         # swap to make sure a is less electrons pseudo
         bandsdata_a, bandsdata_b = bandsdata_b, bandsdata_a
 
-    assert int(bandsdata_b["number_of_electrons"]) >= int(
-        bandsdata_a["number_of_electrons"]
+    assert (
+        int(bandsdata_b["number_of_electrons"])
+        >= int(bandsdata_a["number_of_electrons"])
     ), f"Need to be less num_bands in a {bandsdata_a['number_of_electrons']} than b {bandsdata_b['number_of_electrons']}"
 
     num_electrons_a = int(bandsdata_a["number_of_electrons"])

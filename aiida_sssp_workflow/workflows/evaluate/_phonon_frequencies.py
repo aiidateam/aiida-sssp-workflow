@@ -2,6 +2,7 @@
 """
 WorkChain calculate phonon frequencies at Gamma
 """
+
 from aiida import orm
 from aiida.common import NotExistentAttributeError
 from aiida.engine import ToContext, while_

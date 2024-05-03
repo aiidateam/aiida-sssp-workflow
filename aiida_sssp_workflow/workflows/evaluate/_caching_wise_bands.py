@@ -4,6 +4,7 @@ This is a modified version of the original `PwBandsWorkChain` in aiida-quantumes
 support caching of the results wisely. The PW calculation will be re-run if the the parent folder is cleaned and
 but required by the following PH calculation.
 """
+
 from aiida import orm
 from aiida.common import AttributeDict
 from aiida.engine import ToContext, WorkChain, if_, while_

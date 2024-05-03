@@ -3,6 +3,7 @@
 A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
+
 from aiida import orm
 from aiida.engine import ToContext, calcfunction
 from aiida.plugins import DataFactory, WorkflowFactory

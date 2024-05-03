@@ -2,29 +2,25 @@
 """
 Base convergence workchain
 """
+
 from abc import ABCMeta, abstractmethod
 
 from aiida import orm
-from aiida.engine import append_, if_
+from aiida.engine import append_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     HIGH_DUAL_ELEMENTS,
-    LANTHANIDE_ELEMENTS,
-    MAGNETIC_ELEMENTS,
     convergence_analysis,
     get_default_configuration,
-    get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
-    reset_pseudos_for_magnetic,
     update_dict,
 )
+from aiida_sssp_workflow.utils.pseudo import extract_pseudo_info
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.common import (
-    get_extra_parameters_for_lanthanides,
     get_pseudo_element_and_type,
-    get_pseudo_N,
     get_pseudo_O,
 )
 
@@ -398,7 +394,7 @@ class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
                 # 200 ry not converged
                 self.ctx.output_parameters["precheck"] = {
                     "exit_status": -300,
-                    "message": f"Damn, Super hard pseudo. Under 2 times strict criteria 200 ry not converged.",
+                    "message": "Damn, Super hard pseudo. Under 2 times strict criteria 200 ry not converged.",
                     "value": res_strict["value"].value,
                     "bounds": precision_criteria["bounds"],
                 }
@@ -447,18 +443,18 @@ class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
 
             # specificly write output for set criteria
             if name == self.inputs.criteria.value:
-                self.ctx.output_parameters[
-                    "wavefunction_cutoff"
-                ] = self.ctx.wfc_cutoff = res["cutoff"].value
+                self.ctx.output_parameters["wavefunction_cutoff"] = (
+                    self.ctx.wfc_cutoff
+                ) = res["cutoff"].value
 
                 self.logger.info(
                     f"The wfc convergence at {self.ctx.wfc_cutoff} with value={res['value'].value}"
                 )
 
         # write output wavefunction cutoff in all criteria.
-        self.ctx.output_parameters[
-            "all_criteria_wavefunction_cutoff"
-        ] = all_criteria_wavefunction_cutoff
+        self.ctx.output_parameters["all_criteria_wavefunction_cutoff"] = (
+            all_criteria_wavefunction_cutoff
+        )
 
     def run_rho_convergence_test(self):
         """

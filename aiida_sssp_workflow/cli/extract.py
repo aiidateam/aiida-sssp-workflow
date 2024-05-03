@@ -267,7 +267,3 @@ def extract(pks, element, dst, override, custom_label):
         click.echo("Compressing...")
         with tarfile.open(f"{dst}.tar.gz", "w:bz2") as tar:
             tar.add(dst, arcname=os.path.basename(dst), recursive=True)
-
-
-if __name__ == "__main__":
-    run()

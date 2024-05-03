@@ -2,6 +2,7 @@
 """
 WorkChain calculate the metric (from EOS results) for certain pseudopotential
 """
+
 from aiida import orm
 from aiida.plugins import DataFactory
 from plumpy import ToContext
@@ -34,7 +35,7 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
             cls.finalize,
         )
         spec.expose_outputs(_EquationOfStateWorkChain, namespace='eos',
-                    namespace_options={'help': f'volume_energy and birch_murnaghan_fit result from EOS.'})
+                    namespace_options={'help': 'volume_energy and birch_murnaghan_fit result from EOS.'})
 
         spec.output('output_parameters', required=True,
                     help='The output of metric factor measures to describe the precision of EOS compare '

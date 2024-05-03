@@ -3,6 +3,7 @@
 """
 Running verification workchain
 """
+
 import os
 
 import aiida

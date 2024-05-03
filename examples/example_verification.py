@@ -3,6 +3,7 @@
 """
 Running verification workchain example
 """
+
 import os
 import sys
 

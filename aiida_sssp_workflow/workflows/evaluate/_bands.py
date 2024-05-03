@@ -2,10 +2,10 @@
 """
 WorkChain calculate the bands for certain pseudopotential
 """
+
 import numpy as np
 from aiida import orm
 from aiida.engine import ToContext, calcfunction, if_, while_
-from aiida.engine.processes import ExitCode
 from aiida.plugins import DataFactory
 
 from . import _BaseEvaluateWorkChain
@@ -55,9 +55,7 @@ def validate_inputs(inputs, ctx=None):
     if inputs["run_band_structure"] and (
         "kpoints_distance_band_structure" not in inputs
     ):
-        return (
-            BandsWorkChain.exit_codes.ERROR_KPOINTS_DISTANCE_BAND_STRUCTURE_NOT_SET.message
-        )
+        return BandsWorkChain.exit_codes.ERROR_KPOINTS_DISTANCE_BAND_STRUCTURE_NOT_SET.message
 
 
 class BandsWorkChain(_BaseEvaluateWorkChain):
@@ -113,7 +111,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
                     message=f'The maximum number={cls._MAX_INCREMENT_BANDS_FACTOR} of bands factor'
                             'increase loop reached, but still cannot get enough bands.')
         spec.exit_code(204, 'ERROR_KPOINTS_DISTANCE_BAND_STRUCTURE_NOT_SET',
-                    message=f'kpoints distance is not set in inputs.')
+                    message='kpoints distance is not set in inputs.')
         # yapf: enable
 
     def setup(self):

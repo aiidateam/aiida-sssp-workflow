@@ -2,12 +2,10 @@
 """Workchain to calculate delta factor of specific psp"""
 
 from aiida import orm
-from aiida.engine import if_
 from aiida.plugins import DataFactory
 
 from aiida_sssp_workflow.utils import (
     ACTINIDE_ELEMENTS,
-    HIGH_DUAL_ELEMENTS,
     LANTHANIDE_ELEMENTS,
     MAGNETIC_ELEMENTS,
     NO_GS_CONF_ELEMENTS,
@@ -21,7 +19,6 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.workflows.common import (
     get_extra_parameters_for_lanthanides,
-    get_pseudo_element_and_type,
     get_pseudo_N,
     get_pseudo_O,
 )
@@ -399,7 +396,7 @@ class PrecisionMeasureWorkChain(_BaseMeasureWorkChain):
                 }
             except KeyError:
                 self.logger.warning(
-                    f"Can not get the metric, check EOS result or directly recalculate metric from EOS."
+                    "Can not get the metric, check EOS result or directly recalculate metric from EOS."
                 )
                 continue
 

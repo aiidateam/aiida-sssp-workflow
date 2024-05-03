@@ -1,5 +1,5 @@
 from aiida.engine import WorkChain
-from aiida.orm import Bool, CalcJobNode
+from aiida.orm import Bool
 
 from aiida_sssp_workflow.workflows.common import clean_workdir, operate_calcjobs
 

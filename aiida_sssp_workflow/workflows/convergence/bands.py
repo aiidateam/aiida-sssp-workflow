@@ -180,7 +180,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         spin = self.ctx.element in MAGNETIC_ELEMENTS
 
         # Always process smearing to find fermi level even for non-metal elements.
-        res = helper_bands_distence_difference(
+        res = helper_bands_distance_difference(
             sample_band_structure,
             sample_band_parameters,
             reference_band_structure,

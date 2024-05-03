@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Equation of state workflow that can use any code plugin implementing the common relax workflow."""
+
 from typing import List
 
 from aiida import orm
@@ -96,7 +97,7 @@ class _EquationOfStateWorkChain(WorkChain):
     def run_init(self):
         """Run the first sub-workchain, if this failed the whole workchain break."""
         inputs = self._get_inputs(scale_factor=1)  # inputs for unscaled structure
-        self.report(f"submitting precheck calculation for unscaled structure.")
+        self.report("submitting precheck calculation for unscaled structure.")
         self.ctx.init_workchain = self.submit(PwBaseWorkChain, **inputs)
         self.to_context(children=append_(self.ctx.init_workchain))
 

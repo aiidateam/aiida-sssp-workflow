@@ -20,9 +20,7 @@ def get_protocol(category, name=None):
         "aiida_sssp_workflow.protocol", f"{category}.yml"
     )
     with import_path as pp_path, open(pp_path, "rb") as handle:
-        protocol_dict = yaml.safe_load(
-            handle
-        )  # pylint: disable=attribute-defined-outside-init
+        protocol_dict = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
 
     if name:
         return protocol_dict[name]
@@ -122,7 +120,7 @@ def get_default_configuration(element: str, prop: str) -> str:
     # But for future maintainance, I keep the mapping.json for configuration
     # mapping. Only At, Fr, Ra and actinides using unaries FCC since it is not in typical.
     import_path = importlib.resources.path(
-        "aiida_sssp_workflow.statics.structures", f"mapping.json"
+        "aiida_sssp_workflow.statics.structures", "mapping.json"
     )
 
     with import_path as path, open(path, "r") as handle:

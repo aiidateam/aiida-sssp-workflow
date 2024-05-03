@@ -3,6 +3,7 @@
 A calcfunctian create_isolate_atom
 Create the structure of isolate atom
 """
+
 from aiida import orm
 from aiida.engine import (
     CalcJob,
@@ -100,9 +101,9 @@ class PwBaseWorkChainWithMemoryHandler(PwBaseWorkChain):
                 "resources"
             ].pop("num_mpiprocs_per_machine")
             if num_mpiprocs_per_machine:
-                self.ctx.inputs.metadata.options["resources"][
-                    "tot_num_mpiprocs"
-                ] = num_mpiprocs_per_machine
+                self.ctx.inputs.metadata.options["resources"]["tot_num_mpiprocs"] = (
+                    num_mpiprocs_per_machine
+                )
 
             self.set_restart_type(RestartType.FROM_SCRATCH)
             self.report_error_handled(calculation, action)

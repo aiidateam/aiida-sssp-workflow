@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture(scope="session")
 def docker_compose_file(pytestconfig):  # pylint: disable=unused-argument
-    return f"docker-compose.aiida-sssp-workflow.yml"
+    return "docker-compose.aiida-sssp-workflow.yml"
 
 
 @pytest.fixture(scope="session")
