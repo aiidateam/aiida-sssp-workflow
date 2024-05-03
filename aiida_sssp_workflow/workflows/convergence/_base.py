@@ -44,6 +44,18 @@ class abstract_attribute(object):
         )
 
 
+def is_valid_convergence_configuration(value):
+    """Check if the configuration is valid"""
+    valid_configurations = [
+        "DC",
+        "BCC",
+        "FCC",
+        "SC",
+    ]  # TODO: imported from common module
+    if value not in valid_configurations:
+        return f"Configuration {value} is not valid. Valid configurations are {valid_configurations}"
+
+
 class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
     """Base convergence workchain class for wavefunction cutoff convergence test.
     This is a abstract class and should be subclassed to implement the methods for specific convergence workflow.
@@ -79,7 +91,13 @@ class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
             help="The cutoff control protocol for the workchain.",
         )
         # TODO: the cutoffs can be set as a list of integers, which will be used as the ecutwfc list.
-        spec.input("configuration", valid_type=orm.Str, required=False)
+        spec.input(
+            "configuration",
+            valid_type=orm.Str,
+            required=False,
+            validator=is_valid_convergence_configuration,
+            help="The configuration to use for the workchain, can be DC/BCC/FCC/SC.",
+        )
 
         # Optional inputs for resources control
         # They are directly passed as the CalcJob inputs.
@@ -110,6 +128,18 @@ class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
             valid_type=orm.Dict,
             required=True,
             help="The output parameters of convergence.",
+        )
+        spec.output(
+            "configuration",
+            valid_type=orm.Str,
+            required=True,
+            help="The configuration used for the convergence.",
+        )
+        spec.output(
+            "structure",
+            valid_type=orm.StructureData,
+            required=True,
+            help="The structure used for the convergence.",
         )
 
         spec.exit_code(
@@ -143,6 +173,27 @@ class _WfcBaseConvergenceWorkChain(SelfCleanWorkChain):
         self.ctx.element = pseudo_info.element
         self.ctx.pseudo_type = pseudo_info.type
         self.ctx.pseudos = {self.ctx.element: self.inputs.pseudo}
+
+    def setup_structure(self):
+        """Setup structure from input or use the default structure
+        The convergence behavior may be different for different structure BCC/FCC/SC/DC.
+        We use DC structure as default since it is the one that most hard to converge.
+        See the paper (TODO: add arxiv link).
+        """
+        if "configuration" in self.inputs:
+            configuration = self.inputs.configuration
+        else:
+            # will use the default configuration set in the protocol (mapping.json)
+            configuration = get_default_configuration(
+                self.ctx.element, prop="convergence"
+            )
+
+        self.ctx.structure = get_standard_structure(
+            self.ctx.element, prop="convergence", configuration=self.ctx.configuration
+        )
+
+        self.out("structure", self.ctx.structure)
+        self.out("configuration", configuration)
 
     def init_setup(self):
         """This step contains all the preparations before actaul setup,

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from aiida_sssp_workflow.utils.pseudo import extract_pseudo_info, parse_std_filename
+from aiida_sssp_workflow.utils import extract_pseudo_info, parse_std_filename
 
 upf_folder = Path(__file__).parent.parent / "_statics" / "upf"
 upf_files = list(upf_folder.glob("*.upf"))

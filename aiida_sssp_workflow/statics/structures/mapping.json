@@ -1,415 +1,415 @@
 {
     "_commont": "The mapping from element to configuration for convergence and bands verification.",
     "Ag": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Al": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ar": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "As": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "At": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Au": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ba": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Be": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "B": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Bi": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Br": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ca": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Cd": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ce": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "C": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Cl": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Co": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Cr": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Cs": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Cu": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Dy": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Er": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Eu": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Fe": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "F": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ga": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Gd": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Ge": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "He": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Hf": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "H": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Hg": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ho": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "I": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "In": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ir": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "K": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Kr": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "La": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Li": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Lu": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Mg": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Mn": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Mo": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Na": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Nb": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Nd": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Ne": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "N": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ni": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "O": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Os": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Pb": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Pd": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "P": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Pm": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Po": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Pr": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Pt": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Rb": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Re": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Rh": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Rn": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ru": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Sb": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Sc": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Se": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "S": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Si": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Sm": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Sn": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Sr": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ta": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Tb": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Tc": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Te": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ti": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Tl": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Tm": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "V": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "W": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Xe": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Yb": {
-        "bands": "RE",
-        "convergence": "Diamond"
+        "band": "LAN",
+        "convergence": "DC"
     },
     "Y": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Zn": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Zr": {
-        "bands": "GS",
-        "convergence": "Diamond"
+        "band": "GS",
+        "convergence": "DC"
     },
     "Ac": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Th": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Pa": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "U": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Np": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Pu": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Am": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Cm": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Bk": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Cf": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Es": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Fm": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Md": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "No": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Lr": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Fr": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     },
     "Ra": {
-        "bands": "Diamond",
-        "convergence": "Diamond"
+        "band": "DC",
+        "convergence": "DC"
     }
 }

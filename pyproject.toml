@@ -52,6 +52,10 @@ sssp_workflow_convergence_bands = "aiida_sssp_workflow.workflows.convergence.ban
 sssp_workflow_convergence_delta = "aiida_sssp_workflow.workflows.convergence.delta:ConvergenceDeltaWorkChain"
 sssp_workflow_verification = "aiida_sssp_workflow.workflows.verifications:VerificationWorkChain"
 
+[project.urls]
+Documentation = "https://aiida-sssp-workflow.readthedocs.io/"
+Source = "https://github.com/aiidateam/aiida-sssp-workflow"
+
 [tool.flit.external-data]
 aiida_sssp_workflow = [
     "protocol/*.yml",
@@ -63,6 +67,8 @@ aiida_sssp_workflow = [
     "statics/AE_EOS/*.json"
 ]
 
-[project.urls]
-Documentation = "https://aiida-sssp-workflow.readthedocs.io/"
-Source = "https://github.com/aiidateam/aiida-sssp-workflow"
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore:Creating AiiDA configuration folder.*:UserWarning',
+    'ignore:Object of type .* not in session, .* operation along .* will not proceed:sqlalchemy.exc.SAWarning',
+]
