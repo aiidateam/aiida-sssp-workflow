@@ -2,29 +2,12 @@
 """utils.py"""
 
 import collections.abc
-import importlib
 
-import yaml
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.plugins import DataFactory
 
 UpfData = DataFactory("pseudo.upf")
-
-
-def get_protocol(category, name=None):
-    """Load and read protocol from faml file to a verbose dict
-    if name not set, return whole protocol."""
-    import_path = importlib.resources.path(
-        "aiida_sssp_workflow.protocol", f"{category}.yml"
-    )
-    with import_path as pp_path, open(pp_path, "rb") as handle:
-        protocol_dict = yaml.safe_load(handle)  # pylint: disable=attribute-defined-outside-init
-
-    if name:
-        return protocol_dict[name]
-    else:
-        return protocol_dict
 
 
 def update_dict(d, u):
@@ -86,20 +69,6 @@ def helper_parse_upf(upf: UpfData) -> dict:
     header = parse_upf(upf.get_content())["header"]
 
     return header
-
-
-def get_default_options(max_num_machines=1, max_wallclock_seconds=1800, with_mpi=False):
-    """Return an instance of the options dictionary with the minimally required parameters for a `CalcJob`.
-
-    :param max_num_machines: set the number of nodes, default=1
-    :param max_wallclock_seconds: set the maximum number of wallclock seconds, default=1800
-    :param with_mpi: whether to run the calculation with MPI enabled
-    """
-    return {
-        "resources": {"num_machines": int(max_num_machines)},
-        "max_wallclock_seconds": int(max_wallclock_seconds),
-        "withmpi": with_mpi,
-    }
 
 
 def to_valid_key(name):

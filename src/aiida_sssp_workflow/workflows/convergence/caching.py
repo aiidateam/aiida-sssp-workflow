@@ -1,107 +1,122 @@
+from pathlib import Path
+
 from aiida import orm
-from aiida.plugins import WorkflowFactory
+from aiida.engine import ProcessBuilder
 
-from aiida_sssp_workflow.utils import update_dict
+from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
+
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
-
-PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
+from aiida_sssp_workflow.utils import get_default_mpi_options
 
 
 class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
     """Convergence caching workflow
+
     this workflow will only run in verification workflow
     when there are at least two convergence workflows are order to run.
+
     It also require that the caching machenism of aiida is on.
     The purpose of this workflow is to run a set of common SCF calculations
     with the same input parameters in reference calculation and wavefunction
-    cutoff test calculations. In order to save the time and resource for
-    the following convergence test."""
+    cutoff test calculations.
+    In order to save the time and resource for the following convergence test."""
 
     _PROPERTY_NAME = None  # will only use convergence/base protocol
-    _EVALUATE_WORKCHAIN = PwBaseWorkflow
-    _MEASURE_OUT_PROPERTY = None
-
-    _RUN_WFC_TEST = True
-    _RUN_RHO_TEST = False  # will not run charge density cutoff test
+    _EVALUATE_WORKCHAIN = PwBaseWorkChain
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
         spec.input(
-            "clean_workdir",
-            valid_type=orm.Bool,
-            default=lambda: orm.Bool(False),
-            help="If `True`, work directories of all called calculation will be cleaned at the end of execution.",
+            "code",
+            valid_type=orm.AbstractCode,
+            required=True,
+            help="The `pw.x` code use for the `PwCalculation`.",
+        )
+        spec.input(
+            "parallelization",
+            valid_type=orm.Dict,
+            required=False,
+            help="The parallelization settings for the `PwCalculation`.",
+        )
+        spec.input(
+            "mpi_options",
+            valid_type=orm.Dict,
+            required=False,
+            help="The MPI options for the `PwCalculation`.",
         )
 
-    def init_setup(self):
-        super().init_setup()
-        self.ctx.extra_pw_parameters = {
-            "CONTROL": {
-                "disk_io": "low",
-            },
-        }
+    @classmethod
+    def get_builder(
+        cls,
+        pseudo: Path,
+        protocol: str,
+        cutoff_list: list,
+        configuration: str,
+        code: orm.AbstractCode,
+        parallelization: dict | None = None,
+        mpi_options: dict | None = None,
+        clean_workdir: bool = False,
+    ) -> ProcessBuilder:
+        """Return the builder for the convergence workchain"""
+        builder = super().get_builder(pseudo, protocol, cutoff_list, configuration)
 
-    def inspect_wfc_convergence_test(self):
-        """Override this step to do nothing to parse wavefunction
-        cutoff test results but only run it."""
-        return None
+        builder.metadata.call_link_label = "caching"
+        builder.clean_workdir = orm.Bool(clean_workdir)
+        builder.code = code
 
-    def setup_criteria_parameters_from_protocol(self):
-        """Override this step to do nothing, since it is not
-        used for caching run."""
-        return None
+        if parallelization:
+            builder.parallelization = orm.Dict(parallelization)
+        else:
+            builder.parallelization = orm.Dict()
 
-    def get_result_metadata(self):
-        """No need to actual implemented for caching workchain"""
-        return None
+        if mpi_options:
+            builder.mpi_options = orm.Dict(mpi_options)
+        else:
+            builder.mpi_options = orm.Dict(get_default_mpi_options())
 
-    def helper_compare_result_extract_fun(
-        self, sample_node, reference_node, **kwargs
-    ) -> dict:
-        """No need to actual implemented for caching workchain"""
-        return None
+        return builder
 
-    def setup_code_parameters_from_protocol(self):
-        """Input validation"""
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-
-        # Read from protocol if parameters not set from inputs
-        super().setup_code_parameters_from_protocol()
-
+    def prepare_evaluate_builder(self, ecutwfc, ecutrho) -> ProcessBuilder:
+        """Input builder for running a dummy SCF for caching as the inner evaluation workchain"""
         protocol = self.ctx.protocol
-        self._DEGAUSS = protocol["degauss"]
-        self._OCCUPATIONS = protocol["occupations"]
-        self._SMEARING = protocol["smearing"]
-        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
-        self.ctx.kpoints_distance = self._KDISTANCE = protocol["kpoints_distance"]
 
-        self.ctx.pw_base_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS,
-            self._OCCUPATIONS,
-            self._SMEARING,
-            self._CONV_THR_PER_ATOM,
-        )
+        degauss = protocol["degauss"]
+        occupations = protocol["occupations"]
+        smearing = protocol["smearing"]
+        conv_thr_per_atom = protocol["conv_thr_per_atom"]
+        kpoints_distance = protocol["kpoints_distance"]
 
-    def _get_inputs(self, ecutwfc, ecutrho) -> dict:
-        """inputs for running a dummy SCF for caching"""
-        pw_parameters = update_dict(self.ctx.pw_base_parameters, {})
-        pw_parameters["SYSTEM"]["ecutwfc"] = ecutwfc
-        pw_parameters["SYSTEM"]["ecutrho"] = ecutrho
+        natoms = len(self.structure.sites)
+        etot_conv_thr = conv_thr_per_atom * natoms
 
-        inputs = {
-            "metadata": {"call_link_label": "SCF_for_cache"},
-            "pw": {
-                "structure": self.ctx.structure,
-                "code": self.inputs.code,
-                "pseudos": self.ctx.pseudos,
-                "parameters": orm.Dict(dict=pw_parameters),
-                "metadata": {
-                    "options": self.ctx.options,
-                },
-                "parallelization": orm.Dict(dict=self.ctx.parallelization),
+        pw_parameters = {
+            "SYSTEM": {
+                "degauss": degauss,
+                "occupations": occupations,
+                "smearing": smearing,
+                "ecutwfc": ecutwfc,  # <-- Here set the ecutwfc
+                "ecutrho": ecutrho,  # <-- Here set the ecutrho
             },
-            "kpoints_distance": orm.Float(self.ctx.kpoints_distance),
+            "ELECTRONS": {
+                "conv_thr": etot_conv_thr,
+            },
+            "CONTROL": {
+                "calculation": "scf",
+                "tstress": True,  # for pressue evaluation to use _caching node directly.
+            },
         }
 
-        return inputs
+        builder = self._EVALUATE_WORKCHAIN.get_builder()
+        builder.metadata.call_link_label = "SCF_for_cache"
+
+        builder.pw["structure"] = self.structure
+        builder.pw["pseudos"] = self.pseudos
+        builder.pw["code"] = self.inputs.code
+        builder.pw["parameters"] = orm.Dict(dict=pw_parameters)
+        builder.pw["parallelization"] = self.inputs.parallelization
+        builder.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
+
+        builder.kpoints_distance = orm.Float(kpoints_distance)
+
+        return builder

@@ -13,8 +13,8 @@ class _BaseEvaluateWorkChain(SelfCleanWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.output('ecutwfc', valid_type=orm.Int, required=True)
-        spec.output('ecutrho', valid_type=orm.Int, required=True)
+        spec.output('wavefunction_cutoff', valid_type=orm.Int, required=True)
+        spec.output('charge_density_cutoff', valid_type=orm.Int, required=True)
 
         spec.exit_code(210, 'ERROR_SUB_PROCESS_FAILED_SCF',
                     message='PwBaseWorkChain of pressure scf evaluation failed.')

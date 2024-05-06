@@ -45,6 +45,7 @@ sssp_workflow_birch_murnaghan_fit = "aiida_sssp_workflow.calculations.birch_murn
 [project.entry-points."aiida.workflows"]
 sssp_workflow_measure_precision = "aiida_sssp_workflow.workflows.measure.precision:PrecisionMeasureWorkChain"
 sssp_workflow_measure_bands = "aiida_sssp_workflow.workflows.measure.bands:BandsMeasureWorkChain"
+"sssp_workflow.convergence.caching" = "aiida_sssp_workflow.workflows.convergence.caching:_CachingConvergenceWorkChain"
 sssp_workflow_convergence_cohesive_energy = "aiida_sssp_workflow.workflows.convergence.cohesive_energy:ConvergenceCohesiveEnergyWorkChain"
 sssp_workflow_convergence_phonon_frequencies = "aiida_sssp_workflow.workflows.convergence.phonon_frequencies:ConvergencePhononFrequenciesWorkChain"
 sssp_workflow_convergence_pressure = "aiida_sssp_workflow.workflows.convergence.pressure:ConvergencePressureWorkChain"
@@ -71,4 +72,5 @@ aiida_sssp_workflow = [
 filterwarnings = [
     'ignore:Creating AiiDA configuration folder.*:UserWarning',
     'ignore:Object of type .* not in session, .* operation along .* will not proceed:sqlalchemy.exc.SAWarning',
+    'ignore:The `Code` class is deprecated.*:aiida.common.warnings.AiidaDeprecationWarning',
 ]

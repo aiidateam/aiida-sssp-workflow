@@ -64,7 +64,8 @@ def clean_workdir(node: orm.CalcJobNode) -> Optional[int]:
     # It is like a soft link or shallow copy in caching. This lead to clean the remote path
     # of cached node also destroy the remote path of nonmenon node that may still be used for
     # other subsequent calcjob as `parent_folder`, i.e PH calculation.
-    if "_aiida_cached_from" not in node.extras:
+    cached_from = node.base.extras.get("_aiida_cached_from", None)
+    if not cached_from:
         node.outputs.remote_folder._clean()  # pylint: disable=protected-access
         return node.pk
     else:
@@ -93,12 +94,13 @@ def operate_calcjobs(wnode, operator, all_same_nodes=False):
     cleaned_calcs = []
     for child in wnode.called_descendants:
         if isinstance(child, orm.CalcJobNode):
-            # the nodes waid for operated.
-            nodes = child.get_all_same_nodes()
             try:
                 if not all_same_nodes:
                     # only operated on this node
                     nodes = [child]
+                else:
+                    # the list nodes wait for operated.
+                    nodes = child.base.caching.get_all_same_nodes()
 
                 for n in nodes:
                     pk = operator(n)
