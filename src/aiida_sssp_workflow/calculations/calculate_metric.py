@@ -73,13 +73,14 @@ def metric_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
         - BCC
         - FCC
         - SC
-        - Diamond
+        - DC -> Diamond cubic
     - For actinides and Ar, Fr, Ra: using FCC from ACWF dataset
 
     conf_key is key in json file for configurations of every element.
     """
     element = element.value
     configuration = configuration.value
+
     V0 = V0.value
     B0 = B0.value
     B1 = B1.value
@@ -96,7 +97,10 @@ def metric_analyze(element, configuration, V0, B0, B1, natoms) -> orm.Dict:
 
     if configuration in UNARIE_CONFIGURATIONS:
         ref_json = "AE-average-unaries.json"
-        conf_key = f"{element}-X/{configuration}"
+        if configuration == "DC":
+            conf_key = f"{element}-X/Diamond"
+        else:
+            conf_key = f"{element}-X/{configuration}"
 
     if configuration in OXIDE_CONFIGURATIONS:
         ref_json = "AE-average-oxides.json"

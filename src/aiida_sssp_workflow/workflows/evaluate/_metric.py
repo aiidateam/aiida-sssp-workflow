@@ -9,13 +9,12 @@ from plumpy import ToContext
 
 from aiida_sssp_workflow.calculations.calculate_metric import metric_analyze
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
-
-from . import _BaseEvaluateWorkChain
+from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 
 UpfData = DataFactory("pseudo.upf")
 
 
-class MetricWorkChain(_BaseEvaluateWorkChain):
+class MetricWorkChain(SelfCleanWorkChain):
     """WorkChain calculate the bands for certain pseudopotential"""
 
     @classmethod
@@ -68,9 +67,6 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
                 f"_EquationOfStateWorkChain failed with exit status {workchain.exit_status}"
             )
 
-        self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
-        self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
-
         self.out_many(
             self.exposed_outputs(
                 workchain,
@@ -80,11 +76,7 @@ class MetricWorkChain(_BaseEvaluateWorkChain):
         )
 
     def finalize(self):
-        """result"""
-        # set ecutwfc and ecutrho
-        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
-        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
-
+        """Calculate the metric factor (nu, delta, delta1) from EOS results."""
         output_bmf = self.outputs.get("eos", {}).get("output_birch_murnaghan_fit")
 
         if output_bmf is not None:

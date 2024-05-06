@@ -1,28 +1,25 @@
+# -*- coding: utf-8 -*-
+"""
+Convergence test on cohesive energy of a given pseudopotential
+"""
+
 from pathlib import Path
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
 
-from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
-
-from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.utils import get_default_mpi_options
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 
 
-class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
-    """Convergence caching workflow
+class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
+    """WorkChain to converge test on delta factor of input structure"""
 
-    this workflow will only run in verification workflow
-    when there are at least two convergence workflows are order to run.
+    # pylint: disable=too-many-instance-attributes
 
-    It also require that the caching machenism of aiida is on.
-    The purpose of this workflow is to run a set of common SCF calculations
-    with the same input parameters in reference calculation and wavefunction
-    cutoff test calculations.
-    In order to save the time and resource for the following convergence test."""
-
-    _PROPERTY_NAME = None  # will only use convergence/base protocol
-    _EVALUATE_WORKCHAIN = PwBaseWorkChain
+    _PROPERTY_NAME = "eos"
+    _EVALUATE_WORKCHAIN = MetricWorkChain
 
     @classmethod
     def define(cls, spec):
@@ -30,7 +27,6 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
         spec.input(
             "code",
             valid_type=orm.AbstractCode,
-            required=True,
             help="The `pw.x` code use for the `PwCalculation`.",
         )
         spec.input(
@@ -56,9 +52,9 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
         code: orm.AbstractCode,
         parallelization: dict | None = None,
         mpi_options: dict | None = None,
-        clean_workdir: bool = False,
+        clean_workdir: bool = True,  # default to clean workdir
     ) -> ProcessBuilder:
-        """Return the builder for the convergence workchain"""
+        """Return a builder to run this EOS convergence workchain"""
         builder = super().get_builder(pseudo, protocol, cutoff_list, configuration)
 
         builder.metadata.call_link_label = "caching"
@@ -78,7 +74,7 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
         return builder
 
     def prepare_evaluate_builder(self, ecutwfc, ecutrho) -> ProcessBuilder:
-        """Input builder for running a dummy SCF for caching as the inner evaluation workchain"""
+        """Input builder for running the inner EOS evaluation workchain"""
         protocol = self.protocol
         natoms = len(self.structure.sites)
 
@@ -96,20 +92,38 @@ class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
             },
             "CONTROL": {
                 "calculation": "scf",
-                "tstress": True,  # for pressue evaluation to use _caching node directly.
+                "disk_io": "nowf",  # not store wavefunction file to save inodes
             },
         }
 
+        ## For lanthanides, use sparse kpoints and tetrahedra occupation
+        ## TODO: TBD, high possibility to remove this
+        # if self.ctx.element in LANTHANIDE_ELEMENTS:
+        #    self.ctx.kpoints_distance = self._KDISTANCE + 0.05
+        #    pw_parameters["SYSTEM"].pop("smearing", None)
+        #    pw_parameters["SYSTEM"].pop("degauss", None)
+        #    pw_parameters["SYSTEM"]["occupations"] = "tetrahedra"
+
         builder = self._EVALUATE_WORKCHAIN.get_builder()
-        builder.metadata.call_link_label = "SCF_for_cache"
 
-        builder.pw["structure"] = self.structure
-        builder.pw["pseudos"] = self.pseudos
-        builder.pw["code"] = self.inputs.code
-        builder.pw["parameters"] = orm.Dict(dict=pw_parameters)
-        builder.pw["parallelization"] = self.inputs.parallelization
-        builder.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
+        builder.clean_workdir = (
+            self.inputs.clean_workdir
+        )  # sync with the main workchain
 
-        builder.kpoints_distance = orm.Float(protocol["kpoints_distance"])
+        builder.element = orm.Str(self.element)
+        builder.configuration = self.inputs.configuration
+
+        builder.eos.metadata.call_link_label = "EOS"
+        builder.eos.structure = self.structure
+        builder.eos.kpoints_distance = orm.Float(protocol["kpoints_distance"])
+        builder.eos.scale_count = orm.Int(protocol["scale_count"])
+        builder.eos.scale_increment = orm.Float(protocol["scale_increment"])
+
+        # pw
+        builder.eos.pw["code"] = self.inputs.code
+        builder.eos.pw["pseudos"] = self.ctx.pseudos
+        builder.eos.pw["parameters"] = orm.Dict(dict=pw_parameters)
+        builder.eos.pw["parallelization"] = self.inputs.parallelization
+        builder.eos.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
 
         return builder

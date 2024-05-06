@@ -8,7 +8,6 @@ The detail parameters for different properties are defined in the subclass that 
 
 from pathlib import Path
 from abc import ABCMeta, abstractmethod
-from pydantic import BaseModel
 
 from aiida import orm
 from aiida.engine import append_
@@ -23,32 +22,9 @@ from aiida_sssp_workflow.utils import (
 from aiida_sssp_workflow.utils.pseudo import extract_pseudo_info
 from aiida_sssp_workflow.utils.structure import UNARIE_CONFIGURATIONS
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
 UpfData = DataFactory("pseudo.upf")
-
-
-# TODO: moved to the report module
-class PointRunReportEntry(BaseModel):
-    uuid: str
-    wavefunction_cutoff: int
-    charge_density_cutoff: int
-    exit_status: int
-
-
-class ConvergenceReport(BaseModel):
-    reference: PointRunReportEntry
-    convergence_list: list[PointRunReportEntry]
-
-    @classmethod
-    def construct(cls, reference: dict, convergence_list: list[dict]):
-        """Construct the ConvergenceReport from dict data."""
-
-        return cls(
-            reference=PointRunReportEntry(**reference),
-            convergence_list=[
-                PointRunReportEntry(**entry) for entry in convergence_list
-            ],
-        )
 
 
 class abstract_attribute(object):
@@ -198,6 +174,26 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             )
 
         return self.ctx.pseudos
+
+    @property
+    def protocol(self):
+        """Syntax sugar for self.ctx.protocol"""
+        if "protocol" not in self.ctx:
+            raise AttributeError(
+                "protocol is not set in the context, your step must after _setup_protocol"
+            )
+
+        return self.ctx.protocol
+
+    @property
+    def element(self):
+        """Syntax sugar for self.ctx.element"""
+        if "element" not in self.ctx:
+            raise AttributeError(
+                "element is not set in the context, your step must after _setup_pseudos"
+            )
+
+        return self.ctx.element
 
     @abstractmethod
     def prepare_evaluate_builder(self, ecutwfc: int, ecutrho: int) -> dict:

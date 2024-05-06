@@ -21,7 +21,7 @@ UpfData = DataFactory("pseudo.upf")
 
 
 @calcfunction
-def parse_pseudo_info(pseudo: UpfData):
+def parse_pseudo_info(pseudo):
     """parse the pseudo info as a Dict"""
     from pseudo_parser.upf_parser import parse
 

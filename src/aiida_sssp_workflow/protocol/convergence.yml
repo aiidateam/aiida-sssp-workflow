@@ -5,10 +5,11 @@ acwf:
 
     base:   # base parameters is inherit by other process
         occupations: smearing
-        degauss: 0.0045
+        degauss: 0.02   # balanced protocol of qe -> gabriel
         smearing: fd
         conv_thr_per_atom: 1.0e-10
-        kpoints_distance: 0.15
+        kpoints_distance: 0.15  # balanced protocol of qe -> gabriel
+        mixing_beta: 0.4
 
     cohesive_energy:
         atom_smearing: gaussian
@@ -23,7 +24,6 @@ acwf:
     pressure:
         scale_count: 7
         scale_increment: 0.02
-        mixing_beta: 0.4
 
     bands:
         init_nbands_factor: 3.0
@@ -31,10 +31,9 @@ acwf:
         kpoints_distance_scf: 0.15
         kpoints_distance_bands: 0.15
 
-    delta:
+    eos:
         scale_count: 7
         scale_increment: 0.02
-        mixing_beta: 0.4
 
 
 #moderate:
@@ -69,7 +68,7 @@ acwf:
 #        kpoints_distance_scf: 0.15
 #        kpoints_distance_bands: 0.15
 #
-#    delta:
+#    eos:
 #        scale_count: 7
 #        scale_increment: 0.02
 #        mixing_beta: 0.4
@@ -82,8 +81,9 @@ test:
         occupations: smearing
         degauss: 0.01
         smearing: cold
-        conv_thr_per_atom: 1.0e-6
+        conv_thr_per_atom: 1.0e-5
         kpoints_distance: 0.5
+        mixing_beta: 0.4
 
     cohesive_energy:
         atom_smearing: gaussian
@@ -98,7 +98,6 @@ test:
     pressure:
         scale_count: 5
         scale_increment: 0.02
-        mixing_beta: 0.4
 
     bands:
         init_nbands_factor: 3.0
@@ -106,7 +105,6 @@ test:
         kpoints_distance_scf: 0.5
         kpoints_distance_bands: 0.25
 
-    delta:
+    eos:
         scale_count: 5
         scale_increment: 0.02
-        mixing_beta: 0.4
