@@ -9,6 +9,7 @@ from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 UpfData = DataFactory("pseudo.upf")
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "entry_point",
     [
@@ -60,6 +61,36 @@ def test_run_default(
     ref_evaluate_node = orm.load_node(validated_report.reference.uuid)
 
     data_regression.check(serialize_inputs(ref_evaluate_node.inputs))
+
+
+@pytest.mark.parametrize(
+    "entry_point,clean_workdir",
+    [
+        ("sssp_workflow.convergence.eos", True),
+        ("sssp_workflow.convergence.eos", False),
+    ],
+)
+def test_builder_pseudo_as_upfdata(
+    entry_point,
+    clean_workdir,
+    pseudo_path,
+    code_generator,
+    serialize_builder,
+    data_regression,
+):
+    _ConvergencWorkChain = WorkflowFactory(entry_point)
+    pseudo = UpfData.get_or_create(pseudo_path("Al"))
+
+    builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
+        pseudo=pseudo,
+        protocol="test",
+        cutoff_list=[(20, 80), (30, 120)],
+        configuration="DC",
+        code=code_generator("pw"),
+        clean_workdir=clean_workdir,
+    )
+
+    data_regression.check(serialize_builder(builder))
 
 
 # TODO: test not clean workdir

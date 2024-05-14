@@ -6,13 +6,14 @@ This abstract class give the framework of how to run a convergence test on a giv
 The detail parameters for different properties are defined in the subclass that inherit this base class.
 """
 
+from typing import Union
 from pathlib import Path
 from abc import ABCMeta, abstractmethod
 
 from aiida import orm
 from aiida.engine import append_
-from aiida.plugins import DataFactory
 from aiida.engine import ProcessBuilder
+from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import (
     get_default_configuration,
@@ -23,8 +24,6 @@ from aiida_sssp_workflow.utils.pseudo import extract_pseudo_info
 from aiida_sssp_workflow.utils.structure import UNARIE_CONFIGURATIONS
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
-
-UpfData = DataFactory("pseudo.upf")
 
 
 class abstract_attribute(object):
@@ -210,7 +209,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
     @classmethod
     def get_builder(
         cls,
-        pseudo: Path,
+        pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
         configuration: str,
@@ -219,7 +218,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         """Generate builder for the generic convergence workflow"""
         builder = super().get_builder()
         builder.protocol = orm.Str(protocol)
-        builder.pseudo = UpfData.get_or_create(pseudo)
+
+        if isinstance(pseudo, Path):
+            builder.pseudo = UpfData.get_or_create(pseudo)
+        else:
+            builder.pseudo = pseudo
 
         if ret := is_valid_cutoff_list(cutoff_list):
             raise ValueError(ret)

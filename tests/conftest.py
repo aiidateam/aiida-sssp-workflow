@@ -7,6 +7,7 @@ from pathlib import Path
 
 from aiida import orm
 from aiida.orm.utils.managers import NodeLinksManager
+from aiida.engine import ProcessBuilder
 
 pytest_plugins = ["aiida.manage.tests.pytest_fixtures"]
 
@@ -62,12 +63,69 @@ def pseudo_path():
     return _pseudo_path
 
 
+def _serialize_data(data):
+    from aiida.orm import (
+        AbstractCode,
+        BaseType,
+        Data,
+        Dict,
+        KpointsData,
+        List,
+        RemoteData,
+        SinglefileData,
+    )
+    from aiida.plugins import DataFactory
+
+    StructureData = DataFactory("core.structure")
+    UpfData = DataFactory("pseudo.upf")
+
+    if isinstance(data, dict):
+        return {key: _serialize_data(value) for key, value in data.items()}
+
+    if isinstance(data, BaseType):
+        return data.value
+
+    if isinstance(data, AbstractCode):
+        return data.full_label
+
+    if isinstance(data, Dict):
+        return data.get_dict()
+
+    if isinstance(data, List):
+        return data.get_list()
+
+    if isinstance(data, StructureData):
+        return data.get_formula()
+
+    if isinstance(data, UpfData):
+        return f"{data.element}<md5={data.md5}>"
+
+    if isinstance(data, RemoteData):
+        # For `RemoteData` we compute the hash of the repository. The value returned by `Node._get_hash` is not
+        # useful since it includes the hash of the absolute filepath and the computer UUID which vary between tests
+        return data.base.repository.hash()
+
+    if isinstance(data, KpointsData):
+        try:
+            return data.get_kpoints()
+        except AttributeError:
+            return data.get_kpoints_mesh()
+
+    if isinstance(data, SinglefileData):
+        return data.get_content()
+
+    if isinstance(data, Data):
+        return data.base.caching._get_hash()
+
+    return data
+
+
 @pytest.fixture
 def serialize_inputs():
     """Serialize the given process inputs into a dictionary with nodes turned into their value representation.
     (Borrowed from aiida-quantumespresso/tests/conftest.py::serialize_builder)
 
-    :param builder: the process builder to serialize
+    :param input: the process inputs of type NodeManegerLink to serialize
     :return: dictionary
     """
 
@@ -136,3 +194,18 @@ def serialize_inputs():
         return _serialize_data(_inputs)
 
     return _serialize_inputs
+
+
+@pytest.fixture
+def serialize_builder():
+    """Serialize the builder into a dictionary with nodes turned into their value representation.
+    (Borrowed from aiida-quantumespresso/tests/conftest.py::serialize_builder)
+
+    :param builder: the process builder to serialize
+    :return: dictionary
+    """
+
+    def _serialize_builder(builder: ProcessBuilder):
+        return _serialize_data(builder._inputs(prune=True))
+
+    return _serialize_builder

@@ -4,9 +4,11 @@ Convergence test on cohesive energy of a given pseudopotential
 """
 
 from pathlib import Path
+from typing import Union
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
+from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
@@ -45,7 +47,7 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
     @classmethod
     def get_builder(
         cls,
-        pseudo: Path,
+        pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
         configuration: str,

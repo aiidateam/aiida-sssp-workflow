@@ -1,0 +1,18 @@
+clean_workdir: true
+code: pw-docker@localhost
+configuration: DC
+cutoff_list:
+- - 20
+  - 80
+- - 30
+  - 120
+metadata:
+  call_link_label: caching
+mpi_options:
+  max_wallclock_seconds: 1800
+  resources:
+    num_machines: 1
+  withmpi: false
+parallelization: {}
+protocol: test
+pseudo: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
