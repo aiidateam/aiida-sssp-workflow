@@ -35,6 +35,42 @@ balanced:
         scale_count: 7
         scale_increment: 0.02
 
+fine:
+    name: fine
+    description: The balanced protocol from Gabriel
+
+    base:   # base parameters is inherit by other process
+        occupations: smearing
+        degauss: 0.0125   # balanced protocol of qe -> gabriel
+        smearing: fd
+        conv_thr_per_atom: 1.0e-9
+        kpoints_distance: 0.1  # fine protocol of qe -> gabriel
+        mixing_beta: 0.4
+
+    cohesive_energy:
+        atom_smearing: gaussian
+        vacuum_length: 12.0
+
+    phonon_frequencies:
+        qpoints_list:
+            - [0.5, 0.5, 0.5]
+        epsilon: false
+        tr2_ph: 1.0e-16
+
+    pressure:
+        scale_count: 7
+        scale_increment: 0.02
+
+    bands:
+        init_nbands_factor: 3.0
+        fermi_shift: 10.0
+        kpoints_distance_scf: 0.15
+        kpoints_distance_bands: 0.15
+
+    eos:
+        scale_count: 7
+        scale_increment: 0.02
+
 acwf:
     name: acwf
     description: The parameters of EOS is exactly the same as it used in nat.phys.rev 2024 paper.

@@ -123,8 +123,6 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
                     help='Ground state structure which the verification perform')
         spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
                     help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
-        spec.input('atom_parameters', valid_type=orm.Dict,
-                    help='parameters for pwscf of atom calculation for each element in structure.')
         spec.input('vacuum_length', valid_type=orm.Float,
                     help='The length of cubic cell in isolate atom calculation.')
         spec.expose_inputs(PwBaseWorkChain, namespace="bulk", exclude=["pw.structure", "pw.pseudos"])
@@ -201,9 +199,6 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
             atom_inputs["pw"]["pseudos"] = {
                 element: self._get_pseudo(element, self.inputs.pseudos),
             }
-            atom_inputs["pw"]["parameters"] = orm.Dict(
-                dict=self.inputs.atom_parameters[element]
-            )
 
             running_atom_energy = self.submit(
                 PwBaseWorkChainWithMemoryHandler, **atom_inputs
@@ -279,5 +274,3 @@ class CohesiveEnergyWorkChain(_BaseEvaluateWorkChain):
         output_parameters = orm.Dict(dict=parameters_dict)
 
         self.out("output_parameters", output_parameters.store())
-        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
-        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())

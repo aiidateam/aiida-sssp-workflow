@@ -1,7 +1,5 @@
 from abc import abstractmethod
 
-from aiida import orm
-
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 
 
@@ -13,8 +11,6 @@ class _BaseEvaluateWorkChain(SelfCleanWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.output('wavefunction_cutoff', valid_type=orm.Int, required=True)
-        spec.output('charge_density_cutoff', valid_type=orm.Int, required=True)
 
         spec.exit_code(210, 'ERROR_SUB_PROCESS_FAILED_SCF',
                     message='PwBaseWorkChain of pressure scf evaluation failed.')

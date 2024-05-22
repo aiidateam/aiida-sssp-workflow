@@ -40,7 +40,7 @@ class MetricWorkChain(SelfCleanWorkChain):
                     help='The output of metric factor measures to describe the precision of EOS compare '
                         ' with the AE equation of state.')
 
-        spec.exit_code(201, 'ERROR_SUB_PROCESS_FAILED_EOS', message='The `eos` sub process failed without return the fit value.')
+        spec.exit_code(1701, 'ERROR_BIRCH_MURNAGHAN_FIT_PROCESS_FAILED', message='The `metric` compute (birch murnaghan fit) sub process failed without return the fit value.')
 
         # yapf: enable
 
@@ -98,4 +98,4 @@ class MetricWorkChain(SelfCleanWorkChain):
             output_parameters = orm.Dict(dict={})
             self.out("output_parameters", output_parameters.store())
 
-            return self.exit_codes.ERROR_SUB_PROCESS_FAILED_EOS
+            return self.exit_codes.ERROR_BIRCH_MURNAGHAN_FIT_PROCESS_FAILED

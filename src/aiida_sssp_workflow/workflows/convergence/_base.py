@@ -310,10 +310,15 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             raise RuntimeError("Reference evaluation is not triggered") from e
 
         if not workchain.is_finished_ok:
-            self.report(
+            self.logger.warning(
                 f"{workchain.process_label} pk={workchain.pk} for reference run is failed."
             )
-            return self.exit_codes.ERROR_REFERENCE_CALCULATION_FAILED
+            # I use exit_code > 1000 as warning so the convergence test
+            # continued for other cutoff, and the results can still get to be analyzed.
+            # A typical example is in EOS calculation, the birch murnaghan fit is failed (exit_code=1701),
+            # but the EOS convergence can still be analyzed with energy-volume pairs.
+            if workchain.exit_code.status < 1000:
+                return self.exit_codes.ERROR_REFERENCE_CALCULATION_FAILED
 
     def run_convergence(self):
         """

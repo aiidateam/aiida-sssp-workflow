@@ -15,6 +15,7 @@ UpfData = DataFactory("pseudo.upf")
     [
         "sssp_workflow.convergence.caching",
         "sssp_workflow.convergence.eos",
+        "sssp_workflow.convergence.cohesive_energy",
     ],
 )
 def test_run_default(

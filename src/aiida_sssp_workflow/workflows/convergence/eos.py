@@ -18,8 +18,6 @@ from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
     """WorkChain to converge test on delta factor of input structure"""
 
-    # pylint: disable=too-many-instance-attributes
-
     _PROPERTY_NAME = "eos"
     _EVALUATE_WORKCHAIN = MetricWorkChain
 
@@ -59,7 +57,7 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
         """Return a builder to run this EOS convergence workchain"""
         builder = super().get_builder(pseudo, protocol, cutoff_list, configuration)
 
-        builder.metadata.call_link_label = "caching"
+        builder.metadata.call_link_label = "convergence_eos"
         builder.clean_workdir = orm.Bool(clean_workdir)
         builder.code = code
 
@@ -123,7 +121,7 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
 
         # pw
         builder.eos.pw["code"] = self.inputs.code
-        builder.eos.pw["pseudos"] = self.ctx.pseudos
+        builder.eos.pw["pseudos"] = self.pseudos
         builder.eos.pw["parameters"] = orm.Dict(dict=pw_parameters)
         builder.eos.pw["parallelization"] = self.inputs.parallelization
         builder.eos.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()

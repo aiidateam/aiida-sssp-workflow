@@ -51,7 +51,7 @@ class _EquationOfStateWorkChain(WorkChain):
             help='Result of birch murnaghan fitting.')
         spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
             message='At least one of the `{cls}` sub processes did not finish successfully.')
-        spec.exit_code(500, 'ERROR_BIRCH_MURNAGHAN_FIT_FAILED',
+        spec.exit_code(701, 'ERROR_BIRCH_MURNAGHAN_FIT_FAILED',
             message='The birch murnaghan fit failed with exit code={code}.')
         # yapf: enable
 
