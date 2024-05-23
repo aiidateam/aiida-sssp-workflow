@@ -10,7 +10,7 @@ from aiida.plugins import DataFactory, WorkflowFactory
 
 from . import _BaseEvaluateWorkChain
 
-PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
+PwBaseWorkChain = WorkflowFactory("quantumespresso.pw.base")
 UpfData = DataFactory("pseudo.upf")
 
 
@@ -40,7 +40,11 @@ class PressureWorkChain(_BaseEvaluateWorkChain):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
-        spec.expose_inputs(PwBaseWorkflow, include=['pw', 'kpoints_distance', 'metadata'])
+        spec.input('structure', valid_type=orm.StructureData,
+                    help='Ground state structure which the verification perform')
+        spec.input_namespace('pseudos', valid_type=UpfData, dynamic=True,
+                    help='A mapping of `UpfData` nodes onto the kind name to which they should apply.')
+        spec.expose_inputs(PwBaseWorkChain, exclude=["pw.structure", "pw.pseudos"])
 
         spec.outline(
             cls.run_scf,
@@ -56,10 +60,13 @@ class PressureWorkChain(_BaseEvaluateWorkChain):
         """
         set the inputs and submit scf
         """
-        inputs = self.exposed_inputs(PwBaseWorkflow)
+        inputs = self.exposed_inputs(PwBaseWorkChain)
+        inputs["pw"]["structure"] = self.inputs.structure
+        inputs["pw"]["pseudos"] = self.inputs.pseudos
 
-        running = self.submit(PwBaseWorkflow, **inputs)
-        self.report(f"Running pw calculation pk={running.pk}")
+        running = self.submit(PwBaseWorkChain, **inputs)
+        self.report(f"Running pw scf calculation pk={running.pk}")
+
         return ToContext(workchain_scf=running)
 
     def inspect_scf(self):
@@ -82,11 +89,8 @@ class PressureWorkChain(_BaseEvaluateWorkChain):
         output_parameters = helper_get_hydrostatic_stress(
             output_trajectory, output_parameters
         )
-        self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
-        self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
+
         self.out("output_parameters", output_parameters)
 
     def finalize(self):
         """set ecutwfc and ecutrho"""
-        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
-        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())

@@ -137,7 +137,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         builder.bulk.pw["code"] = self.inputs.code
         builder.bulk.pw["parameters"] = orm.Dict(dict=bulk_pw_parameters)
         builder.bulk.pw["parallelization"] = self.inputs.bulk_parallelization
-        builder.bulk.pw["metadata"]["options"] = self.inputs.atom_mpi_options.get_dict()
+        builder.bulk.pw["metadata"]["options"] = self.inputs.bulk_mpi_options.get_dict()
 
         # atom
         atom_pw_parameters = {

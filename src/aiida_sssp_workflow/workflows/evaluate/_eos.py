@@ -26,34 +26,69 @@ class _EquationOfStateWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
-        # yapf: disable
         super().define(spec)
-        spec.input('structure', valid_type=orm.StructureData, help='The structure at equilibrium volume.')
-        spec.input('kpoints_distance', valid_type=orm.Float, required=True,
-            help='The kpoints distance used in generating the kmesh of unscaled structure then for all scaled structures')
-        spec.input('scale_factors', valid_type=orm.List, required=False,
-            help='The list of scale factors at which the volume and total energy of the structure should be computed.')
-        spec.input('scale_count', valid_type=orm.Int, default=lambda: orm.Int(7),
-            help='The number of points to compute for the equation of state.')
-        spec.input('scale_increment', valid_type=orm.Float, default=lambda: orm.Float(0.02),
-            help='The relative difference between consecutive scaling factors.')
-        spec.expose_inputs(PwBaseWorkChain,
-            exclude=('kpoints', 'pw.structure', 'pw.kpoints_distance'),
-            namespace_options={'help': 'Inputs for the `PwBaseWorkChain` for the SCF calculation.'})
+        spec.input(
+            "structure",
+            valid_type=orm.StructureData,
+            help="The structure at equilibrium volume.",
+        )
+        spec.input(
+            "kpoints_distance",
+            valid_type=orm.Float,
+            required=True,
+            help="The kpoints distance used in generating the kmesh of unscaled structure then for all scaled structures",
+        )
+        spec.input(
+            "scale_factors",
+            valid_type=orm.List,
+            required=False,
+            help="The list of scale factors at which the volume and total energy of the structure should be computed.",
+        )
+        spec.input(
+            "scale_count",
+            valid_type=orm.Int,
+            default=lambda: orm.Int(7),
+            help="The number of points to compute for the equation of state.",
+        )
+        spec.input(
+            "scale_increment",
+            valid_type=orm.Float,
+            default=lambda: orm.Float(0.02),
+            help="The relative difference between consecutive scaling factors.",
+        )
+        spec.expose_inputs(
+            PwBaseWorkChain,
+            exclude=("kpoints", "pw.structure", "pw.kpoints_distance"),
+            namespace_options={
+                "help": "Inputs for the `PwBaseWorkChain` for the SCF calculation."
+            },
+        )
         spec.outline(
             cls.run_init,
             cls.run_eos,
             cls.inspect_eos,
         )
-        spec.output('output_volume_energy', valid_type=orm.Dict,
-            help='Results volumes and energise.')
-        spec.output('output_birch_murnaghan_fit', valid_type=orm.Dict, required=False,
-            help='Result of birch murnaghan fitting.')
-        spec.exit_code(400, 'ERROR_SUB_PROCESS_FAILED',
-            message='At least one of the `{cls}` sub processes did not finish successfully.')
-        spec.exit_code(701, 'ERROR_BIRCH_MURNAGHAN_FIT_FAILED',
-            message='The birch murnaghan fit failed with exit code={code}.')
-        # yapf: enable
+        spec.output(
+            "output_volume_energy",
+            valid_type=orm.Dict,
+            help="Results volumes and energise.",
+        )
+        spec.output(
+            "output_birch_murnaghan_fit",
+            valid_type=orm.Dict,
+            required=False,
+            help="Result of birch murnaghan fitting.",
+        )
+        spec.exit_code(
+            400,
+            "ERROR_SUB_PROCESS_FAILED",
+            message="At least one of the `{cls}` sub processes did not finish successfully.",
+        )
+        spec.exit_code(
+            701,
+            "ERROR_BIRCH_MURNAGHAN_FIT_FAILED",
+            message="The birch murnaghan fit failed with exit code={code}.",
+        )
 
     def get_scale_factors(self) -> List[float]:
         """Return the list of scale factors.
