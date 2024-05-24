@@ -114,7 +114,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         builder.scf.pw["parameters"] = orm.Dict(scf_pw_parameters)
         builder.scf.pw["parallelization"] = self.inputs.parallelization
         builder.scf.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
-        builder.scf.kpoints_distance = orm.Float(protocol["kpoints_distance_scf"])
+        builder.scf.kpoints_distance = orm.Float(protocol["kpoints_distance"])
 
         # For band pw calculation
         bands_pw_parameters = {
@@ -141,7 +141,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         builder.bands.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
 
         # Generic
-        builder.kpoints_distance_bands = orm.Float(protocol["kpoints_distance_bands"])
+        builder.kpoints_distance_bands = orm.Float(protocol["kpoints_distance"])
         builder.init_nbands_factor = orm.Float(protocol["init_nbands_factor"])
         builder.fermi_shift = orm.Float(protocol["fermi_shift"])
         builder.run_band_structure = orm.Bool(False)

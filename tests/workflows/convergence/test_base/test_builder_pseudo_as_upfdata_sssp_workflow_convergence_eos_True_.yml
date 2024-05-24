@@ -7,7 +7,9 @@ cutoff_list:
 - - 30
   - 120
 metadata:
-  call_link_label: caching
+  call_link_label: convergence_eos
+  description: Run on protocol 'test' and configuration 'DC'
+  label: Al.paw.pbe.z_3.ld1.psl.v0.1.upf
 mpi_options:
   max_wallclock_seconds: 1800
   resources:

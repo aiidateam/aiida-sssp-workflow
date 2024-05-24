@@ -38,7 +38,7 @@ def code_generator(aiida_localhost):
             label=f"{bin}-docker",
             default_calc_job_plugin=plugin,
             filepath_executable=exec_path,
-            image_name="container4hpc/qe-mpich314:0.1.0",
+            image_name="ghcr.io/containers4hpc/quantum-espresso:v2024.1001",
             wrap_cmdline_params=True,
             engine_command=engine_command,
             use_double_quotes=True,
@@ -107,7 +107,7 @@ def _serialize_data(data):
 
     if isinstance(data, KpointsData):
         try:
-            return data.get_kpoints()
+            return data.get_kpoints().tolist()
         except AttributeError:
             return data.get_kpoints_mesh()
 
@@ -173,7 +173,7 @@ def serialize_inputs():
 
         if isinstance(data, KpointsData):
             try:
-                return data.get_kpoints()
+                return data.get_kpoints().tolist()
             except AttributeError:
                 return data.get_kpoints_mesh()
 

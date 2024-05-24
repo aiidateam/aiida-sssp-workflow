@@ -6,15 +6,12 @@ WorkChain calculate phonon frequencies at Gamma
 from aiida import orm
 from aiida.common import NotExistentAttributeError
 from aiida.engine import ToContext, while_
-from aiida.plugins import DataFactory, WorkflowFactory
+from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
+from aiida_quantumespresso.workflows.ph.base import PhBaseWorkChain
 
 from aiida_sssp_workflow.workflows.common import clean_workdir, operate_calcjobs
 
 from . import _BaseEvaluateWorkChain
-
-PwBaseWorkflow = WorkflowFactory("quantumespresso.pw.base")
-PhBaseWorkflow = WorkflowFactory("quantumespresso.ph.base")
-UpfData = DataFactory("pseudo.upf")
 
 
 class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
@@ -23,10 +20,18 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
-        # yapf: disable
         super().define(spec)
-        spec.expose_inputs(PwBaseWorkflow, namespace='scf', include=['metadata', 'pw', 'kpoints_distance'])
-        spec.expose_inputs(PhBaseWorkflow, namespace='phonon', exclude=['ph.parent_folder'])
+        spec.input(
+            "structure",
+            valid_type=orm.StructureData,
+            help="The structure at equilibrium volume.",
+        )
+        spec.expose_inputs(
+            PwBaseWorkChain, namespace="scf", exclude=["kpoints", "pw.structure"]
+        )
+        spec.expose_inputs(
+            PhBaseWorkChain, namespace="phonon", exclude=["ph.parent_folder"]
+        )
 
         spec.outline(
             cls.setup,
@@ -38,15 +43,33 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
             ),
             cls.finalize,
         )
-        spec.output('output_parameters', valid_type=orm.Dict, required=True,
-                    help='The output parameters include phonon frequencies.')
-        spec.exit_code(211, 'ERROR_NO_REMOTE_FOLDER_OUTPUT_OF_SCF',
-                    message='The remote folder node not exist')
-        spec.exit_code(202, 'ERROR_SUB_PROCESS_FAILED_PH',
-                    message='The `PhBaseWorkChain` sub process failed.')
-        spec.exit_code(203, 'ERROR_SUB_PROCESS_FAILED_SCF',
-                    message='The `PwBaseWorkChain` sub process failed.')
-        # yapf: enable
+
+        spec.expose_outputs(
+            PwBaseWorkChain,
+            namespace="pw",
+            namespace_options={"help": "output exposed from pw base workchain"},
+        )
+        spec.expose_outputs(
+            PhBaseWorkChain,
+            namespace="ph",
+            namespace_options={"help": "output exposed from ph base workchain"},
+        )
+
+        spec.exit_code(
+            211,
+            "ERROR_NO_REMOTE_FOLDER_OUTPUT_OF_SCF",
+            message="The remote folder node not exist",
+        )
+        spec.exit_code(
+            202,
+            "ERROR_SUB_PROCESS_FAILED_PH",
+            message="The `PhBaseWorkChain` sub process failed.",
+        )
+        spec.exit_code(
+            203,
+            "ERROR_SUB_PROCESS_FAILED_SCF",
+            message="The `PwBaseWorkChain` sub process failed.",
+        )
 
     def setup(self):
         self.ctx.should_run_ph = True
@@ -68,10 +91,12 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         """
         set the inputs and submit scf
         """
-        inputs = self.exposed_inputs(PwBaseWorkflow, namespace="scf")
+        inputs = self.exposed_inputs(PwBaseWorkChain, namespace="scf")
+        inputs["pw"]["structure"] = self.inputs.structure
 
-        running = self.submit(PwBaseWorkflow, **inputs)
+        running = self.submit(PwBaseWorkChain, **inputs)
         self.report(f"Running pw calculation pk={running.pk}")
+
         return ToContext(workchain_scf=running)
 
     def inspect_scf(self):
@@ -88,11 +113,20 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
 
             return self.exit_codes.ERROR_SUB_PROCESS_FAILED_SCF
 
+        # Expose the output
+        self.out_many(
+            self.exposed_outputs(
+                workchain,
+                PwBaseWorkChain,
+                namespace="pw",
+            )
+        )
+
         try:
             remote_folder = self.ctx.scf_remote_folder = workchain.outputs.remote_folder
 
             self.report(
-                f"Is remote folder cleaned? {remote_folder.extras.get('cleaned', False)}"
+                f"Is remote folder be cleaned? ({remote_folder.base.extras.all.get('cleaned', False)})"
             )
         except NotExistentAttributeError:
             # set condition to False to break loop
@@ -105,21 +139,17 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
             node = orm.load_node(node_pk)
             node.is_valid_cache = True
 
-        self.ctx.ecutwfc = workchain.inputs.pw.parameters["SYSTEM"]["ecutwfc"]
-        self.ctx.ecutrho = workchain.inputs.pw.parameters["SYSTEM"]["ecutrho"]
-
-        self.ctx.calc_time = workchain.outputs.output_parameters["wall_time_seconds"]
-
     def run_ph(self):
         """
         set the inputs and submit ph calculation to get quantities for phonon evaluation
         """
 
-        inputs = self.exposed_inputs(PhBaseWorkflow, namespace="phonon")
+        inputs = self.exposed_inputs(PhBaseWorkChain, namespace="phonon")
         inputs["ph"]["parent_folder"] = self.ctx.scf_remote_folder
 
-        running = self.submit(PhBaseWorkflow, **inputs)
+        running = self.submit(PhBaseWorkChain, **inputs)
         self.report(f"Running ph calculation pk={running.pk}")
+
         return ToContext(workchain_ph=running)
 
     def inspect_ph(self):
@@ -149,22 +179,19 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
                 )
                 return self.exit_codes.ERROR_SUB_PROCESS_FAILED_PH
 
-        self.ctx.calc_time += workchain.outputs.output_parameters["wall_time_seconds"]
-        output_parameters = workchain.outputs.output_parameters.get_dict()
-        output_parameters.update(
-            {
-                "total_calc_time": self.ctx.calc_time,
-                "time_unit": "s",
-            }
-        )
-        self.out("output_parameters", orm.Dict(dict=output_parameters).store())
-
         self.ctx.should_run_ph = False
+
+        # Expose the output
+        self.out_many(
+            self.exposed_outputs(
+                workchain,
+                PhBaseWorkChain,
+                namespace="ph",
+            )
+        )
 
     def finalize(self):
         """set ecutwfc and ecutrho"""
-        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
-        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
         if self.inputs.clean_workdir.value is True:
             cleaned_calcs = operate_calcjobs(

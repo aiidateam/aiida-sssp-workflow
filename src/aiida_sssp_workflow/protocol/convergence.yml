@@ -19,7 +19,8 @@ balanced:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-16
+        tr2_ph: 1.0e-12
+        diagonalization: cg
 
     pressure:
         scale_count: 7
@@ -28,8 +29,6 @@ balanced:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
-        kpoints_distance_scf: 0.15
-        kpoints_distance_bands: 0.15
 
     eos:
         scale_count: 7
@@ -55,7 +54,8 @@ fine:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-16
+        tr2_ph: 1.0e-12
+        diagonalization: cg
 
     pressure:
         scale_count: 7
@@ -64,8 +64,6 @@ fine:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
-        kpoints_distance_scf: 0.15
-        kpoints_distance_bands: 0.15
 
     eos:
         scale_count: 7
@@ -91,7 +89,8 @@ acwf:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-16
+        tr2_ph: 1.0e-14
+        diagonalization: cg
 
     pressure:
         scale_count: 7
@@ -100,8 +99,6 @@ acwf:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
-        kpoints_distance_scf: 0.15
-        kpoints_distance_bands: 0.15
 
     eos:
         scale_count: 7
@@ -127,7 +124,8 @@ test:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-5
+        tr2_ph: 1.0e-6
+        diagonalization: cg
 
     pressure:
         scale_count: 5
@@ -136,8 +134,6 @@ test:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
-        kpoints_distance_scf: 0.5
-        kpoints_distance_bands: 0.25
 
     eos:
         scale_count: 5

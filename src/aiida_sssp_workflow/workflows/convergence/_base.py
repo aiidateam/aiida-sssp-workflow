@@ -225,6 +225,16 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         builder = super().get_builder()
         builder.protocol = orm.Str(protocol)
 
+        # Set the default label and description
+        # The default label is set to be the base file name of PP
+        # The description include which configuration and which protocol is using.
+        builder.metadata.label = (
+            pseudo.filename if isinstance(pseudo, UpfData) else pseudo.name
+        )
+        builder.metadata.description = (
+            f"Run on protocol '{protocol}' and configuration '{configuration}'"
+        )
+
         if isinstance(pseudo, Path):
             builder.pseudo = UpfData.get_or_create(pseudo)
         else:

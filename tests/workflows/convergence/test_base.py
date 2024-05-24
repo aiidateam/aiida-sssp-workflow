@@ -18,6 +18,7 @@ UpfData = DataFactory("pseudo.upf")
         "sssp_workflow.convergence.cohesive_energy",
         "sssp_workflow.convergence.pressure",
         "sssp_workflow.convergence.bands",
+        "sssp_workflow.convergence.phonon_frequencies",
     ],
 )
 def test_run_default(
@@ -29,23 +30,33 @@ def test_run_default(
     """
     _ConvergencWorkChain = WorkflowFactory(entry_point)
 
-    builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
-        pseudo=pseudo_path("Al"),
-        protocol="test",
-        cutoff_list=[(20, 80), (30, 120)],
-        configuration="DC",
-        code=code_generator("pw"),
-        clean_workdir=True,
-    )
-
-    # set up the inputs
-    builder.metadata.label = "test"
-    builder.metadata.description = "test"
+    if "phonon_frequencies" in entry_point:
+        # require passing pw_code and ph_code
+        builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
+            pseudo=pseudo_path("Al"),
+            protocol="test",
+            cutoff_list=[(20, 80), (30, 120)],
+            configuration="DC",
+            pw_code=code_generator("pw"),
+            ph_code=code_generator("ph"),
+            clean_workdir=True,
+        )
+    else:
+        builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
+            pseudo=pseudo_path("Al"),
+            protocol="test",
+            cutoff_list=[(20, 80), (30, 120)],
+            configuration="DC",
+            code=code_generator("pw"),
+            clean_workdir=True,
+        )
 
     # run the workchain
     result, node = run_get_node(builder)
 
     assert node.is_finished_ok
+    assert node.label == "Al.paw.pbe.z_3.ld1.psl.v0.1.upf"
+    assert "DC" in node.description and "test" in node.description
 
     validated_report = ConvergenceReport.construct(**result["convergence_report"])
 

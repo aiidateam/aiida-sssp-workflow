@@ -20,7 +20,7 @@ bands:
 clean_workdir: true
 fermi_shift: 10.0
 init_nbands_factor: 3.0
-kpoints_distance_bands: 0.25
+kpoints_distance_bands: 0.5
 run_band_structure: false
 scf:
   kpoints_distance: 0.5
