@@ -3,71 +3,16 @@
 Convergence test on bands of a given pseudopotential
 """
 
-from aiida import orm
-from aiida.engine import calcfunction
-from aiida.plugins import DataFactory
+from pathlib import Path
+from typing import Union
 
-from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
-from aiida_sssp_workflow.utils import MAGNETIC_ELEMENTS, NONMETAL_ELEMENTS, update_dict
+from aiida import orm
+from aiida.engine import ProcessBuilder
+from aiida_pseudo.data.pseudo import UpfData
+
+from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
-
-UpfData = DataFactory("pseudo.upf")
-
-
-@calcfunction
-def helper_bands_distance_difference(
-    band_structure_a: orm.BandsData,
-    band_parameters_a: orm.Dict,
-    band_structure_b: orm.BandsData,
-    band_parameters_b: orm.Dict,
-    smearing: orm.Float,
-    fermi_shift: orm.Float,
-    do_smearing: orm.Bool,
-    spin: orm.Bool,
-):
-    """The helper function to calculate the bands distance between two band structures.
-    The function is called in last step of convergence workflow to get the bands distance.
-    """
-
-    # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
-    bandsdata_a = {
-        "number_of_electrons": band_parameters_a["number_of_electrons"],
-        "number_of_bands": band_parameters_a["number_of_bands"],
-        "fermi_level": band_parameters_a["fermi_energy"],
-        "bands": band_structure_a.get_bands(),
-        "kpoints": band_structure_a.get_kpoints(),
-        "weights": band_structure_a.get_array("weights"),
-    }
-    bandsdata_b = {
-        "number_of_electrons": band_parameters_b["number_of_electrons"],
-        "number_of_bands": band_parameters_b["number_of_bands"],
-        "fermi_level": band_parameters_b["fermi_energy"],
-        "bands": band_structure_b.get_bands(),
-        "kpoints": band_structure_b.get_kpoints(),
-        "weights": band_structure_b.get_array("weights"),
-    }
-    res = get_bands_distance(
-        bandsdata_a,
-        bandsdata_b,
-        smearing=smearing.value,
-        fermi_shift=fermi_shift.value,
-        do_smearing=do_smearing.value,
-        spin=spin.value,
-    )
-    eta = res.get("eta_c", None)
-    shift = res.get("shift_c", None)
-    max_diff = res.get("max_diff_c", None)
-    units = res.get("units", None)
-
-    return orm.Dict(
-        dict={
-            "eta_c": eta,
-            "shift_c": shift,
-            "max_diff_c": max_diff,
-            "bands_unit": units,
-        }
-    )
 
 
 class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
@@ -77,124 +22,128 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
     _PROPERTY_NAME = "bands"
     _EVALUATE_WORKCHAIN = BandsWorkChain
-    _MEASURE_OUT_PROPERTY = "eta_c"
 
-    def init_setup(self):
-        super().init_setup()
-        self.ctx.extra_pw_parameters = {
-            "CONTROL": {
-                "disk_io": "low",
-            },
-        }
-
-    def setup_code_parameters_from_protocol(self):
-        """Input validation"""
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-
-        # Read from protocol if parameters not set from inputs
-        super().setup_code_parameters_from_protocol()
-
-        # parse protocol
-        protocol = self.ctx.protocol
-        self.ctx.degauss = self._DEGAUSS = protocol["degauss"]
-        self._OCCUPATIONS = protocol["occupations"]
-        self._SMEARING = protocol["smearing"]
-        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
-        self.ctx.kpoints_distance_scf = protocol["kpoints_distance_scf"]
-        self.ctx.kpoints_distance_bands = protocol["kpoints_distance_bands"]
-
-        # Set context parameters
-        self.ctx.pw_parameters = super()._get_pw_base_parameters(
-            self._DEGAUSS, self._OCCUPATIONS, self._SMEARING, self._CONV_THR_PER_ATOM
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+        spec.input(
+            "code",
+            valid_type=orm.AbstractCode,
+            help="The `pw.x` code use for the `PwCalculation`.",
+        )
+        spec.input(
+            "parallelization",
+            valid_type=orm.Dict,
+            required=False,
+            help="The parallelization settings for the `PwCalculation`.",
+        )
+        spec.input(
+            "mpi_options",
+            valid_type=orm.Dict,
+            required=False,
+            help="The MPI options for the `PwCalculation`.",
         )
 
-        self.ctx.fermi_shift = protocol["fermi_shift"]
-        self.ctx.init_nbands_factor = protocol["init_nbands_factor"]
-        self.ctx.is_metal = self.ctx.element not in NONMETAL_ELEMENTS
+    @classmethod
+    def get_builder(
+        cls,
+        pseudo: Union[Path, UpfData],
+        protocol: str,
+        cutoff_list: list,
+        configuration: str,
+        code: orm.AbstractCode,
+        parallelization: dict | None = None,
+        mpi_options: dict | None = None,
+        clean_workdir: bool = True,  # default to clean workdir
+    ) -> ProcessBuilder:
+        """Return a builder to run this EOS convergence workchain"""
+        builder = super().get_builder(pseudo, protocol, cutoff_list, configuration)
 
-        self.logger.info(f"The parameters for convergence is: {self.ctx.pw_parameters}")
+        builder.metadata.call_link_label = "convergence_eos"
+        builder.clean_workdir = orm.Bool(clean_workdir)
+        builder.code = code
 
-    def _get_inputs(self, ecutwfc, ecutrho):
-        """
-        get inputs for the evaluation CohesiveWorkChain by provide ecutwfc and ecutrho,
-        all other parameters are fixed for the following steps
-        """
-        parameters = {
+        if parallelization:
+            builder.parallelization = orm.Dict(parallelization)
+        else:
+            builder.parallelization = orm.Dict()
+
+        if mpi_options:
+            builder.mpi_options = orm.Dict(mpi_options)
+        else:
+            builder.mpi_options = orm.Dict(get_default_mpi_options())
+
+        return builder
+
+    def prepare_evaluate_builder(self, ecutwfc, ecutrho):
+        """Input builder for running the inner bands/bands-structure evation workchain"""
+        protocol = self.protocol
+        natoms = len(self.structure.sites)
+
+        builder = self._EVALUATE_WORKCHAIN.get_builder()
+
+        builder.clean_workdir = (
+            self.inputs.clean_workdir
+        )  # sync with the main workchain
+
+        builder.metadata.call_link_label = "convergence_bands"
+
+        # ports from PwBandsWorkChain: scf/bands namespace and structure port
+        builder.structure = self.structure
+
+        # For SCF pw calculation
+        scf_pw_parameters = {
             "SYSTEM": {
-                "ecutwfc": ecutwfc,
-                "ecutrho": ecutrho,
+                "degauss": protocol["degauss"],
+                "occupations": protocol["occupations"],
+                "smearing": protocol["smearing"],
+                "ecutwfc": ecutwfc,  # <-- Here set the ecutwfc
+                "ecutrho": ecutrho,  # <-- Here set the ecutrho
+            },
+            "ELECTRONS": {
+                "conv_thr": protocol["conv_thr_per_atom"] * natoms,
+                "mixing_beta": protocol["mixing_beta"],
+            },
+            "CONTROL": {
+                "calculation": "scf",
             },
         }
 
-        parameters = update_dict(parameters, self.ctx.pw_parameters)
+        builder.scf.pw["code"] = self.inputs.code
+        builder.scf.pw["pseudos"] = self.pseudos
+        builder.scf.pw["parameters"] = orm.Dict(scf_pw_parameters)
+        builder.scf.pw["parallelization"] = self.inputs.parallelization
+        builder.scf.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
+        builder.scf.kpoints_distance = orm.Float(protocol["kpoints_distance_scf"])
 
-        parameters_bands = update_dict(parameters, {})
-        parameters_bands["SYSTEM"].pop("nbnd", None)
-        parameters_bands["CONTROL"].pop("tstress", None)
-        parameters_bands["CONTROL"]["calculation"] = "bands"
-
-        inputs = {
-            "structure": self.ctx.structure,
-            "scf": {
-                "pw": {
-                    "code": self.inputs.code,
-                    "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=parameters),
-                    "metadata": {
-                        "options": self.ctx.options,
-                    },
-                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
-                },
-                "kpoints_distance": orm.Float(self.ctx.kpoints_distance_scf),
+        # For band pw calculation
+        bands_pw_parameters = {
+            "SYSTEM": {
+                "degauss": protocol["degauss"],
+                "occupations": protocol["occupations"],
+                "smearing": protocol["smearing"],
+                "ecutwfc": ecutwfc,  # <-- Here set the ecutwfc
+                "ecutrho": ecutrho,  # <-- Here set the ecutrho
             },
-            "bands": {
-                "pw": {
-                    "code": self.inputs.code,
-                    "pseudos": self.ctx.pseudos,
-                    "parameters": orm.Dict(dict=parameters_bands),
-                    "metadata": {
-                        "options": self.ctx.options,
-                    },
-                    "parallelization": orm.Dict(dict=self.ctx.parallelization),
-                },
+            "ELECTRONS": {
+                "conv_thr": protocol["conv_thr_per_atom"] * natoms,
+                "mixing_beta": protocol["mixing_beta"],
             },
-            "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
-            "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
-            "fermi_shift": orm.Float(self.ctx.fermi_shift),
-            "run_bands_structure": orm.Bool(
-                False
-            ),  # for convergence with no band structure evaluate
-            "clean_workdir": self.inputs.clean_workdir,
+            "CONTROL": {
+                "calculation": "bands",
+            },
         }
 
-        return inputs
+        builder.bands.pw["code"] = self.inputs.code
+        builder.bands.pw["pseudos"] = self.pseudos
+        builder.bands.pw["parameters"] = orm.Dict(bands_pw_parameters)
+        builder.bands.pw["parallelization"] = self.inputs.parallelization
+        builder.bands.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
 
-    def helper_compare_result_extract_fun(self, sample_node, reference_node, **kwargs):
-        """implement"""
-        sample_band_parameters = sample_node.outputs.bands.band_parameters
-        reference_band_parameters = reference_node.outputs.bands.band_parameters
+        # Generic
+        builder.kpoints_distance_bands = orm.Float(protocol["kpoints_distance_bands"])
+        builder.init_nbands_factor = orm.Float(protocol["init_nbands_factor"])
+        builder.fermi_shift = orm.Float(protocol["fermi_shift"])
+        builder.run_band_structure = orm.Bool(False)
 
-        sample_band_structure = sample_node.outputs.bands.band_structure
-        reference_band_structure = reference_node.outputs.bands.band_structure
-
-        spin = self.ctx.element in MAGNETIC_ELEMENTS
-
-        # Always process smearing to find fermi level even for non-metal elements.
-        res = helper_bands_distance_difference(
-            sample_band_structure,
-            sample_band_parameters,
-            reference_band_structure,
-            reference_band_parameters,
-            smearing=orm.Float(self.ctx.degauss),
-            fermi_shift=orm.Float(self.ctx.fermi_shift),
-            do_smearing=orm.Bool(True),
-            spin=orm.Bool(spin),
-        ).get_dict()
-
-        return res
-
-    def get_result_metadata(self):
-        return {
-            "fermi_shift": self.ctx.fermi_shift,
-            "bands_unit": "meV",
-        }
+        return builder

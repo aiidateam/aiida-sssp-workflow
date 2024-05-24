@@ -209,7 +209,7 @@ class BandsMeasureWorkChain(_BaseMeasureWorkChain):
             "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
             "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
             "fermi_shift": orm.Float(self.ctx.fermi_shift),
-            "run_bands_structure": orm.Bool(True),
+            "run_band_structure": orm.Bool(True),
             "kpoints_distance_band_structure": orm.Float(
                 self.ctx.kpoints_distance_band_structure
             ),

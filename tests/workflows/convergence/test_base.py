@@ -13,10 +13,11 @@ UpfData = DataFactory("pseudo.upf")
 @pytest.mark.parametrize(
     "entry_point",
     [
-        # "sssp_workflow.convergence.caching",
-        # "sssp_workflow.convergence.eos",
-        # "sssp_workflow.convergence.cohesive_energy",
+        "sssp_workflow.convergence.caching",
+        "sssp_workflow.convergence.eos",
+        "sssp_workflow.convergence.cohesive_energy",
         "sssp_workflow.convergence.pressure",
+        "sssp_workflow.convergence.bands",
     ],
 )
 def test_run_default(

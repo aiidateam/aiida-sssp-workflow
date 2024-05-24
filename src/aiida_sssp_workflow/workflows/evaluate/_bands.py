@@ -181,11 +181,8 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
             self.ctx.should_run_bands = False
         else:
             self.report(
-                f"highest band eigenvalue above fermi is {highest_band.min() - fermi_energy}, not enough, you want {self.inputs.fermi_shift.value}."
+                f"highest band eigenvalue above fermi is {highest_band.min() - fermi_energy}, not enough, we want {self.inputs.fermi_shift.value}."
             )
-
-        self.ctx.ecutwfc = workchain.inputs.scf.pw.parameters["SYSTEM"]["ecutwfc"]
-        self.ctx.ecutrho = workchain.inputs.scf.pw.parameters["SYSTEM"]["ecutrho"]
 
         return workchain
 
@@ -239,9 +236,6 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
     def finalize(self):
         """inspect band and dump all its output"""
         self._inspect_workchain(namespace="bands", workchain=self.ctx.workchain_bands)
-
-        self.out("ecutwfc", orm.Int(self.ctx.ecutwfc).store())
-        self.out("ecutrho", orm.Int(self.ctx.ecutrho).store())
 
     def _inspect_workchain(self, namespace, workchain):
         if not workchain.is_finished_ok:
