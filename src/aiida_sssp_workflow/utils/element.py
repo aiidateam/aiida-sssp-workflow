@@ -64,3 +64,19 @@ NO_GS_CONF_ELEMENTS = ["At", "Fr", "Ra"]
 
 # The elements that from our knowledge require high charge density cutoff.
 HIGH_DUAL_ELEMENTS = ["O", "Fe", "Mn", "Hf", "Co", "Ni", "Cr"]
+
+# The element that not has unaries structure from nat.phys.rev (maxium to Z=108)
+UNSUPPORTED_ELEMENTS = [
+    "Bk",
+    "Cf",
+    "Es",
+    "Fm",
+    "Md",
+    "No",
+    "Lr",
+    "Rf",
+    "Db",
+    "Sg",
+    "Bh",
+    "Hs",
+]

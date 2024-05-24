@@ -22,6 +22,7 @@ from aiida_sssp_workflow.utils import (
 )
 from aiida_sssp_workflow.utils.pseudo import extract_pseudo_info
 from aiida_sssp_workflow.utils.structure import UNARIE_CONFIGURATIONS
+from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
@@ -153,6 +154,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             "ERROR_SUB_PROCESS_FAILED",
             message="The sub process for `{label}` did not finish successfully.",
         )
+        spec.exit_code(
+            404,
+            "ERROR_UNSUPPORTED_ELEMENT",
+            message="The PP of element {} is not yet supported to be verified.",
+        )
 
     @property
     def structure(self):
@@ -250,6 +256,11 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         We use DC structure as default since it is the one that most hard to converge.
         See the paper (TODO: add arxiv link).
         """
+        # We only has unaries from Z=1 (hydrogen) to Z=96 (curium), so raise an exception
+        # if larger Z elements e.g from Bk comes to valified
+        if self.element in UNSUPPORTED_ELEMENTS:
+            return self.exit_codes.ERROR_UNSUPPORTED_ELEMENT.format(self.element)
+
         if "configuration" in self.inputs:
             configuration = self.inputs.configuration
         else:
