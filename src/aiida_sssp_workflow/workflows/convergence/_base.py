@@ -53,8 +53,8 @@ def is_valid_convergence_configuration(value, _=None):
 
 def is_valid_cutoff_list(cutoff_list, _=None):
     """Check the cutoff list is a list of tuples and the cutoffs are increasing"""
-    if not all(isinstance(cutoff, tuple) for cutoff in cutoff_list):
-        return "cutoff_list must be a list of tuples"
+    if not all(isinstance(cutoff, (tuple, list)) for cutoff in cutoff_list):
+        return "cutoff_list must be a list of tuples or list."
     if not all(
         cutoff_list[i][0] < cutoff_list[i + 1][0] for i in range(len(cutoff_list) - 1)
     ):

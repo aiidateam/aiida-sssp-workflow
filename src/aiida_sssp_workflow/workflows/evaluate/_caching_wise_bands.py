@@ -359,7 +359,7 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
             is_cleaned = self.ctx.current_folder.base.extras.get("cleaned", False)
             if is_cleaned:
                 self.logger.warning(
-                    f"PhBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
+                    f"PwBaseWorkChain failed because the remote folder is empty with exit status {workchain.exit_status}, invalid the caching of the node and re-run scf calculation."
                 )
                 # invalid the caching of the node and re-run scf calculation
                 workchain_scf = self.ctx.workchain_scf
