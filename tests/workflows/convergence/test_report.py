@@ -1,16 +1,4 @@
-import uuid
-import hashlib
-import pytest
-
-from aiida_sssp_workflow.workflows.convergence._base import ConvergenceReport
-
-
-@pytest.fixture
-def generate_uuid():
-    def _generate_uuid(seed="0"):
-        return str(uuid.UUID(hashlib.md5(seed.encode()).hexdigest()))
-
-    return _generate_uuid
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
 
 def test_point_run_report_entry(generate_uuid):

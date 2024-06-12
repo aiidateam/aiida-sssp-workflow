@@ -1,10 +1,6 @@
-import importlib
 from typing import Optional
 
 from aiida import orm
-from aiida.plugins import DataFactory
-
-UpfData = DataFactory("pseudo.upf")
 
 
 def get_extra_parameters_for_lanthanides(element, nbnd) -> dict:
@@ -33,28 +29,6 @@ def get_extra_parameters_for_lanthanides(element, nbnd) -> dict:
     }
 
     return extra_parameters
-
-
-def get_pseudo_N():
-    """Return pseudo of nitrogen for lanthanide nitrides"""
-    import_path = importlib.resources.path(
-        "aiida_sssp_workflow.statics.upf", "N.us.z_5.ld1.psl.v0.1.upf"
-    )
-    with import_path as psp_path, open(psp_path, "rb") as stream:
-        pseudo_N = UpfData(stream)
-
-    return pseudo_N
-
-
-def get_pseudo_O():
-    """Return pseudo of oxygen for oxides"""
-    import_path = importlib.resources.path(
-        "aiida_sssp_workflow.statics.upf", "O.paw.z_6.ld1.psl.v0.1.upf"
-    )
-    with import_path as psp_path, open(psp_path, "rb") as stream:
-        pseudo_O = UpfData(stream)
-
-    return pseudo_O
 
 
 def clean_workdir(node: orm.CalcJobNode) -> Optional[int]:

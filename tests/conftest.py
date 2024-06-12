@@ -4,6 +4,8 @@
 import os
 import pytest
 from pathlib import Path
+import uuid
+import hashlib
 
 from aiida import orm
 from aiida.orm.utils.managers import NodeLinksManager
@@ -12,6 +14,14 @@ from aiida.engine import ProcessBuilder
 pytest_plugins = ["aiida.manage.tests.pytest_fixtures"]
 
 STATICS_DIR = Path(__file__).parent / "_statics"
+
+
+@pytest.fixture
+def generate_uuid():
+    def _generate_uuid(seed="0"):
+        return str(uuid.UUID(hashlib.md5(seed.encode()).hexdigest()))
+
+    return _generate_uuid
 
 
 @pytest.fixture(scope="function")
@@ -55,6 +65,8 @@ def pseudo_path():
     def _pseudo_path(element="Al"):
         if element == "Al":
             path = STATICS_DIR / "upf" / "Al.paw.pbe.z_3.ld1.psl.v0.1.upf"
+        elif element == "O_nc":
+            path = STATICS_DIR / "upf" / "O.nc.pbe.z_6.oncvpsp3.dojo.v0.4.1-std.upf"
         else:
             raise ValueError(f"pseudo for {element} not found")
 

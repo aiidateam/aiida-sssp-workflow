@@ -120,7 +120,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         )
 
         spec.output(
-            "convergence_report",
+            "report",
             valid_type=orm.Dict,
             required=True,
             help="The output report of convergence verification, it is a dict contains the full information of convergence test, the mapping of cutoffs to the UUID of the evaluation workchain etc.",
@@ -413,7 +413,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             raise e
         else:
             self.out(
-                "convergence_report",
+                "report",
                 orm.Dict(dict=validated_report.model_dump()).store(),
             )
 

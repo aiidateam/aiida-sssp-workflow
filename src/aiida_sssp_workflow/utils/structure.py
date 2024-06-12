@@ -13,6 +13,10 @@ OXIDE_CONFIGURATIONS = ["XO", "XO2", "XO3", "X2O", "X2O3", "X2O5"]
 UNARIE_CONFIGURATIONS = ["BCC", "FCC", "SC", "DC"]
 ACWF_CONFIGURATIONS = OXIDE_CONFIGURATIONS + UNARIE_CONFIGURATIONS
 
+VALID_CONFIGURATIONS = (
+    ACWF_CONFIGURATIONS  # FIXME: should also have GS for bands and LANN
+)
+
 
 @calcfunction
 def get_default_configuration(element: orm.Str, property: orm.Str) -> orm.Str:
@@ -40,7 +44,7 @@ def _get_default_configuration(element: str, property: str) -> str:
 
 @calcfunction
 def get_standard_structure(
-    element: orm.Str, configuration=orm.Str
+    element: orm.Str, configuration: orm.Str
 ) -> orm.StructureData:
     try:
         ase_structure = _get_standard_structure(element.value, configuration.value)
@@ -59,7 +63,7 @@ def get_standard_structure(
     return structure
 
 
-def _get_standard_structure(element: str, configuration=str) -> Atoms:
+def _get_standard_structure(element: str, configuration: str) -> Atoms:
     """
     Create an ASE structure from property and configuration and element.
 

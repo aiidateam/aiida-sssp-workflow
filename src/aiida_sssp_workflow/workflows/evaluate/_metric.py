@@ -15,7 +15,7 @@ UpfData = DataFactory("pseudo.upf")
 
 
 class MetricWorkChain(SelfCleanWorkChain):
-    """WorkChain calculate the bands for certain pseudopotential"""
+    """WorkChain running EOS workflow and compute nu/delta values"""
 
     @classmethod
     def define(cls, spec):
