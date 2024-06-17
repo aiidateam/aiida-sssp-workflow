@@ -23,12 +23,8 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
                     help='The `pw.x` code use for the `PwCalculation`.')
         spec.input('pseudo', valid_type=UpfData, required=True,
                     help='Pseudopotential to be verified')
-        spec.input('oxygen_pseudo', valid_type=UpfData, required=True)
-        spec.input('oxygen_ecutwfc', valid_type=orm.Float, required=True)
-        spec.input('oxygen_ecutrho', valid_type=orm.Float, required=True)
         spec.input('protocol', valid_type=orm.Str, required=True,
                     help='The protocol which define input calculation parameters.')
-        spec.input('configurations', valid_type=orm.List, required=False)
         spec.input('wavefunction_cutoff', valid_type=orm.Float, required=True, help='The wavefunction cutoff.')
         spec.input('charge_density_cutoff', valid_type=orm.Float, required=True, help='The charge density cutoff.')
         spec.input(

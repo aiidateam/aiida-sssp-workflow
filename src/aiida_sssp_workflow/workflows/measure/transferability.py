@@ -48,6 +48,10 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
     def define(cls, spec):
         """Define the process specification."""
         super().define(spec)
+        spec.input("oxygen_pseudo", valid_type=UpfData, required=True)
+        spec.input("oxygen_ecutwfc", valid_type=orm.Float, required=True)
+        spec.input("oxygen_ecutrho", valid_type=orm.Float, required=True)
+        spec.input("configurations", valid_type=orm.List, required=False)
 
         spec.outline(
             cls._setup_pseudos,

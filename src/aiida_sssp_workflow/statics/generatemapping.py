@@ -8,102 +8,11 @@ from aiida_sssp_workflow.utils import (
     ACTINIDE_ELEMENTS,
     LANTHANIDE_ELEMENTS,
     NO_GS_CONF_ELEMENTS,
+    ALL_ELEMENTS,
+    UNSUPPORTED_ELEMENTS,
 )
 
 MAPPING_FILE_PATH = Path(__file__).parent / "structures" / "mapping.json"
-
-ALL_ELEMENTS = (
-    [
-        "Ag",
-        "Al",
-        "Ar",
-        "As",
-        "At",
-        "Au",
-        "Ba",
-        "Be",
-        "B",
-        "Bi",
-        "Br",
-        "Ca",
-        "Cd",
-        "Ce",
-        "C",
-        "Cl",
-        "Co",
-        "Cr",
-        "Cs",
-        "Cu",
-        "Dy",
-        "Er",
-        "Eu",
-        "Fe",
-        "F",
-        "Ga",
-        "Gd",
-        "Ge",
-        "He",
-        "Hf",
-        "H",
-        "Hg",
-        "Ho",
-        "I",
-        "In",
-        "Ir",
-        "K",
-        "Kr",
-        "La",
-        "Li",
-        "Lu",
-        "Mg",
-        "Mn",
-        "Mo",
-        "Na",
-        "Nb",
-        "Nd",
-        "Ne",
-        "N",
-        "Ni",
-        "O",
-        "Os",
-        "Pb",
-        "Pd",
-        "P",
-        "Pm",
-        "Po",
-        "Pr",
-        "Pt",
-        "Rb",
-        "Re",
-        "Rh",
-        "Rn",
-        "Ru",
-        "Sb",
-        "Sc",
-        "Se",
-        "S",
-        "Si",
-        "Sm",
-        "Sn",
-        "Sr",
-        "Ta",
-        "Tb",
-        "Tc",
-        "Te",
-        "Ti",
-        "Tl",
-        "Tm",
-        "V",
-        "W",
-        "Xe",
-        "Yb",
-        "Y",
-        "Zn",
-        "Zr",
-    ]
-    + ACTINIDE_ELEMENTS
-    + NO_GS_CONF_ELEMENTS
-)
 
 
 def run():
@@ -115,7 +24,10 @@ def run():
     # We use DC (Diamond Cubic) for the convergence test for all elements.
     # Because it usually give the lagrest cutoff energy, which is the most strict test.
     for e in ALL_ELEMENTS:
-        if e in NO_GS_CONF_ELEMENTS:
+        if e in UNSUPPORTED_ELEMENTS:
+            band_configuration = "N/A"
+            convergence_configuration = "N/A"
+        elif e in NO_GS_CONF_ELEMENTS:
             # we don't have At in typical
             band_configuration = "DC"
             convergence_configuration = "DC"

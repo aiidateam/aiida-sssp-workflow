@@ -22,3 +22,19 @@ class TransferabilityReport(BaseModel):
         if not all(k in VALID_CONFIGURATIONS for k in d.keys()):
             raise ValueError(f"configuration should be one of {VALID_CONFIGURATIONS}")
         return d
+
+
+class SingleBandEntry(BaseModel):
+    uuid: str
+    exit_status: int
+
+
+class BandStructureReport(BaseModel):
+    bands: SingleBandEntry
+    band_structure: SingleBandEntry
+
+    @classmethod
+    def construct(cls, band_dict: dict[str, dict]):
+        """Construct the BandStructureReport from dict data, one kv for bands, one for band structure"""
+
+        return cls(**{k: SingleBandEntry(**v) for (k, v) in band_dict.items()})

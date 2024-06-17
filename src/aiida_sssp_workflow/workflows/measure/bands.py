@@ -3,26 +3,27 @@
 Bands distance of many input pseudos
 """
 
+from pathlib import Path
+
 from aiida import orm
-from aiida.engine import ToContext, if_
 from aiida.plugins import DataFactory
+from aiida.engine import ToContext, ProcessBuilder
 
 from aiida_sssp_workflow.utils import (
-    LANTHANIDE_ELEMENTS,
-    MAGNETIC_ELEMENTS,
-    NONMETAL_ELEMENTS,
-    get_magnetic_inputs,
     get_protocol,
     get_standard_structure,
-    reset_pseudos_for_magnetic,
-    update_dict,
 )
-from aiida_sssp_workflow.workflows.common import (
-    get_extra_parameters_for_lanthanides,
-    get_pseudo_N,
+from aiida_sssp_workflow.utils import get_default_mpi_options, extract_pseudo_info
+from aiida_sssp_workflow.utils.structure import (
+    UNARIE_CONFIGURATIONS,
+    get_default_configuration,
 )
-from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
+from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
+from aiida_sssp_workflow.workflows.evaluate._bands import (
+    BandsWorkChain as EvaluateBandsWorkChain,
+)
 from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
+from aiida_sssp_workflow.workflows.measure.report import BandStructureReport
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -35,199 +36,315 @@ def validate_input_pseudos(d_pseudos, _):
         return f"The pseudos corespond to different elements {element}."
 
 
-class BandsMeasureWorkChain(_BaseMeasureWorkChain):
-    """
-    WorkChain to run bands measure,
+def is_valid_convergence_configuration(value, _=None):
+    """Check if the configuration is valid"""
+    # XXX: I am duplicate from _base.py, combine us
+    valid_configurations = UNARIE_CONFIGURATIONS
+    if value not in valid_configurations:
+        return f"Configuration {value} is not valid. Valid configurations are {valid_configurations}"
+
+
+class BandStructureWorkChain(_BaseMeasureWorkChain):
+    """WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
     """
+
+    _EVALUATE_WORKCHAIN = EvaluateBandsWorkChain
 
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
         # yapf: disable
         super().define(spec)
+        spec.input(
+            "configuration",
+            valid_type=orm.Str,
+            required=False,
+            validator=is_valid_convergence_configuration,
+            help="The configuration to use for the workchain, can be DC/BCC/FCC/SC.",
+        )
 
         spec.outline(
-            cls.setup,
-            if_(cls.is_magnetic_element)(
-                cls.extra_setup_for_magnetic_element,
-            ),
-            if_(cls.is_lanthanide_element)(
-                cls.extra_setup_for_lanthanide_element, ),
-            cls.setup_pw_parameters_from_protocol,
-            cls.run_bands_evaluation,
-            cls.finalize,
+            cls._setup_pseudos,
+            cls._setup_protocol,
+            cls._setup_structure,
+            cls.run_bands,
+            cls.inspect_bands,
+            cls._finalize,
         )
 
-        spec.expose_outputs(BandsWorkChain)
+        spec.expose_outputs(EvaluateBandsWorkChain)
+        spec.output(
+            "configuration",
+            valid_type=orm.Str,
+            required=True,
+            help="The configuration used for the convergence.",
+        )
+        spec.output(
+            "structure",
+            valid_type=orm.StructureData,
+            required=True,
+            help="The structure used for the convergence.",
+        )
+        spec.output( # XXX: I am same as transferibility workchain. combine me.
+            "report",
+            valid_type=orm.Dict,
+            required=True,
+            help="The output report of convergence verification, it is a dict contains the full information of convergence test, the mapping of cutoffs to the UUID of the evaluation workchain etc.",
+        )
 
-    def setup(self):
-        """
-        This step contains all preparation before actaul setup, e.g. set
-        the context of element, base_structure, base pw_parameters and pseudos.
-        """
-        # parse pseudo and output its header information
-        self.ctx.pw_parameters = {}
-
-        element = self.ctx.element = self.inputs.pseudo.element
+    def _setup_pseudos(self):
+        """Setup pseudos"""
+        # XXX: this is same as trans WF, consider combine
+        pseudo_info = extract_pseudo_info(
+            self.inputs.pseudo.get_content(),
+        )
+        self.ctx.element = pseudo_info.element
         self.ctx.pseudos = {self.ctx.element: self.inputs.pseudo}
 
-        self.ctx.structure = get_standard_structure(
-            element,
-            prop="bands",
-        )
+    @property
+    def element(self):
+        """Syntax sugar for self.ctx.element"""
+        # TODO: same as from convergence/_base, consider combine
+        if "element" not in self.ctx:
+            raise AttributeError(
+                "element is not set in the context, your step must after _setup_pseudos"
+            )
 
-        # extra setting for bands convergence
-        self.ctx.is_metal = element not in NONMETAL_ELEMENTS
+        return self.ctx.element
 
-        # set up the ecutwfc and ecutrho
-        self.ctx.ecutwfc = self.inputs.wavefunction_cutoff.value
-        self.ctx.ecutrho = self.inputs.charge_density_cutoff.value
+    @property
+    def pseudos(self):
+        """Syntax sugar for self.ctx.pseudos"""
+        # TODO: same as from convergence/_base, consider combine
+        if "pseudos" not in self.ctx:
+            raise AttributeError(
+                "pseudos is not set in the context, your step must after _setup_pseudos"
+            )
 
-    def is_magnetic_element(self):
-        """Check if the element is magnetic"""
-        return self.ctx.element in MAGNETIC_ELEMENTS
+        return self.ctx.pseudos
 
-    def extra_setup_for_magnetic_element(self):
-        """Extra setup for magnetic element"""
-        self.ctx.structure, magnetic_extra_parameters = get_magnetic_inputs(
-            self.ctx.structure
-        )
-        self.ctx.pw_parameters = update_dict(
-            self.ctx.pw_parameters, magnetic_extra_parameters
-        )
-
-        # override pseudos setting
-        # required for O, Mn, Cr where the kind names varies for sites
-        self.ctx.pseudos = reset_pseudos_for_magnetic(
-            self.inputs.pseudo, self.ctx.structure
-        )
-
-    def is_lanthanide_element(self):
-        """Check if the element is rare earth"""
-        return self.ctx.element in LANTHANIDE_ELEMENTS
-
-    def extra_setup_for_lanthanide_element(self):
-        """Extra setup for rare earth element"""
-        nbnd_factor = 2.0
-        pseudo_N = get_pseudo_N()
-        self.ctx.pseudos["N"] = pseudo_N
-        pseudo_RE = self.inputs.pseudo
-        nbnd = nbnd_factor * (pseudo_N.z_valence + pseudo_RE.z_valence)
-        pw_parameters = get_extra_parameters_for_lanthanides(self.ctx.element, nbnd)
-
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, pw_parameters)
-
-    def setup_pw_parameters_from_protocol(self):
-        """Input validation"""
-        # pylint: disable=invalid-name, attribute-defined-outside-init
-
-        # Read from protocol if parameters not set from inputs
+    def _setup_protocol(self):
+        """unzip and parse protocol parameters to context"""
+        # XXX: this is same as trans WF, consider combine
         protocol = get_protocol(category="bands", name=self.inputs.protocol.value)
-        self._DEGAUSS = protocol["degauss"]
-        self._OCCUPATIONS = protocol["occupations"]
-        self._SMEARING = protocol["smearing"]
-        self._CONV_THR_PER_ATOM = protocol["conv_thr_per_atom"]
+        self.ctx.protocol = protocol
 
-        self._INIT_NBANDS_FACTOR = protocol["init_nbands_factor"]
-        self._FERMI_SHIFT = protocol["fermi_shift"]
+    @property
+    def protocol(self):
+        """Syntax sugar for self.ctx.protocol"""
+        # XXX: this is same as trans WF, consider combine
+        if "protocol" not in self.ctx:
+            raise AttributeError(
+                "protocol is not set in the context, your step must after _setup_protocol"
+            )
 
-        self.ctx.init_nbands_factor = self._INIT_NBANDS_FACTOR
-        self.ctx.fermi_shift = self._FERMI_SHIFT
+        return self.ctx.protocol
 
-        self.ctx.kpoints_distance_scf = protocol["kpoints_distance_scf"]
-        self.ctx.kpoints_distance_bands = protocol["kpoints_distance_bands"]
-        self.ctx.kpoints_distance_band_structure = protocol[
-            "kpoints_distance_band_structure"
-        ]
+    def _setup_structure(self):
+        """Set up the configuration to be run for band structure"""
+        # We only has unaries from Z=1 (hydrogen) to Z=96 (curium), so raise an exception
+        # if larger Z elements e.g from Bk comes to valified
+        if self.element in UNSUPPORTED_ELEMENTS:
+            return self.exit_codes.ERROR_UNSUPPORTED_ELEMENT.format(self.element)
 
-        parameters = {
-            "SYSTEM": {
-                "degauss": self._DEGAUSS,
-                "occupations": self._OCCUPATIONS,
-                "smearing": self._SMEARING,
-            },
-            "ELECTRONS": {
-                "conv_thr": self._CONV_THR_PER_ATOM,
-            },
+        if "configuration" in self.inputs:
+            configuration = self.inputs.configuration
+        else:
+            # will use the default configuration set in the protocol (mapping.json)
+            configuration = get_default_configuration(
+                self.ctx.element, property="bands"
+            )
+
+        self.ctx.structure = get_standard_structure(
+            self.ctx.element, configuration=configuration
+        )
+
+        self.out("configuration", configuration)
+        self.out("structure", self.ctx.structure)
+
+    @property
+    def structure(self):
+        """Syntax sugar to get self structure"""
+        return self.ctx.structure
+
+    @classmethod
+    def get_builder(
+        cls,
+        pseudo: Path | UpfData,
+        protocol: str,
+        wavefunction_cutoff: float,
+        charge_density_cutoff: float,
+        code: orm.AbstractCode,
+        configuration: list | None = None,
+        parallelization: dict | None = None,
+        mpi_options: dict | None = None,
+        clean_workdir: bool = True,  # default to clean workdir
+    ) -> ProcessBuilder:
+        """Return a builder to run this EOS convergence workchain"""
+        builder = super().get_builder()
+        builder.protocol = orm.Str(protocol)
+        if isinstance(pseudo, Path):
+            builder.pseudo = UpfData.get_or_create(pseudo)
+        else:
+            builder.pseudo = pseudo
+        builder.wavefunction_cutoff = orm.Float(wavefunction_cutoff)
+        builder.charge_density_cutoff = orm.Float(charge_density_cutoff)
+        builder.code = code
+
+        if configuration is not None:
+            builder.configuration = orm.Str(configuration)
+
+        # Set the default label and description
+        # The default label is set to be the base file name of PP
+        # The description include which configuration and which protocol is using.
+        builder.metadata.call_link_label = "band_structure_verification"
+        builder.metadata.label = (
+            pseudo.filename if isinstance(pseudo, UpfData) else pseudo.name
+        )
+        builder.metadata.description = (
+            f"""Run on protocol '{protocol}' | configuration '{configuration if configuration is not None else "default"}' | """
+            f" base (ecutwfc, ecutrho) = ({wavefunction_cutoff}, {charge_density_cutoff})"
+        )
+        builder.clean_workdir = orm.Bool(clean_workdir)
+        builder.code = code
+
+        if parallelization:
+            builder.parallelization = orm.Dict(parallelization)
+        else:
+            builder.parallelization = orm.Dict()
+
+        if mpi_options:
+            builder.mpi_options = orm.Dict(mpi_options)
+        else:
+            builder.mpi_options = orm.Dict(get_default_mpi_options())
+
+        return builder
+
+    def prepare_evaluate_builder(self):
+        """Get inputs for the bands evaluation with given pseudo"""
+        # Read from protocol if parameters not set from inputs
+        ecutwfc = self.inputs.wavefunction_cutoff.value
+        ecutrho = self.inputs.charge_density_cutoff.value
+
+        protocol = self.protocol
+
+        builder = self._EVALUATE_WORKCHAIN.get_builder()
+
+        builder.clean_workdir = (
+            self.inputs.clean_workdir
+        )  # sync with the main workchain
+
+        builder.structure = self.structure
+        natoms = len(self.structure.sites)
+
+        scf_pw_parameters = {
             "CONTROL": {
                 "calculation": "scf",
             },
-        }
-
-        self.ctx.pw_parameters = update_dict(self.ctx.pw_parameters, parameters)
-
-        self.logger.info(
-            f"The pw parameters for convergence is: {self.ctx.pw_parameters}"
-        )
-
-    def _get_inputs(self, pseudos):
-        """
-        get inputs for the bands evaluation with given pseudo
-        """
-        ecutwfc, ecutrho = self._get_pw_cutoff(
-            self.ctx.structure, self.ctx.ecutwfc, self.ctx.ecutrho
-        )
-
-        parameters = {
             "SYSTEM": {
-                "ecutwfc": round(ecutwfc, 1),
-                "ecutrho": round(ecutrho, 1),
+                "degauss": protocol["degauss"],
+                "occupations": protocol["occupations"],
+                "smearing": protocol["smearing"],
+                "ecutwfc": round(ecutwfc),
+                "ecutrho": round(ecutrho),
+            },
+            "ELECTRONS": {
+                "conv_thr": protocol["conv_thr_per_atom"] * natoms,
+                "mixing_beta": protocol["mixing_beta"],
             },
         }
-        parameters = update_dict(parameters, self.ctx.pw_parameters)
+        builder.scf.pw["code"] = self.inputs.code
+        builder.scf.pw["pseudos"] = self.pseudos
+        builder.scf.pw["parameters"] = orm.Dict(scf_pw_parameters)
+        builder.scf.pw["parallelization"] = self.inputs.parallelization
+        builder.scf.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
+        builder.scf.kpoints_distance = orm.Float(protocol["kpoints_distance"])
 
-        parameters_bands = update_dict(parameters, {})
-        parameters_bands["SYSTEM"].pop("nbnd", None)
-        parameters_bands["CONTROL"]["calculation"] = "bands"
-
-        inputs = {
-            "structure": self.ctx.structure,
-            "scf": {
-                "pw": {
-                    "code": self.inputs.code,
-                    "pseudos": pseudos,
-                    "parameters": orm.Dict(dict=parameters),
-                    "metadata": {
-                        "options": self.inputs.options.get_dict(),
-                    },
-                    "parallelization": self.inputs.parallelization,
-                },
-                "kpoints_distance": orm.Float(self.ctx.kpoints_distance_scf),
+        bands_pw_parameters = {
+            "CONTROL": {
+                "calculation": "bands",
             },
-            "bands": {
-                "pw": {
-                    "code": self.inputs.code,
-                    "pseudos": pseudos,
-                    "parameters": orm.Dict(dict=parameters_bands),
-                    "metadata": {
-                        "options": self.inputs.options.get_dict(),
-                    },
-                    "parallelization": self.inputs.parallelization,
-                },
+            "SYSTEM": {
+                "degauss": protocol["degauss"],
+                "occupations": protocol["occupations"],
+                "smearing": protocol["smearing"],
+                "ecutwfc": round(ecutwfc),
+                "ecutrho": round(ecutrho),
             },
-            "kpoints_distance_bands": orm.Float(self.ctx.kpoints_distance_bands),
-            "init_nbands_factor": orm.Float(self.ctx.init_nbands_factor),
-            "fermi_shift": orm.Float(self.ctx.fermi_shift),
-            "run_band_structure": orm.Bool(True),
-            "kpoints_distance_band_structure": orm.Float(
-                self.ctx.kpoints_distance_band_structure
-            ),
-            "clean_workdir": self.inputs.clean_workdir,
+            "ELECTRONS": {
+                "conv_thr": protocol["conv_thr_per_atom"] * natoms,
+                "mixing_beta": protocol["mixing_beta"],
+            },
         }
 
-        return inputs
+        builder.bands.pw["code"] = self.inputs.code
+        builder.bands.pw["pseudos"] = self.pseudos
+        builder.bands.pw["parameters"] = orm.Dict(bands_pw_parameters)
+        builder.bands.pw["parallelization"] = self.inputs.parallelization
+        builder.bands.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
 
-    def run_bands_evaluation(self):
-        """run bands evaluation of psp in inputs list"""
-        inputs = self._get_inputs(self.ctx.pseudos)
+        # Generic
+        builder.kpoints_distance_bands = orm.Float(protocol["kpoints_distance"])
+        builder.kpoints_distance_band_structure = orm.Float(
+            protocol["kpoints_distance_bs"]
+        )
+        builder.init_nbands_factor = orm.Int(protocol["init_nbands_factor"])
+        builder.fermi_shift = orm.Float(protocol["fermi_shift"])
+        builder.run_band_structure = orm.Bool(True)
 
-        running = self.submit(BandsWorkChain, **inputs)
+        return builder
+
+    def run_bands(self):
+        """run bands evaluation"""
+        builder = self.prepare_evaluate_builder()
+
+        running = self.submit(builder)
 
         self.report(f"launching BandsWorkChain<{running.pk}>")
 
         return ToContext(bands=running)
 
-    def finalize(self):
+    def inspect_bands(self):
         """inspect bands run results"""
-        self.out_many(self.exposed_outputs(self.ctx.bands, BandsWorkChain))
+        bands_workchain = self.ctx.bands
+        self.out_many(self.exposed_outputs(bands_workchain, EvaluateBandsWorkChain))
+
+        outgoing: orm.LinkManager = bands_workchain.base.links.get_outgoing()
+        band_structure_node = outgoing.get_node_by_label("band_structure")
+
+        # The band node into record is the one with largest bands_factor
+        # ['band_with_factor_x'] -> {'band_with_factor_x': x} and sort
+        bands_label = sorted(
+            {
+                k: int(k.split("_")[-1])
+                for k in outgoing.all_link_labels()
+                if "bands_with_factor" in k
+            },
+            key=lambda x: x[1],
+        )[-1]
+        bands_node = outgoing.get_node_by_label(bands_label)
+
+        band_dict = {
+            "bands": {
+                "uuid": bands_node.uuid,
+                "exit_status": bands_node.exit_status,
+            },
+            "band_structure": {
+                "uuid": band_structure_node.uuid,
+                "exit_status": band_structure_node.exit_status,
+            },
+        }
+
+        try:
+            validated_report = BandStructureReport.construct(band_dict)
+            self.report("BandStructureReport report is validated")
+        except Exception as e:
+            self.report(f"BandStructureReport in sot validated: {e}")
+            raise e
+        else:
+            self.out("report", orm.Dict(dict=validated_report.model_dump()).store())
+
+    def _finalize(self):
+        """Final"""
+        # TODO:

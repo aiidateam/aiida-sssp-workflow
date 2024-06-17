@@ -44,7 +44,7 @@ aiida-sssp-workflow = "aiida_sssp_workflow.cli:cmd_root"
 
 [project.entry-points."aiida.workflows"]
 "sssp_workflow.measure.transferability" = "aiida_sssp_workflow.workflows.measure.transferability:EOSTransferabilityWorkChain"
-"sssp_workflow.measure_bands" = "aiida_sssp_workflow.workflows.measure.bands:BandsMeasureWorkChain"
+"sssp_workflow.measure.bands" = "aiida_sssp_workflow.workflows.measure.bands:BandStructureWorkChain"
 "sssp_workflow.convergence.caching" = "aiida_sssp_workflow.workflows.convergence.caching:_CachingConvergenceWorkChain"
 "sssp_workflow.convergence.eos" = "aiida_sssp_workflow.workflows.convergence.eos:ConvergenceEOSWorkChain"
 "sssp_workflow.convergence.cohesive_energy" = "aiida_sssp_workflow.workflows.convergence.cohesive_energy:ConvergenceCohesiveEnergyWorkChain"

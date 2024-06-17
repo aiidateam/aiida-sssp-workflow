@@ -1,8 +1,13 @@
 import pytest
+import itertools
+
 from aiida.engine import run_get_node
 from aiida import orm
 
 from aiida_sssp_workflow.utils import get_default_configuration, get_standard_structure
+from aiida_sssp_workflow.utils.element import ALL_ELEMENTS, UNSUPPORTED_ELEMENTS
+
+ALL_SUPPORTED_ELEMENTS = [e for e in ALL_ELEMENTS if e not in UNSUPPORTED_ELEMENTS]
 
 
 @pytest.mark.parametrize(
@@ -44,3 +49,48 @@ def test_get_standard_structure(element, configuration, data_regression):
     )
 
     data_regression.check(r.get_cif().get_content())
+
+
+@pytest.mark.parametrize(
+    "element, target_property",
+    [
+        (e, p)
+        for e, p in itertools.product(ALL_SUPPORTED_ELEMENTS, ["band", "convergence"])
+    ],
+)
+def test_get_standard_structure_for_available_properties(element, target_property):
+    """Go through all elements covered configuration from get_default_configuration"""
+    # Loop over all elements
+    configuration = get_default_configuration(
+        element,
+        property=target_property,
+    )
+
+    structure = get_standard_structure(
+        element,
+        configuration=configuration,
+    )
+
+    assert isinstance(structure, orm.StructureData)
+
+
+@pytest.mark.parametrize(
+    "element, target_property",
+    [
+        (e, p)
+        for e, p in itertools.product(UNSUPPORTED_ELEMENTS, ["band", "convergence"])
+    ],
+)
+def test_get_standard_structure_raise_for_unsupported(element, target_property):
+    """Go through all elements covered configuration from get_default_configuration"""
+    # Loop over all elements
+    configuration = get_default_configuration(
+        element,
+        property=target_property,
+    )
+
+    with pytest.raises(ValueError, match="Unknown configuration N/A"):
+        get_standard_structure(
+            element,
+            configuration=configuration,
+        )

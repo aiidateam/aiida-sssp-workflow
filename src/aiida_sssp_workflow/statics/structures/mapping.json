@@ -1,30 +1,14 @@
 {
     "_commont": "The mapping from element to configuration for convergence and bands verification.",
-    "Ag": {
+    "H": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Al": {
+    "He": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Ar": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "As": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "At": {
-        "band": "DC",
-        "convergence": "DC"
-    },
-    "Au": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ba": {
+    "Li": {
         "band": "GS",
         "convergence": "DC"
     },
@@ -36,159 +20,7 @@
         "band": "GS",
         "convergence": "DC"
     },
-    "Bi": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Br": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ca": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Cd": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ce": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
     "C": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Cl": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Co": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Cr": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Cs": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Cu": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Dy": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Er": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Eu": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Fe": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "F": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ga": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Gd": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Ge": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "He": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Hf": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "H": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Hg": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ho": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "I": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "In": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ir": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "K": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Kr": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "La": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Li": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Lu": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Mg": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Mn": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Mo": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Na": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Nb": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Nd": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Ne": {
         "band": "GS",
         "convergence": "DC"
     },
@@ -196,79 +28,27 @@
         "band": "GS",
         "convergence": "DC"
     },
-    "Ni": {
-        "band": "GS",
-        "convergence": "DC"
-    },
     "O": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Os": {
+    "F": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Pb": {
+    "Ne": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Pd": {
+    "Na": {
         "band": "GS",
         "convergence": "DC"
     },
-    "P": {
+    "Mg": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Pm": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Po": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Pr": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Pt": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Rb": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Re": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Rh": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Rn": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Ru": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Sb": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Sc": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Se": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "S": {
+    "Al": {
         "band": "GS",
         "convergence": "DC"
     },
@@ -276,31 +56,31 @@
         "band": "GS",
         "convergence": "DC"
     },
-    "Sm": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Sn": {
+    "P": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Sr": {
+    "S": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Ta": {
+    "Cl": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Tb": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
-    "Tc": {
+    "Ar": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Te": {
+    "K": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ca": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Sc": {
         "band": "GS",
         "convergence": "DC"
     },
@@ -308,31 +88,31 @@
         "band": "GS",
         "convergence": "DC"
     },
-    "Tl": {
-        "band": "GS",
-        "convergence": "DC"
-    },
-    "Tm": {
-        "band": "LAN",
-        "convergence": "DC"
-    },
     "V": {
         "band": "GS",
         "convergence": "DC"
     },
-    "W": {
+    "Cr": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Xe": {
+    "Mn": {
         "band": "GS",
         "convergence": "DC"
     },
-    "Yb": {
-        "band": "LAN",
+    "Fe": {
+        "band": "GS",
         "convergence": "DC"
     },
-    "Y": {
+    "Co": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ni": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Cu": {
         "band": "GS",
         "convergence": "DC"
     },
@@ -340,8 +120,236 @@
         "band": "GS",
         "convergence": "DC"
     },
+    "Ga": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ge": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "As": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Se": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Br": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Kr": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Rb": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Sr": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Y": {
+        "band": "GS",
+        "convergence": "DC"
+    },
     "Zr": {
         "band": "GS",
+        "convergence": "DC"
+    },
+    "Nb": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Mo": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Tc": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ru": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Rh": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Pd": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ag": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Cd": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "In": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Sn": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Sb": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Te": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "I": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Xe": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Cs": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ba": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "La": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Ce": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Pr": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Nd": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Pm": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Sm": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Eu": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Gd": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Tb": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Dy": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Ho": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Er": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Tm": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Yb": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Lu": {
+        "band": "LAN",
+        "convergence": "DC"
+    },
+    "Hf": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ta": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "W": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Re": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Os": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Ir": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Pt": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Au": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Hg": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Tl": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Pb": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Bi": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Po": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "At": {
+        "band": "DC",
+        "convergence": "DC"
+    },
+    "Rn": {
+        "band": "GS",
+        "convergence": "DC"
+    },
+    "Fr": {
+        "band": "DC",
+        "convergence": "DC"
+    },
+    "Ra": {
+        "band": "DC",
         "convergence": "DC"
     },
     "Ac": {
@@ -377,39 +385,51 @@
         "convergence": "DC"
     },
     "Bk": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
     "Cf": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
     "Es": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
     "Fm": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
     "Md": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
     "No": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
     "Lr": {
-        "band": "DC",
-        "convergence": "DC"
+        "band": "N/A",
+        "convergence": "N/A"
     },
-    "Fr": {
-        "band": "DC",
-        "convergence": "DC"
+    "Rf": {
+        "band": "N/A",
+        "convergence": "N/A"
     },
-    "Ra": {
-        "band": "DC",
-        "convergence": "DC"
+    "Db": {
+        "band": "N/A",
+        "convergence": "N/A"
+    },
+    "Sg": {
+        "band": "N/A",
+        "convergence": "N/A"
+    },
+    "Bh": {
+        "band": "N/A",
+        "convergence": "N/A"
+    },
+    "Hs": {
+        "band": "N/A",
+        "convergence": "N/A"
     }
 }

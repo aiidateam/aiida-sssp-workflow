@@ -66,7 +66,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
     # to prevent the infinite loop in bands evaluation
     # If start from 1.5, and increase 2.0 every time, it will reach 11.5 at most.
     _MAX_INCREMENT_BANDS_FACTOR = 10
-    _BANDS_FACTOR_INCREASE_STEP = 2.0
+    _BANDS_FACTOR_INCREASE_STEP = 2
 
     @classmethod
     def define(cls, spec):
@@ -76,7 +76,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
         spec.expose_inputs(PwBandsWorkChain, include=['scf', 'bands', 'structure'])
         spec.input('kpoints_distance_bands', valid_type=orm.Float,
                     help='Kpoints distance setting for bulk energy bands calculation.')
-        spec.input('init_nbands_factor', valid_type=orm.Float, default=lambda: orm.Float(1.5),
+        spec.input('init_nbands_factor', valid_type=orm.Int, default=lambda: orm.Int(2),
                     help='initial nbands factor.')
         spec.input('fermi_shift', valid_type=orm.Float, default=lambda: orm.Float(10.0),
                     help='The uplimit of energy to check the bands diff, control the number of bands.')
@@ -117,7 +117,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
     def setup(self):
         """Input validation"""
         # set initial lowest highest bands eigenvalue - fermi_energy equals to 0.0
-        self.ctx.nbands_factor = self.inputs.init_nbands_factor.value
+        self.ctx.nbands_factor = int(self.inputs.init_nbands_factor.value)
 
         # For qe PwBandsWorkChain if `bands_kpoints` not set, the seekpath will run
         # to give a seekpath along the recommonded path.
@@ -141,6 +141,9 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
     def run_bands(self):
         """run bands calculation"""
         inputs = self.exposed_inputs(PwBandsWorkChain)
+        inputs["metadata"] = {
+            "call_link_label": f"bands_with_factor_{self.ctx.nbands_factor}"
+        }
         inputs["nbands_factor"] = orm.Float(self.ctx.nbands_factor)
         inputs["bands_kpoints"] = self.ctx.bands_kpoints
 
@@ -215,6 +218,7 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
     def run_band_structure(self):
         """run band structure calculation"""
         inputs = self.exposed_inputs(PwBandsWorkChain)
+        inputs["metadata"] = {"call_link_label": "band_structure"}
         inputs["nbands_factor"] = orm.Float(self.ctx.nbands_factor)
         inputs["bands_kpoints_distance"] = orm.Float(
             self.inputs.kpoints_distance_band_structure

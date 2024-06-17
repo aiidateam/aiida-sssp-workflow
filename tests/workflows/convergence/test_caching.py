@@ -37,6 +37,7 @@ def test_caching_bands(
 
         # check the first scf of reference
         # The pw calculation
+        # XXX: use link label to find the expected calcjob node
         source_ref_wf = [
             p
             for p in source_node.called

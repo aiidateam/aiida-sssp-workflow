@@ -142,7 +142,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
 
         # Generic
         builder.kpoints_distance_bands = orm.Float(protocol["kpoints_distance"])
-        builder.init_nbands_factor = orm.Float(protocol["init_nbands_factor"])
+        builder.init_nbands_factor = orm.Int(protocol["init_nbands_factor"])
         builder.fermi_shift = orm.Float(protocol["fermi_shift"])
         builder.run_band_structure = orm.Bool(False)
 
