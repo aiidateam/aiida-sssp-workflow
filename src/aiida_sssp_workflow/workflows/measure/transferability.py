@@ -340,6 +340,7 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
 
         builder = self._EVALUATE_WORKCHAIN.get_builder()
 
+        builder.metadata.call_link_label = f"{configuration}"
         builder.clean_workdir = (
             self.inputs.clean_workdir
         )  # sync with the main workchain

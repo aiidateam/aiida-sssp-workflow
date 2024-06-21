@@ -48,7 +48,7 @@ def code_generator(aiida_localhost):
             label=f"{bin}-docker",
             default_calc_job_plugin=plugin,
             filepath_executable=exec_path,
-            image_name="ghcr.io/containers4hpc/quantum-espresso:v2024.1001",
+            image_name="ghcr.io/cnts4sci/quantum-espresso:edge",
             wrap_cmdline_params=True,
             engine_command=engine_command,
             use_double_quotes=True,

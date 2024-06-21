@@ -42,13 +42,15 @@ def test_run_default_check_inner_eos_inputs(
     assert "test" in node.description
 
     # Check the first EOS (SC) use (25, 100) cutoffs
-    pw_parameters_SC = node.called[2].inputs.eos.pw.parameters
+
+    outgoing: orm.LinkManager = node.base.links.get_outgoing()
+    pw_parameters_SC = outgoing.get_node_by_label("SC").inputs.eos.pw.parameters
     assert isinstance(pw_parameters_SC["SYSTEM"]["ecutwfc"], int)
     assert pw_parameters_SC["SYSTEM"]["ecutwfc"] == 25
     assert pw_parameters_SC["SYSTEM"]["ecutrho"] == 100
 
-    # Check the first EOS (XO) use (30, 120) cutoffs
-    pw_parameters_XO = node.called[3].inputs.eos.pw.parameters
+    # Check the first EOS (XO) use (30, 120) cutoffs from Oxygen
+    pw_parameters_XO = outgoing.get_node_by_label("XO").inputs.eos.pw.parameters
     assert isinstance(pw_parameters_XO["SYSTEM"]["ecutwfc"], int)
     assert pw_parameters_XO["SYSTEM"]["ecutwfc"] == 30
     assert pw_parameters_XO["SYSTEM"]["ecutrho"] == 120

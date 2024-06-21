@@ -19,7 +19,7 @@ bands:
       Al: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
 clean_workdir: true
 fermi_shift: 10.0
-init_nbands_factor: 3.0
+init_nbands_factor: 3
 kpoints_distance_bands: 0.5
 run_band_structure: false
 scf:
