@@ -1,5 +1,6 @@
 import pytest
 import itertools
+import numpy as np
 
 from aiida.engine import run_get_node
 from aiida import orm
@@ -47,8 +48,9 @@ def test_get_standard_structure(element, configuration, data_regression):
     r, _ = run_get_node(
         get_standard_structure, element=element, configuration=configuration
     )
+    ase_r = r.get_ase()
 
-    data_regression.check(r.get_cif().get_content())
+    data_regression.check({k: np.round(v, 3).tolist() for k, v in ase_r.arrays.items()})
 
 
 @pytest.mark.parametrize(

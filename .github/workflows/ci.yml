@@ -7,10 +7,17 @@ on: [push, pull_request]
 
 jobs:
 
-    fast-tests:
 
+    fast-tests:
         runs-on: ubuntu-latest
         timeout-minutes: 10
+
+        services:
+          rabbitmq:
+            image: rabbitmq:3.8.14-management
+            ports:
+            - 5672:5672
+            - 15672:15672
 
         steps:
             - uses: actions/checkout@v4
@@ -24,9 +31,9 @@ jobs:
               run: |
                   pip install .[dev]
 
-            - name: Pull the image and Run pytest
+            - name: Run pytest
               run: |
-                  pytest -v tests -m "not slow"
+                  pytest -s tests -m "not slow"
 
     slow-tests:
 
@@ -34,6 +41,13 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 30
 
+        services:
+          rabbitmq:
+            image: rabbitmq:3.8.14-management
+            ports:
+            - 5672:5672
+            - 15672:15672
+
         steps:
             - uses: actions/checkout@v4
 
@@ -46,9 +60,9 @@ jobs:
               run: |
                   pip install .[dev]
 
-            - name: Pull the image and Run pytest
+            - name: Run pytest
               run: |
-                  pytest -v tests -m "slow"
+                  pytest -s tests -m "slow"
 
     edge-aiida-core-tests:
         # This is to test the plugin is compatible with the main branch of aiida-core
@@ -56,6 +70,13 @@ jobs:
         needs: [slow-tests]
         runs-on: ubuntu-latest
         timeout-minutes: 30
+
+        services:
+          rabbitmq:
+            image: rabbitmq:3.8.14-management
+            ports:
+            - 5672:5672
+            - 15672:15672
 
         steps:
             - uses: actions/checkout@v4
@@ -81,6 +102,6 @@ jobs:
                     exit 1
                   fi
 
-            - name: Pull the image and Run pytest
+            - name: Run pytest
               run: |
-                  pytest -v tests
+                  pytest -s tests
