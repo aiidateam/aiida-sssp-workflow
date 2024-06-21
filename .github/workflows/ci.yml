@@ -37,7 +37,6 @@ jobs:
 
     slow-tests:
 
-        needs: [fast-tests]
         runs-on: ubuntu-latest
         timeout-minutes: 30
 
