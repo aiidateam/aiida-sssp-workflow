@@ -90,7 +90,7 @@ jobs:
                   pip install .[dev]
                   pip uninstall --yes aiida-core
                   git clone --depth 1 https://github.com/aiidateam/aiida-core.git
-                  uv pip install ./aiida-core
+                  pip install ./aiida-core
 
             - name: Check aiida-core version is the edget ('post' in version tag)
               run: |

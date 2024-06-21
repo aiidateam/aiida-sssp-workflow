@@ -139,7 +139,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
 
         # pw calculation
         builder.scf.kpoints_distance = orm.Float(protocol["kpoints_distance"])
-        builder.scf.metadata.call_link_label = "phonon_frequencies_scf"
+        builder.scf.metadata.call_link_label = "scf"
         builder.scf.pw["code"] = self.inputs.pw_code
         builder.scf.pw["pseudos"] = self.pseudos
         builder.scf.pw["parameters"] = orm.Dict(dict=pw_parameters)
@@ -159,7 +159,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
             }
         }
 
-        builder.phonon.metadata.call_link_label = "phonon_frequencies_ph"
+        builder.phonon.metadata.call_link_label = "ph"
         builder.phonon["qpoints"] = qpoints
         builder.phonon.ph["code"] = self.inputs.ph_code
         builder.phonon.ph["parameters"] = orm.Dict(dict=ph_parameters)

@@ -74,6 +74,7 @@ filterwarnings = [
     'ignore:Object of type .* not in session, .* operation along .* will not proceed:sqlalchemy.exc.SAWarning',
     'ignore:The `Code` class is deprecated.*:aiida.common.warnings.AiidaDeprecationWarning',
     'ignore:`CalcJobNode.*` is deprecated.*:aiida.common.warnings.AiidaDeprecationWarning',
+    'ignore:`WorkChainNode.get_outgoing` is deprecated.*:aiida.common.warnings.AiidaDeprecationWarning',
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

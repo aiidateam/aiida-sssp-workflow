@@ -310,6 +310,9 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
         builder = self.prepare_evaluate_builder(ecutwfc=ecutwfc, ecutrho=ecutrho)
 
+        # Add link to the called workchain by '{ecutwfc}_{ecutrho}'
+        builder.metadata.call_link_label = f"cutoffs_{ecutwfc}_{ecutrho}"
+
         running = self.submit(builder)
         running.base.extras.set("wavefunction_cutoff", ecutwfc)
         running.base.extras.set("charge_density_cutoff", ecutrho)
@@ -350,6 +353,9 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         ]:  # The last one is reference
             ecutwfc, ecutrho = round(ecutwfc), round(ecutrho)
             builder = self.prepare_evaluate_builder(ecutwfc=ecutwfc, ecutrho=ecutrho)
+
+            # Add link to the called workchain by '{ecutwfc}_{ecutrho}'
+            builder.metadata.call_link_label = f"cutoffs_{ecutwfc}_{ecutrho}"
 
             running = self.submit(builder)
             self.report(

@@ -37,32 +37,35 @@ def test_caching_bands(
 
         # check the first scf of reference
         # The pw calculation
-        # XXX: use link label to find the expected calcjob node
-        source_ref_wf = [
-            p
-            for p in source_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
-        source_scf_calcjob_node = source_ref_wf.called[1].called[0].called[1]
+        source_ref_wf = source_node.get_outgoing().get_node_by_label("cutoffs_30_120")
+        first_run = source_ref_wf.get_outgoing().get_node_by_label(
+            "bands_with_factor_3"
+        )
+        source_scf_calcjob_node = (
+            first_run.get_outgoing().get_node_by_label("scf").called[1]
+        )
         assert (
             source_scf_calcjob_node.base.extras.get("_aiida_cached_from", None) is None
         )
 
         # check the first bands of reference was cached
         # The pw calculation
-        source_band_calcjob_node = source_ref_wf.called[1].called[1].called[0]
+        source_band_calcjob_node = (
+            first_run.get_outgoing().get_node_by_label("bands").called[0]
+        )
         assert (
             source_band_calcjob_node.base.extras.get("_aiida_cached_from", None) is None
         )
 
         # Run again and check it is using caching
         _, cached_node = run_get_node(bands_builder)
-        cached_ref_wf = [
-            p
-            for p in cached_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
-        cached_scf_calcjob_node = cached_ref_wf.called[1].called[0].called[1]
+        cached_ref_wf = cached_node.get_outgoing().get_node_by_label("cutoffs_30_120")
+        first_run = cached_ref_wf.get_outgoing().get_node_by_label(
+            "bands_with_factor_3"
+        )
+        cached_scf_calcjob_node = (
+            first_run.get_outgoing().get_node_by_label("scf").called[1]
+        )
 
         assert (
             cached_scf_calcjob_node.base.extras.get("_aiida_cached_from", None)
@@ -70,7 +73,9 @@ def test_caching_bands(
         )
         assert not cached_scf_calcjob_node.base.caching.is_valid_cache
 
-        cached_band_calcjob_node = cached_ref_wf.called[1].called[1].called[0]
+        cached_band_calcjob_node = (
+            first_run.get_outgoing().get_node_by_label("bands").called[0]
+        )
 
         assert (
             cached_band_calcjob_node.base.extras.get("_aiida_cached_from", None)
@@ -112,30 +117,30 @@ def test_caching_phonon_frequencies(
 
         # check the first scf of reference
         # The pw calculation
-        source_ref_wf = [
-            p
-            for p in source_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
-        source_scf_calcjob_node = source_ref_wf.called[0].called[1]
+        source_ref_wf = source_node.get_outgoing().get_node_by_label("cutoffs_30_120")
+
+        source_scf_calcjob_node = (
+            source_ref_wf.get_outgoing().get_node_by_label("scf").called[1]
+        )
         assert (
             source_scf_calcjob_node.base.extras.get("_aiida_cached_from", None) is None
         )
 
         # The ph calculation
-        source_ph_calcjob_node = source_ref_wf.called[1].called[0]
+        source_ph_calcjob_node = (
+            source_ref_wf.get_outgoing().get_node_by_label("ph").called[0]
+        )
         assert (
             source_ph_calcjob_node.base.extras.get("_aiida_cached_from", None) is None
         )
 
         # Run again and check it is using caching
         _, cached_node = run_get_node(phonon_frequencies_builder)
-        cached_ref_wf = [
-            p
-            for p in cached_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
-        cached_scf_calcjob_node = cached_ref_wf.called[0].called[1]
+        cached_ref_wf = cached_node.get_outgoing().get_node_by_label("cutoffs_30_120")
+
+        cached_scf_calcjob_node = (
+            cached_ref_wf.get_outgoing().get_node_by_label("scf").called[1]
+        )
 
         assert (
             cached_scf_calcjob_node.base.extras.get("_aiida_cached_from", None)
@@ -144,7 +149,9 @@ def test_caching_phonon_frequencies(
         assert not cached_scf_calcjob_node.base.caching.is_valid_cache
 
         # Run again and check it is using caching
-        cached_ph_calcjob_node = cached_ref_wf.called[1].called[0]
+        cached_ph_calcjob_node = (
+            cached_ref_wf.get_outgoing().get_node_by_label("ph").called[0]
+        )
         assert (
             cached_ph_calcjob_node.base.extras.get("_aiida_cached_from", None)
             == source_ph_calcjob_node.uuid
@@ -179,12 +186,13 @@ def test_caching_bands_rerun_pw_prepare(
         _, source_node = run_get_node(bands_builder)
 
         # Make the source band calculation invalid cache
-        source_ref_wf = [
-            p
-            for p in source_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
-        source_band_calcjob_node = source_ref_wf.called[1].called[1].called[0]
+        source_ref_wf = source_node.get_outgoing().get_node_by_label("cutoffs_30_120")
+        first_run = source_ref_wf.get_outgoing().get_node_by_label(
+            "bands_with_factor_3"
+        )
+        source_band_calcjob_node = (
+            first_run.get_outgoing().get_node_by_label("bands").called[0]
+        )
         assert source_band_calcjob_node.is_valid_cache
 
         source_band_calcjob_node.is_valid_cache = False
@@ -192,15 +200,16 @@ def test_caching_bands_rerun_pw_prepare(
         # Run again and check it is using caching
         _, cached_node = run_get_node(bands_builder)
 
-        # Check the band work chain finished okay
-        cached_ref_wf = [
-            p
-            for p in cached_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
+        # Check the band work chain finished okay which means it runs the second scf again
+        # and get the bands run again and success
+        cached_ref_wf = cached_node.get_outgoing().get_node_by_label("cutoffs_30_120")
         assert cached_ref_wf.called[1].is_finished_ok
 
-        cached_band_calcjob_node = cached_ref_wf.called[1].called[1].called[0]
+        # check that the first scf from cache is not okay therefore trigger the rerun
+        first_run = cached_ref_wf.get_outgoing().get_node_by_label(
+            "bands_with_factor_3"
+        )
+        cached_band_calcjob_node = first_run.called[1].called[0]
         assert (
             cached_band_calcjob_node.base.extras.get("_aiida_cached_from", None) is None
         )
@@ -240,12 +249,10 @@ def test_caching_phonon_frequencies_rerun_pw_prepare(
         _, source_node = run_get_node(phonon_frequencies_builder)
 
         # Make the source ph calculation invalid cache
-        source_ref_wf = [
-            p
-            for p in source_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
-        source_ph_calcjob_node = source_ref_wf.called[1].called[0]
+        source_ref_wf = source_node.get_outgoing().get_node_by_label("cutoffs_30_120")
+        source_ph_calcjob_node = (
+            source_ref_wf.get_outgoing().get_node_by_label("ph").called[0]
+        )
         assert source_ph_calcjob_node.is_valid_cache
 
         source_ph_calcjob_node.is_valid_cache = False
@@ -253,11 +260,7 @@ def test_caching_phonon_frequencies_rerun_pw_prepare(
         # Run again and check it is using caching
         _, cached_node = run_get_node(phonon_frequencies_builder)
 
-        cached_ref_wf = [
-            p
-            for p in cached_node.called
-            if p.base.extras.get("wavefunction_cutoff", None) == 30
-        ][0]
+        cached_ref_wf = cached_node.get_outgoing().get_node_by_label("cutoffs_30_120")
         # Check the ph from rerun pw is finished okay
         assert cached_ref_wf.is_finished_ok
 
