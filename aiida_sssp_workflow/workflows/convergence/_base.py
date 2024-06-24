@@ -542,18 +542,18 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
             # specificly write output for set criteria
             if name == self.inputs.criteria.value:
-                self.ctx.output_parameters[
-                    "wavefunction_cutoff"
-                ] = self.ctx.wfc_cutoff = res["cutoff"].value
+                self.ctx.output_parameters["wavefunction_cutoff"] = (
+                    self.ctx.wfc_cutoff
+                ) = res["cutoff"].value
 
                 self.logger.info(
                     f"The wfc convergence at {self.ctx.wfc_cutoff} with value={res['value'].value}"
                 )
 
         # write output wavefunction cutoff in all criteria.
-        self.ctx.output_parameters[
-            "all_criteria_wavefunction_cutoff"
-        ] = all_criteria_wavefunction_cutoff
+        self.ctx.output_parameters["all_criteria_wavefunction_cutoff"] = (
+            all_criteria_wavefunction_cutoff
+        )
 
     def run_rho_convergence_test(self):
         """

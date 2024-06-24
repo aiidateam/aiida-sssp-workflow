@@ -231,9 +231,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
         if "convergence.cohesive_energy" in self.ctx.properties_list:
             inputs_cohesive_energy = convergence_inputs.copy()
             if "pw_code_large_memory" in self.inputs:
-                inputs_cohesive_energy[
-                    "pw_code_large_memory"
-                ] = self.inputs.pw_code_large_memory
+                inputs_cohesive_energy["pw_code_large_memory"] = (
+                    self.inputs.pw_code_large_memory
+                )
 
             self.ctx.convergence_inputs["cohesive_energy"] = inputs_cohesive_energy
 
@@ -249,9 +249,9 @@ class VerificationWorkChain(SelfCleanWorkChain):
                 False
             )  # For phonon frequencies convergence workflow, the clean dir is taken care by the the finalize step of the verification workflow.
 
-            self.ctx.convergence_inputs[
-                "phonon_frequencies"
-            ] = inputs_phonon_frequencies
+            self.ctx.convergence_inputs["phonon_frequencies"] = (
+                inputs_phonon_frequencies
+            )
 
         if "convergence.bands" in self.ctx.properties_list:
             inputs_bands = convergence_inputs.copy()
