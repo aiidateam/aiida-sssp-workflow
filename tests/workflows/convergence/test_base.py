@@ -58,6 +58,8 @@ def test_run_default(
     assert node.label == "Al.paw.pbe.z_3.ld1.psl.v0.1.upf"
     assert "DC" in node.description and "test" in node.description
 
+    assert result["success_rate"].value == 1.0
+
     validated_report = ConvergenceReport.construct(**result["report"])
 
     assert validated_report.reference == validated_report.convergence_list[-1]

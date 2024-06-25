@@ -143,6 +143,12 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             required=True,
             help="The structure used for the convergence.",
         )
+        spec.output(
+            "success_rate",
+            valid_type=orm.Float,
+            required=False,
+            help="The success rate of convergence tests.",
+        )
 
         spec.exit_code(
             401,
@@ -157,7 +163,17 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         spec.exit_code(
             404,
             "ERROR_UNSUPPORTED_ELEMENT",
-            message="The PP of element {} is not yet supported to be verified.",
+            message="The PP of element {element} is not yet supported to be verified.",
+        )
+        spec.exit_code(
+            811,
+            "ERROR_NOT_ENOUGH_CONVERGENCE_TEST",
+            message="Not enough convergence test, the success rate is {rate:.1%}, expect > 80%",
+        )
+        spec.exit_code(
+            1801,
+            "WARNING_REFERENCE_CALCULATION_FAILED",
+            message="The reference calculation failed with warning exit_status {warning_exit_status}",
         )
 
     @property
@@ -269,7 +285,9 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         # We only has unaries from Z=1 (hydrogen) to Z=96 (curium), so raise an exception
         # if larger Z elements e.g from Bk comes to valified
         if self.element in UNSUPPORTED_ELEMENTS:
-            return self.exit_codes.ERROR_UNSUPPORTED_ELEMENT.format(self.element)
+            return self.exit_codes.ERROR_UNSUPPORTED_ELEMENT.format(
+                element=self.element
+            )
 
         if "configuration" in self.inputs:
             configuration = self.inputs.configuration
@@ -423,8 +441,30 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
                 orm.Dict(dict=validated_report.model_dump()).store(),
             )
 
+        # Pass to ctx for _finalize
+        self.ctx.convergence_reports = convergence_reports
+
     def _finalize(self):
         """Construct a summary report from the convergence report.
         It will contains the analysis of the convergence test, such as the ratio of succuessful runs.
         """
-        # TODO: implement the finalize method
+        # Do two things:
+        # 1. if the reference raise a warning, happened in EOS convergence where the birch marnaghan fit failed for Hg. The exit code -> 1801
+        # 2. if the convergence points don't have enough success (must > 80%), exit code -> 811
+
+        ref_wc = self.ctx.reference
+        if not ref_wc.is_finished_ok:
+            return self.exit_codes.WARNING_REFERENCE_CALCULATION_FAILED.format(
+                warning_exit_status=ref_wc.exit_code.status
+            )
+
+        total = len(self.ctx.convergence_reports)
+        success_count = len(
+            [i for i in self.ctx.convergence_reports if i["exit_status"] == 0]
+        )
+
+        rate = round(float(success_count / total), 3)
+        if rate < 0.8:
+            return self.exit_codes.ERROR_NOT_ENOUGH_CONVERGENCE_TEST.format(rate=rate)
+
+        self.out("success_rate", orm.Float(rate).store())
