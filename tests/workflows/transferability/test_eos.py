@@ -4,7 +4,7 @@ from aiida import orm
 from aiida.plugins import DataFactory, WorkflowFactory
 from aiida.engine import ProcessBuilder, run_get_node
 
-from aiida_sssp_workflow.workflows.measure.report import TransferabilityReport
+from aiida_sssp_workflow.workflows.transferability.report import EOSReport
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -17,15 +17,14 @@ def test_run_default_check_inner_eos_inputs(
     Used to test basic things of _base convergence workchain such as the
     output ports are correct and the report is correct in the format.
     """
-    _WorkChain = WorkflowFactory("sssp_workflow.measure.transferability")
+    _WorkChain = WorkflowFactory("sssp_workflow.transferability.eos")
 
     builder: ProcessBuilder = _WorkChain.get_builder(
-        pseudo=pseudo_path("Al"),
+        pseudo=pseudo_path(),
         protocol="test",
         configurations=["SC", "XO"],
-        wavefunction_cutoff=25,
-        charge_density_cutoff=100,
-        oxygen_pseudo=pseudo_path("O_nc"),
+        cutoffs=(25, 100),
+        oxygen_pseudo=pseudo_path("O.nc"),
         oxygen_ecutwfc=30,
         oxygen_ecutrho=120,
         code=code_generator("pw"),
@@ -59,7 +58,7 @@ def test_run_default_check_inner_eos_inputs(
     assert "XO" in result
     assert "report" in result
 
-    validated_report = TransferabilityReport.construct(**result["report"])
+    validated_report = EOSReport.construct(**result["report"])
 
     assert {"SC", "XO"} == set(validated_report.eos_dict.keys())
 
@@ -74,13 +73,15 @@ def test_run_default_check_inner_eos_inputs(
 
 
 @pytest.mark.parametrize(
-    "curate_type,clean_workdir",
+    "cutoffs,curate_type,clean_workdir",
     [
-        ("SSSP", True),
-        ("NC", False),
+        ((25, 100), "SSSP", True),
+        ((25, 100), "NC", False),
+        (None, "SSSP", True),
     ],
 )
 def test_builder_default_args_passing(
+    cutoffs,
     curate_type,
     clean_workdir,
     pseudo_path,
@@ -89,13 +90,12 @@ def test_builder_default_args_passing(
     data_regression,
 ):
     """Test transferability workflow builder is correctly created with default args"""
-    _WorkChain = WorkflowFactory("sssp_workflow.measure.transferability")
+    _WorkChain = WorkflowFactory("sssp_workflow.transferability.eos")
 
     builder: ProcessBuilder = _WorkChain.get_builder(
-        pseudo=pseudo_path("Al"),
+        pseudo=pseudo_path(),
         protocol="test",
-        wavefunction_cutoff=25,
-        charge_density_cutoff=100,
+        cutoffs=cutoffs,
         code=code_generator("pw"),
         curate_type=curate_type,
         clean_workdir=clean_workdir,

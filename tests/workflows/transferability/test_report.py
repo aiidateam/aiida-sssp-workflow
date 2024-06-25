@@ -1,14 +1,14 @@
 import pytest
 from pydantic import ValidationError
 
-from aiida_sssp_workflow.workflows.measure.report import (
-    TransferabilityReport,
-    BandStructureReport,
+from aiida_sssp_workflow.workflows.transferability.report import (
+    BandsReport,
+    EOSReport,
 )
 
 
 def test_construct_transferibility_report_entry(generate_uuid):
-    """Test TransferabilityReport report model"""
+    """Test EOSReport report model"""
     report1 = {
         "uuid": generate_uuid("1"),
         "exit_status": 0,
@@ -19,10 +19,10 @@ def test_construct_transferibility_report_entry(generate_uuid):
         "exit_status": 0,
     }
 
-    expected_report = TransferabilityReport.construct({"XO": report1, "SC": report2})
+    expected_report = EOSReport.construct({"XO": report1, "SC": report2})
 
     # regression test
-    got_report = TransferabilityReport.construct(**expected_report.model_dump())
+    got_report = EOSReport.construct(**expected_report.model_dump())
 
     assert got_report == expected_report
 
@@ -39,7 +39,7 @@ def test_raise_when_configuration_not_valid(generate_uuid):
     }
 
     with pytest.raises(ValueError, match="should be one of"):
-        TransferabilityReport.construct({"XO": report1, "WRONG": report2})
+        EOSReport.construct({"XO": report1, "WRONG": report2})
 
 
 def test_construct_band_report_entry(generate_uuid):
@@ -57,12 +57,12 @@ def test_construct_band_report_entry(generate_uuid):
         "exit_status": 0,
     }
 
-    expected_report = BandStructureReport.construct(
+    expected_report = BandsReport.construct(
         {"bands": bands, "band_structure": band_structure}
     )
 
     # regression test
-    got_report = BandStructureReport.construct(expected_report.model_dump())
+    got_report = BandsReport.construct(expected_report.model_dump())
 
     assert got_report == expected_report
 
@@ -81,7 +81,5 @@ def test_raise_when_key_of_band_report_not_valid(generate_uuid):
         "exit_status": 0,
     }
 
-    with pytest.raises(
-        ValidationError, match="1 validation error for BandStructureReport"
-    ):
-        BandStructureReport.construct({"bands": report1, "WRONG": report2})
+    with pytest.raises(ValidationError, match="1 validation error for BandsReport"):
+        BandsReport.construct({"bands": report1, "WRONG": report2})

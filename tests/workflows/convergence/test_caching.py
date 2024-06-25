@@ -24,7 +24,7 @@ def test_caching_bands(
     # but are both valid cached source. This cause caching race condition.
     with enable_caching(identifier="aiida.calculations:quantumespresso.*"):
         bands_builder: ProcessBuilder = _ConvergenceBandsWorkChain.get_builder(
-            pseudo=pseudo_path("Al"),
+            pseudo=pseudo_path(),
             protocol="test",
             cutoff_list=[(20, 80), (30, 120)],
             configuration="DC",
@@ -102,7 +102,7 @@ def test_caching_phonon_frequencies(
     with enable_caching(identifier="aiida.calculations:quantumespresso.*"):
         phonon_frequencies_builder: ProcessBuilder = (
             _ConvergencePhononFrequenciessWorkChain.get_builder(
-                pseudo=pseudo_path("Al"),
+                pseudo=pseudo_path(),
                 protocol="test",
                 cutoff_list=[(20, 80), (30, 120)],
                 configuration="DC",
@@ -174,7 +174,7 @@ def test_caching_bands_rerun_pw_prepare(
     # but are both valid cached source. This cause caching race condition.
     with enable_caching(identifier="aiida.calculations:quantumespresso.*"):
         bands_builder: ProcessBuilder = _ConvergenceBandsWorkChain.get_builder(
-            pseudo=pseudo_path("Al"),
+            pseudo=pseudo_path(),
             protocol="test",
             cutoff_list=[(20, 80), (30, 120)],
             configuration="DC",
@@ -235,7 +235,7 @@ def test_caching_phonon_frequencies_rerun_pw_prepare(
     with enable_caching(identifier="aiida.calculations:quantumespresso.*"):
         phonon_frequencies_builder: ProcessBuilder = (
             _ConvergencePhononFrequenciessWorkChain.get_builder(
-                pseudo=pseudo_path("Al"),
+                pseudo=pseudo_path(),
                 protocol="test",
                 cutoff_list=[(20, 80), (30, 120)],
                 configuration="DC",

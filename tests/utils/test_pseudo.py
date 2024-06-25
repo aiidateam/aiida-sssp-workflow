@@ -1,11 +1,14 @@
 """Test ``utils.pseudo`` module."""
 
+from _pytest.pytester import pytester
 import pytest
 from pathlib import Path
 
 from aiida_sssp_workflow.utils import extract_pseudo_info, parse_std_filename
 from aiida_sssp_workflow.utils.pseudo import (
+    DualType,
     compute_total_nelectrons,
+    get_dual_type,
     get_pseudo_O,
     get_pseudo_N,
     CurateType,
@@ -67,3 +70,15 @@ def test_compute_total_nelectrons():
         ("X2O5", {"O": pseudo_O, "N": pseudo_N}, 80),
     ]:
         assert compute_total_nelectrons(configuration, pseudos) == n_total
+
+@pytest.mark.parametrize(
+    "element, pp_type, expected_dual_type", 
+    [
+        ('He', 'nc', DualType.NC),
+        ('Fe', 'nc', DualType.NC),
+        ('Fe', 'paw', DualType.AUGHIGH),
+        ('H', 'us', DualType.AUGLOW),
+    ]
+)
+def test_get_dual_type(element, pp_type, expected_dual_type):
+    assert get_dual_type(pp_type, element) == expected_dual_type

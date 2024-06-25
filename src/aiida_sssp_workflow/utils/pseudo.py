@@ -3,10 +3,10 @@ import re
 from pydantic import BaseModel
 from importlib import resources
 from enum import Enum
+from aiida_pseudo.data.pseudo import UpfData
 
-from aiida.plugins import DataFactory
+from .element import HIGH_DUAL_ELEMENTS
 
-UpfData = DataFactory("pseudo.upf")
 
 REGEX_ELEMENT_V1 = re.compile(r"""(?P<element>[a-zA-Z]{1,2})\s+Element""")
 REGEX_ELEMENT_V2 = re.compile(
@@ -119,6 +119,18 @@ class PseudoInfo(BaseModel):
     # source_lib: str
     # ...
 
+class DualType(Enum):
+    NC = "nc"
+    AUGLOW = "charge augmentation low"
+    AUGHIGH = "charge augmentation high"
+
+def get_dual_type(pp_type: str, element: str) -> DualType:
+        if element in HIGH_DUAL_ELEMENTS and pp_type != 'nc':
+            return DualType.AUGHIGH
+        elif pp_type == 'nc':
+            return DualType.NC
+        else:
+            return DualType.AUGLOW
 
 def extract_pseudo_info(pseudo_text: str) -> PseudoInfo:
     """Giving a pseudo, extract the pseudo info and return as a `PseudoInfo` object"""
@@ -129,6 +141,26 @@ def extract_pseudo_info(pseudo_text: str) -> PseudoInfo:
         type=upf_info["type"],
         z_valence=upf_info["z_valence"],
     )
+
+
+def _get_proper_dual(pp_info: PseudoInfo) -> int:
+    if pp_info.type == "nc":
+        dual = 4
+    else:
+        dual = 8
+
+    if pp_info.element in HIGH_DUAL_ELEMENTS and pp_info.type != "nc":
+        dual = 18
+
+    return dual
+
+
+def get_default_dual(pseudo: UpfData) -> int:
+    """Based on the pseudo_type, give the cutoffs pairs"""
+    pp_info = extract_pseudo_info(pseudo.get_content())
+    dual = _get_proper_dual(pp_info)
+
+    return dual
 
 
 def parse_std_filename(filename: str, extension: str = "upf") -> PseudoInfo:

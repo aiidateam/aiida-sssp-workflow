@@ -4,7 +4,7 @@ from aiida import orm
 from aiida.plugins import DataFactory, WorkflowFactory
 from aiida.engine import ProcessBuilder, run_get_node
 
-from aiida_sssp_workflow.workflows.measure.report import BandStructureReport
+from aiida_sssp_workflow.workflows.transferability.report import BandsReport
 
 UpfData = DataFactory("pseudo.upf")
 
@@ -12,14 +12,13 @@ UpfData = DataFactory("pseudo.upf")
 @pytest.mark.slow
 def test_run_default(pseudo_path, code_generator, serialize_inputs, data_regression):
     """Test band structure verification workflow"""
-    _WorkChain = WorkflowFactory("sssp_workflow.measure.bands")
+    _WorkChain = WorkflowFactory("sssp_workflow.transferability.bands")
 
     builder: ProcessBuilder = _WorkChain.get_builder(
-        pseudo=pseudo_path("Al"),
+        pseudo=pseudo_path(),
         protocol="test",
         configuration="SC",
-        wavefunction_cutoff=25,
-        charge_density_cutoff=100,
+        cutoffs=(25, 100),
         code=code_generator("pw"),
         clean_workdir=True,
     )
@@ -37,7 +36,7 @@ def test_run_default(pseudo_path, code_generator, serialize_inputs, data_regress
     assert "bands" in result
     assert "band_structure" in result
 
-    report = BandStructureReport.construct(result["report"].get_dict())
+    report = BandsReport.construct(result["report"].get_dict())
     bands_node = orm.load_node(report.bands.uuid)
     band_structure_node = orm.load_node(report.band_structure.uuid)
 
@@ -63,13 +62,12 @@ def test_builder_default_args_passing(
     data_regression,
 ):
     """Test transferability workflow builder is correctly created with default args"""
-    _WorkChain = WorkflowFactory("sssp_workflow.measure.bands")
+    _WorkChain = WorkflowFactory("sssp_workflow.transferability.bands")
 
     builder: ProcessBuilder = _WorkChain.get_builder(
-        pseudo=pseudo_path("Al"),
+        pseudo=pseudo_path(),
         protocol="test",
-        wavefunction_cutoff=25,
-        charge_density_cutoff=100,
+        cutoffs=(25, 100),
         code=code_generator("pw"),
         clean_workdir=clean_workdir,
     )

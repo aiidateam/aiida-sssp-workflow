@@ -1,12 +1,12 @@
 ---
-acwf:
+standard:
     name: acwf
     description: Delta measure parameters compatible with AiiDA common workflow
 
     occupations: smearing
     degauss: 0.0045
     smearing: fd
-    conv_thr_per_atom: 1.0e-10
+    conv_thr_per_atom: 1.0e-9
     kpoints_distance: 0.06
     mixing_beta: 0.4
     scale_count: 7

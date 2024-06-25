@@ -68,12 +68,12 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
-        configuration: str,
         pw_code: orm.AbstractCode,
         ph_code: orm.AbstractCode,
+        configuration: str | None = None,
         pw_parallelization: dict | None = None,
-        ph_settings: dict | None = None,
         pw_mpi_options: dict | None = None,
+        ph_settings: dict | None = None,
         ph_mpi_options: dict | None = None,
         clean_workdir: bool = True,  # default to clean workdir
     ) -> ProcessBuilder:

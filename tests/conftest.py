@@ -10,6 +10,7 @@ import hashlib
 from aiida import orm
 from aiida.orm.utils.managers import NodeLinksManager
 from aiida.engine import ProcessBuilder
+from aiida_sssp_workflow.utils import serialize_data
 
 pytest_plugins = ["aiida.manage.tests.pytest_fixtures"]
 
@@ -62,74 +63,19 @@ def code_generator(aiida_localhost):
 
 @pytest.fixture(scope="function")
 def pseudo_path():
-    def _pseudo_path(element="Al"):
-        if element == "Al":
+    def _pseudo_path(pseudo="Al.paw"):
+        if pseudo == "Al.paw":
             path = STATICS_DIR / "upf" / "Al.paw.pbe.z_3.ld1.psl.v0.1.upf"
-        elif element == "O_nc":
+        elif pseudo == "O.nc":
             path = STATICS_DIR / "upf" / "O.nc.pbe.z_6.oncvpsp3.dojo.v0.4.1-std.upf"
+        elif pseudo == "O.paw":
+            path = STATICS_DIR / "upf" / "O.paw.pbe.z_6.atompaw.jth.v1.1-std.upf"
         else:
-            raise ValueError(f"pseudo for {element} not found")
+            raise ValueError(f"pseudo {pseudo} not found")
 
         return path
 
     return _pseudo_path
-
-
-def _serialize_data(data):
-    from aiida.orm import (
-        AbstractCode,
-        BaseType,
-        Data,
-        Dict,
-        KpointsData,
-        List,
-        RemoteData,
-        SinglefileData,
-    )
-    from aiida.plugins import DataFactory
-
-    StructureData = DataFactory("core.structure")
-    UpfData = DataFactory("pseudo.upf")
-
-    if isinstance(data, dict):
-        return {key: _serialize_data(value) for key, value in data.items()}
-
-    if isinstance(data, BaseType):
-        return data.value
-
-    if isinstance(data, AbstractCode):
-        return data.full_label
-
-    if isinstance(data, Dict):
-        return data.get_dict()
-
-    if isinstance(data, List):
-        return data.get_list()
-
-    if isinstance(data, StructureData):
-        return data.get_formula()
-
-    if isinstance(data, UpfData):
-        return f"{data.element}<md5={data.md5}>"
-
-    if isinstance(data, RemoteData):
-        # For `RemoteData` we compute the hash of the repository. The value returned by `Node._get_hash` is not
-        # useful since it includes the hash of the absolute filepath and the computer UUID which vary between tests
-        return data.base.repository.hash()
-
-    if isinstance(data, KpointsData):
-        try:
-            return data.get_kpoints().tolist()
-        except AttributeError:
-            return data.get_kpoints_mesh()
-
-    if isinstance(data, SinglefileData):
-        return data.get_content()
-
-    if isinstance(data, Data):
-        return data.base.caching._get_hash()
-
-    return data
 
 
 @pytest.fixture
@@ -141,69 +87,13 @@ def serialize_inputs():
     :return: dictionary
     """
 
-    def _serialize_data(data):
-        from aiida.orm import (
-            AbstractCode,
-            BaseType,
-            Data,
-            Dict,
-            KpointsData,
-            List,
-            RemoteData,
-            SinglefileData,
-        )
-        from aiida.plugins import DataFactory
-
-        StructureData = DataFactory("core.structure")
-        UpfData = DataFactory("pseudo.upf")
-
-        if isinstance(data, dict):
-            return {key: _serialize_data(value) for key, value in data.items()}
-
-        if isinstance(data, BaseType):
-            return data.value
-
-        if isinstance(data, AbstractCode):
-            return data.full_label
-
-        if isinstance(data, Dict):
-            return data.get_dict()
-
-        if isinstance(data, List):
-            return data.get_list()
-
-        if isinstance(data, StructureData):
-            return data.get_formula()
-
-        if isinstance(data, UpfData):
-            return f"{data.element}<md5={data.md5}>"
-
-        if isinstance(data, RemoteData):
-            # For `RemoteData` we compute the hash of the repository. The value returned by `Node._get_hash` is not
-            # useful since it includes the hash of the absolute filepath and the computer UUID which vary between tests
-            return data.base.repository.hash()
-
-        if isinstance(data, KpointsData):
-            try:
-                return data.get_kpoints().tolist()
-            except AttributeError:
-                return data.get_kpoints_mesh()
-
-        if isinstance(data, SinglefileData):
-            return data.get_content()
-
-        if isinstance(data, Data):
-            return data.base.caching._get_hash()
-
-        return data
-
     def _serialize_inputs(inputs: NodeLinksManager):
         # NodeLinksManager -> dict
         _inputs = {}
         for key in inputs._get_keys():
             _inputs[key] = inputs[key]
 
-        return _serialize_data(_inputs)
+        return serialize_data(_inputs)
 
     return _serialize_inputs
 
@@ -218,6 +108,6 @@ def serialize_builder():
     """
 
     def _serialize_builder(builder: ProcessBuilder):
-        return _serialize_data(builder._inputs(prune=True))
+        return serialize_data(builder._inputs(prune=True))
 
     return _serialize_builder

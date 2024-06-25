@@ -1,4 +1,4 @@
-charge_density_cutoff: 100.0
+charge_density_cutoff: 100
 clean_workdir: false
 code: pw-docker@localhost
 metadata:
@@ -17,4 +17,4 @@ oxygen_pseudo: O<md5=3e3f909f7470e8921608ab6b1f57bbae>
 parallelization: {}
 protocol: test
 pseudo: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
-wavefunction_cutoff: 25.0
+wavefunction_cutoff: 25

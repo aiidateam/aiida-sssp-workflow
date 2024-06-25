@@ -187,6 +187,17 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         return self.ctx.structure
 
     @property
+    def configuration(self):
+        """Syntax sugar for self.ctx.configuration"""
+        if "configuration" not in self.ctx:
+            raise AttributeError(
+                "structure is not set in the context, your step must after _setup_structure"
+            )
+
+        return self.ctx.configuration
+
+
+    @property
     def pseudos(self):
         """Syntax sugar for self.ctx.pseudos"""
         if "pseudos" not in self.ctx:
@@ -234,12 +245,21 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
-        configuration: str,
+        configuration: str | None = None,
         clean_workdir: bool = True,
     ) -> ProcessBuilder:
         """Generate builder for the generic convergence workflow"""
         builder = super().get_builder()
         builder.protocol = orm.Str(protocol)
+
+        if configuration is not None:
+            builder.configuration = orm.Str(configuration)
+            configuration_name = configuration
+
+            if ret := is_valid_convergence_configuration(configuration):
+                raise ValueError(ret)
+        else:
+            configuration_name = "default"
 
         # Set the default label and description
         # The default label is set to be the base file name of PP
@@ -248,7 +268,7 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             pseudo.filename if isinstance(pseudo, UpfData) else pseudo.name
         )
         builder.metadata.description = (
-            f"Run on protocol '{protocol}' and configuration '{configuration}'"
+            f"Run on protocol '{protocol}' and configuration '{configuration_name}'"
         )
 
         if isinstance(pseudo, Path):
@@ -259,11 +279,8 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
         if ret := is_valid_cutoff_list(cutoff_list):
             raise ValueError(ret)
 
-        if ret := is_valid_convergence_configuration(configuration):
-            raise ValueError(ret)
 
         builder.cutoff_list = orm.List(list=cutoff_list)
-        builder.configuration = orm.Str(configuration)
         builder.clean_workdir = orm.Bool(clean_workdir)
 
         return builder
@@ -290,18 +307,18 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
             )
 
         if "configuration" in self.inputs:
-            configuration = self.inputs.configuration
+            self.ctx.configuration = self.inputs.configuration
         else:
             # will use the default configuration set in the protocol (mapping.json)
-            configuration = get_default_configuration(
+            self.ctx.configuration = get_default_configuration(
                 self.ctx.element, property="convergence"
             )
 
         self.ctx.structure = get_standard_structure(
-            self.ctx.element, configuration=configuration
+            self.ctx.element, configuration=self.ctx.configuration
         )
 
-        self.out("configuration", configuration)
+        self.out("configuration", self.ctx.configuration)
         self.out("structure", self.ctx.structure)
 
     def _setup_protocol(self):

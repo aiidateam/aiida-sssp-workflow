@@ -8,7 +8,7 @@ class SingleEOSEntry(BaseModel):
     exit_status: int
 
 
-class TransferabilityReport(BaseModel):
+class EOSReport(BaseModel):
     eos_dict: dict[str, SingleEOSEntry]
 
     @classmethod
@@ -29,7 +29,7 @@ class SingleBandEntry(BaseModel):
     exit_status: int
 
 
-class BandStructureReport(BaseModel):
+class BandsReport(BaseModel):
     bands: SingleBandEntry
     band_structure: SingleBandEntry
 

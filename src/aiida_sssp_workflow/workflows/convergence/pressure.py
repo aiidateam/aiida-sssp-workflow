@@ -46,11 +46,11 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
     @classmethod
     def get_builder(
         cls,
+        code: orm.AbstractCode,
         pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
-        configuration: str,
-        code: orm.AbstractCode,
+        configuration: str | None = None,
         parallelization: dict | None = None,
         mpi_options: dict | None = None,
         clean_workdir: bool = True,  # clean workdir by default

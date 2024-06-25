@@ -33,7 +33,7 @@ def test_run_default(
     if "phonon_frequencies" in entry_point:
         # require passing pw_code and ph_code
         builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
-            pseudo=pseudo_path("Al"),
+            pseudo=pseudo_path(),
             protocol="test",
             cutoff_list=[(20, 80), (30, 120)],
             configuration="DC",
@@ -43,7 +43,7 @@ def test_run_default(
         )
     else:
         builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
-            pseudo=pseudo_path("Al"),
+            pseudo=pseudo_path(),
             protocol="test",
             cutoff_list=[(20, 80), (30, 120)],
             configuration="DC",
@@ -95,7 +95,7 @@ def test_builder_pseudo_as_upfdata(
     data_regression,
 ):
     _ConvergencWorkChain = WorkflowFactory(entry_point)
-    pseudo = UpfData.get_or_create(pseudo_path("Al"))
+    pseudo = UpfData.get_or_create(pseudo_path())
 
     builder: ProcessBuilder = _ConvergencWorkChain.get_builder(
         pseudo=pseudo,

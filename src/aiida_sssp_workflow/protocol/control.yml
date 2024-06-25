@@ -34,7 +34,7 @@ quick:
 test:
     description: test only
 
-    wfc_scan: [30, 35] # at fix dual
-    nc_dual_scan: [] # at fix wfc
-    nonnc_dual_scan: [] # at fix rho
+    wfc_scan: [20, 30] # at fix dual
+    nc_dual_scan: [3.0, 4.0] # at fix wfc
+    nonnc_dual_scan: [6.0, 8.0] # at fix rho
     nonnc_high_dual_scan: [8.0, 12.0]

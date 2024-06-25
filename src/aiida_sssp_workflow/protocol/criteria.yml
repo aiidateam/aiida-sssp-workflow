@@ -1,6 +1,6 @@
 ---
-efficiency:
-    name: SSSP efficiency
+standard:
+    name: initial naive defined criteria
     description: Protocol to pick the efficiency pseudopotestials.
 
     cohesive_energy:
@@ -9,7 +9,7 @@ efficiency:
         eps: 1.0e-3
         unit: meV/atom
 
-    delta:
+    eos:
         mode: 0
         bounds: [0.0, 0.2]  # when absolute error < 0.2 meV/atom
         eps: 1.0e-3
@@ -33,37 +33,37 @@ efficiency:
         eps: 1.0e-3
         unit: meV/atom
 
-
-precision:
-    name: SSSP precision
-    description: Protocol to pick the precision pseudopotestials.
+v2024.1001:
+    name: initial naive defined criteria
+    description: Protocol to pick the efficiency pseudopotestials.
 
     cohesive_energy:
         mode: 0
-        bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
+        bounds: [0.0, 2.0]
         eps: 1.0e-3
         unit: meV/atom
 
-    delta:
+    eos:
         mode: 0
-        bounds: [0.0, 0.1]  # when absolute error < 0.1 meV/atom
+        bounds: [0.0, 0.02]
         eps: 1.0e-3
-        unit: meV/atom
+        unit: "na"
 
     phonon_frequencies:
         mode: 0
-        bounds: [0.0, 1.0]  # when error < 1.0 %
+        bounds: [0.0, 1.0]
         eps: 1.0e-3
         unit: "%"
 
     pressure:
         mode: 0
-        bounds: [0.0, 0.5]  # when relative error < 0.5%
+        bounds: [0.0, 0.5]
         eps: 1.0e-3
         unit: "%"
 
     bands:
         mode: 0
-        bounds: [0.0, 15]   # when error eta_c < 15 meV
+        bounds: [0.0, 10]   # when error eta_c < 20 meV
         eps: 1.0e-3
         unit: meV/atom
+

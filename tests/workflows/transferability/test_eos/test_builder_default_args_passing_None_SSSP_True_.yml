@@ -1,10 +1,10 @@
-charge_density_cutoff: 100.0
+charge_density_cutoff: 1600
 clean_workdir: true
 code: pw-docker@localhost
 metadata:
   call_link_label: transferability_eos
   description: Run on protocol 'test' | configurations 'all' | with oxygen_pseudo
-    'O.paw.pbe.z_6.ld1.psl.v0.1.upf' | base (ecutwfc, ecutrho) = (25, 100)
+    'O.paw.pbe.z_6.ld1.psl.v0.1.upf' | base (ecutwfc, ecutrho) = (200, 1600)
   label: Al.paw.pbe.z_3.ld1.psl.v0.1.upf
 mpi_options:
   max_wallclock_seconds: 1800
@@ -17,4 +17,4 @@ oxygen_pseudo: O<md5=ef47edf176e98f8e64dad12c7c426cc0>
 parallelization: {}
 protocol: test
 pseudo: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
-wavefunction_cutoff: 25.0
+wavefunction_cutoff: 200

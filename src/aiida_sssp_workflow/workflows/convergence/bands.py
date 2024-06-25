@@ -50,8 +50,8 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
-        configuration: str,
         code: orm.AbstractCode,
+        configuration: str | None = None,
         parallelization: dict | None = None,
         mpi_options: dict | None = None,
         clean_workdir: bool = True,  # default to clean workdir

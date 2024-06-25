@@ -43,15 +43,15 @@ aiida-sssp-workflow = "aiida_sssp_workflow.cli:cmd_root"
 "sssp_workflow.birch_murnaghan_fit" = "aiida_sssp_workflow.calculations.birch_murnaghan_fit:birch_murnaghan_fit"
 
 [project.entry-points."aiida.workflows"]
-"sssp_workflow.measure.transferability" = "aiida_sssp_workflow.workflows.measure.transferability:EOSTransferabilityWorkChain"
-"sssp_workflow.measure.bands" = "aiida_sssp_workflow.workflows.measure.bands:BandStructureWorkChain"
+"sssp_workflow.transferability.eos" = "aiida_sssp_workflow.workflows.transferability.eos:TransferabilityEOSWorkChain"
+"sssp_workflow.transferability.bands" = "aiida_sssp_workflow.workflows.transferability.bands:TransferabilityBandsWorkChain"
 "sssp_workflow.convergence.caching" = "aiida_sssp_workflow.workflows.convergence.caching:_CachingConvergenceWorkChain"
 "sssp_workflow.convergence.eos" = "aiida_sssp_workflow.workflows.convergence.eos:ConvergenceEOSWorkChain"
 "sssp_workflow.convergence.cohesive_energy" = "aiida_sssp_workflow.workflows.convergence.cohesive_energy:ConvergenceCohesiveEnergyWorkChain"
 "sssp_workflow.convergence.phonon_frequencies" = "aiida_sssp_workflow.workflows.convergence.phonon_frequencies:ConvergencePhononFrequenciesWorkChain"
 "sssp_workflow.convergence.pressure" = "aiida_sssp_workflow.workflows.convergence.pressure:ConvergencePressureWorkChain"
 "sssp_workflow.convergence.bands" = "aiida_sssp_workflow.workflows.convergence.bands:ConvergenceBandsWorkChain"
-"sssp_workflow.verification" = "aiida_sssp_workflow.workflows.verifications:VerificationWorkChain"
+"sssp_workflow.verification" = "aiida_sssp_workflow.workflows.verification:FullVerificationWorkChain"
 
 [project.urls]
 Documentation = "https://aiida-sssp-workflow.readthedocs.io/"

@@ -1,5 +1,5 @@
-charge_density_cutoff: 100.0
-clean_workdir: true
+charge_density_cutoff: 100
+clean_workdir: false
 code: pw-docker@localhost
 metadata:
   call_link_label: band_structure_verification
@@ -14,4 +14,4 @@ mpi_options:
 parallelization: {}
 protocol: test
 pseudo: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
-wavefunction_cutoff: 25.0
+wavefunction_cutoff: 25

@@ -3,17 +3,18 @@
 Bands distance of many input pseudos
 """
 
+from typing import Tuple
 from pathlib import Path
 
 from aiida import orm
-from aiida.plugins import DataFactory
 from aiida.engine import ToContext, ProcessBuilder
+from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import (
     get_protocol,
     get_standard_structure,
 )
-from aiida_sssp_workflow.utils import get_default_mpi_options, extract_pseudo_info
+from aiida_sssp_workflow.utils import extract_pseudo_info
 from aiida_sssp_workflow.utils.structure import (
     UNARIE_CONFIGURATIONS,
     get_default_configuration,
@@ -22,10 +23,8 @@ from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
 from aiida_sssp_workflow.workflows.evaluate._bands import (
     BandsWorkChain as EvaluateBandsWorkChain,
 )
-from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
-from aiida_sssp_workflow.workflows.measure.report import BandStructureReport
-
-UpfData = DataFactory("pseudo.upf")
+from aiida_sssp_workflow.workflows.transferability import _BaseMeasureWorkChain
+from aiida_sssp_workflow.workflows.transferability.report import BandsReport
 
 
 def validate_input_pseudos(d_pseudos, _):
@@ -44,7 +43,7 @@ def is_valid_convergence_configuration(value, _=None):
         return f"Configuration {value} is not valid. Valid configurations are {valid_configurations}"
 
 
-class BandStructureWorkChain(_BaseMeasureWorkChain):
+class TransferabilityBandsWorkChain(_BaseMeasureWorkChain):
     """WorkChain to run bands measure,
     run without sym for distance compare and band structure along the path
     """
@@ -54,7 +53,6 @@ class BandStructureWorkChain(_BaseMeasureWorkChain):
     @classmethod
     def define(cls, spec):
         """Define the process specification."""
-        # yapf: disable
         super().define(spec)
         spec.input(
             "configuration",
@@ -86,7 +84,7 @@ class BandStructureWorkChain(_BaseMeasureWorkChain):
             required=True,
             help="The structure used for the convergence.",
         )
-        spec.output( # XXX: I am same as transferibility workchain. combine me.
+        spec.output(  # XXX: I am same as transferibility workchain. combine me.
             "report",
             valid_type=orm.Dict,
             required=True,
@@ -95,7 +93,7 @@ class BandStructureWorkChain(_BaseMeasureWorkChain):
 
     def _setup_pseudos(self):
         """Setup pseudos"""
-        # XXX: this is same as trans WF, consider combine
+        # XXX: this is same as eos WF, consider combine
         pseudo_info = extract_pseudo_info(
             self.inputs.pseudo.get_content(),
         )
@@ -171,26 +169,25 @@ class BandStructureWorkChain(_BaseMeasureWorkChain):
     @classmethod
     def get_builder(
         cls,
+        code: orm.AbstractCode,
         pseudo: Path | UpfData,
         protocol: str,
-        wavefunction_cutoff: float,
-        charge_density_cutoff: float,
-        code: orm.AbstractCode,
+        cutoffs: Tuple[float, float] | None = None,
         configuration: list | None = None,
         parallelization: dict | None = None,
         mpi_options: dict | None = None,
         clean_workdir: bool = True,  # default to clean workdir
     ) -> ProcessBuilder:
         """Return a builder to run this EOS convergence workchain"""
-        builder = super().get_builder()
-        builder.protocol = orm.Str(protocol)
-        if isinstance(pseudo, Path):
-            builder.pseudo = UpfData.get_or_create(pseudo)
-        else:
-            builder.pseudo = pseudo
-        builder.wavefunction_cutoff = orm.Float(wavefunction_cutoff)
-        builder.charge_density_cutoff = orm.Float(charge_density_cutoff)
-        builder.code = code
+        builder = super().get_builder(
+            code,
+            pseudo,
+            protocol,
+            cutoffs,
+            parallelization,
+            mpi_options,
+            clean_workdir,
+        )
 
         if configuration is not None:
             builder.configuration = orm.Str(configuration)
@@ -204,20 +201,8 @@ class BandStructureWorkChain(_BaseMeasureWorkChain):
         )
         builder.metadata.description = (
             f"""Run on protocol '{protocol}' | configuration '{configuration if configuration is not None else "default"}' | """
-            f" base (ecutwfc, ecutrho) = ({wavefunction_cutoff}, {charge_density_cutoff})"
+            f" base (ecutwfc, ecutrho) = ({builder.wavefunction_cutoff.value}, {builder.charge_density_cutoff.value})"
         )
-        builder.clean_workdir = orm.Bool(clean_workdir)
-        builder.code = code
-
-        if parallelization:
-            builder.parallelization = orm.Dict(parallelization)
-        else:
-            builder.parallelization = orm.Dict()
-
-        if mpi_options:
-            builder.mpi_options = orm.Dict(mpi_options)
-        else:
-            builder.mpi_options = orm.Dict(get_default_mpi_options())
 
         return builder
 
@@ -337,10 +322,10 @@ class BandStructureWorkChain(_BaseMeasureWorkChain):
         }
 
         try:
-            validated_report = BandStructureReport.construct(band_dict)
-            self.report("BandStructureReport report is validated")
+            validated_report = BandsReport.construct(band_dict)
+            self.report("BandsReport is validated")
         except Exception as e:
-            self.report(f"BandStructureReport in sot validated: {e}")
+            self.report(f"BandsReport in sot validated: {e}")
             raise e
         else:
             self.out("report", orm.Dict(dict=validated_report.model_dump()).store())

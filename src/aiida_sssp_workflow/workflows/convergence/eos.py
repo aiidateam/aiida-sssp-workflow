@@ -48,8 +48,8 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
         pseudo: Union[Path, UpfData],
         protocol: str,
         cutoff_list: list,
-        configuration: str,
         code: orm.AbstractCode,
+        configuration: str | None = None,
         parallelization: dict | None = None,
         mpi_options: dict | None = None,
         clean_workdir: bool = True,  # default to clean workdir
@@ -111,7 +111,7 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
         )  # sync with the main workchain
 
         builder.element = orm.Str(self.element)
-        builder.configuration = self.inputs.configuration
+        builder.configuration = self.configuration
 
         builder.eos.metadata.call_link_label = "EOS"
         builder.eos.structure = self.structure

@@ -4,16 +4,18 @@
 Running verification workchain
 """
 
-import os
+from typing import List, Tuple
+from pathlib import Path
 
 import aiida
 import click
 from aiida import orm
 from aiida.cmdline.params import options, types
 from aiida.cmdline.utils import echo
-from aiida.engine import run_get_node, submit
+from aiida.engine import ProcessBuilder, run_get_node, submit
 from aiida.plugins import DataFactory, WorkflowFactory
 
+from aiida_pseudo.data.pseudo.upf import UpfData
 from aiida_sssp_workflow.cli import cmd_root
 from aiida_sssp_workflow.workflows.verifications import (
     DEFAULT_CONVERGENCE_PROPERTIES_LIST,
@@ -21,13 +23,49 @@ from aiida_sssp_workflow.workflows.verifications import (
     DEFAULT_PROPERTIES_LIST,
 )
 
-UpfData = DataFactory("pseudo.upf")
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 
+def guess_properties_list(property: list) -> Tuple[List[str], str]:
+    # if the property is not specified, use the default list with all properties calculated.
+    # otherwise, use the specified properties.
+    if not property:
+        properties_list = DEFAULT_PROPERTIES_LIST
+        extra_desc = "All properties"
+    elif len(property) == 1 and property[0] == "convergence":
+        properties_list = DEFAULT_CONVERGENCE_PROPERTIES_LIST
+        extra_desc = "Convergence"
+    elif len(property) == 1 and property[0] == "measure":
+        properties_list = DEFAULT_MEASURE_PROPERTIES_LIST
+        extra_desc = "Measure"
+    else:
+        properties_list = list(property)
+        extra_desc = f"{properties_list}"
+
+    return properties_list, extra_desc
+
+def guess_is_convergence(properties_list: list) -> bool:
+    """Check if it is a convergence test"""
+
+    return any([c for c in properties_list if c.startswith("convergence")])
+
+def guess_is_full_convergence(properties_list: list) -> bool:
+    """Check if all properties are run for convergence test"""
+
+    return len([c for c in properties_list if c.startswith("convergence")]) == len(DEFAULT_CONVERGENCE_PROPERTIES_LIST)
+
+def guess_is_measure(properties_list: list) -> bool:
+    """Check if it is a measure test"""
+
+    return any([c for c in properties_list if c.startswith("measure")])
+
+def guess_is_ph(properties_list: list) -> bool:
+    """Check if it has a measure test"""
+
+    return any([c for c in properties_list if "phonon_frequencies" in c])
+
+
 # Trigger the launch by running:
-# aiida-sssp-workflow launch --property measure.precision --pw-code pw-7.0@localhost --ph-code ph-7.0@localhost --protocol test --cutoff-control test --criteria efficiency --withmpi True -- examples/_static/Si_ONCV_PBE-1.2.upf
-
-
+# aiida-sssp-workflow launch --property measure.precision --pw-code pw-7.0@localhost --ph-code ph-7.0@localhost --protocol test --cutoff-control test --withmpi True -- examples/_static/Si_ONCV_PBE-1.2.upf
 @cmd_root.command("launch")
 @click.argument("pseudo", type=click.Path(exists=True))
 @options.OverridableOption(
@@ -52,11 +90,6 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
     help="Oxygen ecutrho to use for oxides precision measure workflow.",
 )
 @options.OverridableOption(
-    "--pw-code-large-memory",
-    "pw_code_large_memory",
-    type=types.CodeParamType(entry_point="quantumespresso.pw"),
-)(required=False)
-@options.OverridableOption(
     "--ph-code", "ph_code", type=types.CodeParamType(entry_point="quantumespresso.ph")
 )(required=False)
 @click.option(
@@ -68,10 +101,9 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option(
     "protocol",
     "--protocol",
-    default="acwf",
-    help="Protocol to use for the verification, (acwf, test).",
+    default="standard",
+    help="Protocol to use for the verification, (standard, quick, test).",
 )
-@click.option("withmpi", "--withmpi", default=True, help="Run with mpi.")
 @click.option("npool", "--npool", default=1, help="Number of pool.")
 @click.option("walltime", "--walltime", default=3600, help="Walltime.")
 @click.option(
@@ -100,142 +132,91 @@ VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
 @click.option(
     "ecutwfc",
     "--ecutwfc",
+    type=float,
     help="Cutoff energy for wavefunctions in Rydberg.",
 )
 @click.option(
     "ecutrho",
     "--ecutrho",
+    type=float,
     help="Cutoff energy for charge density in Rydberg.",
 )
-# cutoff_control, criteria, configuration is for convergence workflows only
-@click.option(
-    "cutoff_control",
-    "--cutoff-control",
-    help="Cutoff control for convergence workflow, (standard, quick, opsp).",
-)
-@click.option(
-    "criteria", "--criteria", help="Criteria for convergence (efficiency, precision)."
-)
 # configuration is hard coded for convergence workflow, but here is an interface for experiment purpose
+# when this is passed with convergence test, only one can be passed.
+# When it is passed with measure test, can be multiple configurations.
 @click.option(
     "configuration",
     "--configuration",
     multiple=True,
-    default=(),
+    default=[],
     help="Configuration of structure, can be: SC, FCC, BCC, Diamond, XO, XO2, XO3, X2O, X2O3, X2O5, GS, RE",
 )
 def launch(
-    pw_code,
-    ph_code,
-    pw_code_large_memory,
-    property,
-    protocol,
-    ecutwfc,
-    ecutrho,
-    cutoff_control,
-    criteria,
-    configuration,
-    withmpi,
-    npool,
-    walltime,
+    pw_code: orm.Code,
+    ph_code: orm.Code,
+    property: list,
+    protocol: str,
+    configuration: list,
+    npool: int,
+    walltime: int,
     resources,
-    pseudo,
-    oxygen_pseudo,
-    oxygen_ecutwfc,
-    oxygen_ecutrho,
-    clean_workdir,
-    daemon,
-    comment,
+    pseudo: Path,
+    clean_workdir: bool,
+    daemon: bool,
+    comment: str,
 ):
     """Launch the verification workchain."""
-    # if the property is not specified, use the default list with all properties calculated.
-    # otherwise, use the specified properties.
-    if not property:
-        properties_list = DEFAULT_PROPERTIES_LIST
-        extra_desc = "All properties"
-    elif len(property) == 1 and property[0] == "convergence":
-        properties_list = DEFAULT_CONVERGENCE_PROPERTIES_LIST
-        extra_desc = "Convergence"
-    elif len(property) == 1 and property[0] == "measure":
-        properties_list = DEFAULT_MEASURE_PROPERTIES_LIST
-        extra_desc = "Measure"
-    else:
-        properties_list = list(property)
-        extra_desc = f"{properties_list}"
-
-    # validate the options are all provide for the property
-    is_convergence = False
-    is_measure = False
-    is_ph = False
-    for prop in properties_list:
-        if prop.startswith("convergence"):
-            is_convergence = True
-        if prop.startswith("measure"):
-            is_measure = True
-        if "phonon_frequencies" in prop:
-            is_ph = True
-
     # raise error if the options are not provided
-    if is_convergence and not (cutoff_control and criteria):
-        echo.echo_critical(
-            "cutoff_control, criteria must be provided for convergence workflow."
-        )
+    properties_list, extra_desc = guess_properties_list(property)
 
-    if is_measure and not (ecutwfc and ecutrho):
-        echo.echo_critical("ecutwfc and ecutrho must be provided for measure workflow.")
+    is_convergence = guess_is_convergence(properties_list)
+    is_full_convergence = guess_is_full_convergence(properties_list)
+    is_measure = guess_is_measure(properties_list)
+    is_ph = guess_is_ph(properties_list)
 
     if is_ph and not ph_code:
-        echo.echo_critical("ph_code must be provided for phonon frequencies.")
-
-    # raise warning if the options are over provided, e.g. cutoff_control is provided for measure workflow
-    if is_measure and (cutoff_control or criteria):
-        echo.echo_warning("cutoff_control, criteria are not used for measure workflow.")
-
-    # raise warning if pw_code_large_memory is provided for not include cohesive energy convergence workflow
-    if pw_code_large_memory and (
-        not is_convergence or "convergence.cohesive_energy" not in properties_list
-    ):
-        echo.echo_warning("pw_code_large_memory is not used for this workflow.")
+        echo.echo_critical("ph_code must be provided since we run on it for phonon frequencies.")
 
     if is_convergence and len(configuration) > 1:
         echo.echo_critical(
             "Only one configuration is allowed for convergence workflow."
         )
 
-    if is_convergence and (ecutwfc or ecutrho):
-        echo.echo_warning("ecutwfc and ecutrho are not used for convergence workflow.")
+    if is_measure and not is_full_convergence:
+        echo.echo_warning("Full convergence tests are not run, so we use maximum cutoffs for transferability verification.")
 
+    # Load the curent AiiDA profile and log to user
     _profile = aiida.load_profile()
     echo.echo_info(f"Current profile: {_profile.name}")
 
-    basename = os.path.basename(pseudo)
-
-    computer = pw_code.computer.label
-    label, _ = os.path.splitext(basename)
-
     # convert configuration to list
-    configuration = list(configuration)
+    configuration_list = list(configuration)
 
-    if len(configuration) == 0:
+    if len(configuration_list) == 0:
         conf_label = "default"
-    elif len(configuration) == 1:
-        conf_label = configuration[0]
+    elif len(configuration_list) == 1:
+        conf_label = configuration_list[0]
     else:
-        conf_label = "/".join(configuration)
-
-    pre_label = (
-        f"{protocol}"
-        if not is_convergence
-        else f"{protocol}-{criteria}-{cutoff_control}"
-    )
-    label = orm.Str(f"({pre_label} at {computer} - {conf_label}) {label}")
-
-    with open(pseudo, "rb") as stream:
-        pseudo = UpfData(stream)
+        conf_label = "/".join(configuration_list)
 
     resources = dict(resources)
     if "num_machines" not in resources:
         resources["num_machines"] = 1
+
+    builder: ProcessBuilder = FullVerificationWorkChain.get_builder(
+        pseudo=pseudo,
+        protocol=protocol,
+        properties_list=properties_list,
+        configuration_list=configuration_list,
+        clean_workdir=clean_workdir,
+    )
+
+    builder.metadata.label = f"({protocol} at {pw_code.computer.label} - {conf_label}) {pseudo.stem}"
+    builder.metadata.description = f"""Calculation is run on protocol: {protocol}; on {pw_code.computer.label}; on configuration {conf_label}; on pseudo {pseudo.stem}."""
+
+    builder.pw_code = pw_code
+    if is_ph:
+        builder.ph_code = ph_code
 
     inputs = {
         "measure": {
@@ -257,7 +238,7 @@ def launch(
                 "resources": resources,
                 "max_wallclock_seconds": walltime,
                 "withmpi": withmpi,
-            }
+            },
         ),
         "parallelization": orm.Dict(dict={"npool": npool}),
         "clean_workdir": orm.Bool(clean_workdir),

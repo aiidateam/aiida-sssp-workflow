@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-
+from typing import Tuple
 from pathlib import Path
 
 from aiida import orm
@@ -16,7 +16,6 @@ from aiida_sssp_workflow.utils import (
     get_protocol,
     get_standard_structure,
 )
-from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.utils.pseudo import (
     extract_pseudo_info,
     compute_total_nelectrons,
@@ -24,14 +23,12 @@ from aiida_sssp_workflow.utils.pseudo import (
     CurateType,
 )
 from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
-from aiida_sssp_workflow.workflows.measure import _BaseMeasureWorkChain
-from aiida_sssp_workflow.workflows.measure.report import TransferabilityReport
+from aiida_sssp_workflow.workflows.transferability import _BaseMeasureWorkChain
+from aiida_sssp_workflow.workflows.transferability.report import EOSReport
 
 
-class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
+class TransferabilityEOSWorkChain(_BaseMeasureWorkChain):
     """Workchain run EOS on 10 structures and compute nu/delta metric factor"""
-
-    # pylint: disable=too-many-instance-attributes
 
     _OXIDE_CONFIGURATIONS = OXIDE_CONFIGURATIONS
 
@@ -176,7 +173,7 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
     def _setup_protocol(self):
         """unzip and parse protocol parameters to context"""
         protocol = get_protocol(
-            category="transferability", name=self.inputs.protocol.value
+            category="eos", name=self.inputs.protocol.value
         )
         self.ctx.protocol = protocol
 
@@ -193,11 +190,10 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
     @classmethod
     def get_builder(
         cls,
+        code: orm.AbstractCode,
         pseudo: Path | UpfData,
         protocol: str,
-        wavefunction_cutoff: float,
-        charge_density_cutoff: float,
-        code: orm.AbstractCode,
+        cutoffs: Tuple[float, float] | None = None,
         configurations: list | None = None,
         curate_type: str | None = None,  # sssp -> pslib O; nc -> dojo O
         oxygen_pseudo: Path | UpfData | None = None,
@@ -208,15 +204,15 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
         clean_workdir: bool = True,  # default to clean workdir
     ) -> ProcessBuilder:
         """Return a builder to run this EOS convergence workchain"""
-        builder = super().get_builder()
-        builder.protocol = orm.Str(protocol)
-        if isinstance(pseudo, Path):
-            builder.pseudo = UpfData.get_or_create(pseudo)
-        else:
-            builder.pseudo = pseudo
-        builder.wavefunction_cutoff = orm.Float(wavefunction_cutoff)
-        builder.charge_density_cutoff = orm.Float(charge_density_cutoff)
-        builder.code = code
+        builder = super().get_builder(
+            code, 
+            pseudo,
+            protocol, 
+            cutoffs, 
+            parallelization, 
+            mpi_options, 
+            clean_workdir,
+        )
 
         if configurations is not None:
             builder.configurations = orm.List(configurations)
@@ -261,21 +257,8 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
         )
         builder.metadata.description = (
             f"""Run on protocol '{protocol}' | configurations '{configurations if configurations is not None else "all"}' | """
-            f"with oxygen_pseudo '{builder.oxygen_pseudo.filename}' | base (ecutwfc, ecutrho) = ({wavefunction_cutoff}, {charge_density_cutoff})"
+            f"with oxygen_pseudo '{builder.oxygen_pseudo.filename}' | base (ecutwfc, ecutrho) = ({builder.wavefunction_cutoff.value}, {builder.charge_density_cutoff.value})"
         )
-        builder.clean_workdir = orm.Bool(clean_workdir)
-        builder.code = code
-
-        if parallelization:
-            builder.parallelization = orm.Dict(parallelization)
-        else:
-            builder.parallelization = orm.Dict()
-
-        if mpi_options:
-            builder.mpi_options = orm.Dict(mpi_options)
-        else:
-            builder.mpi_options = orm.Dict(get_default_mpi_options())
-
         return builder
 
     def prepare_evaluate_builder(
@@ -457,10 +440,10 @@ class EOSTransferabilityWorkChain(_BaseMeasureWorkChain):
             )
 
         try:
-            validated_report = TransferabilityReport.construct(transferability_reports)
-            self.report("TransferabilityReport report is validated.")
+            validated_report = EOSReport.construct(transferability_reports)
+            self.report("EOSReport is validated.")
         except Exception as e:
-            self.report(f"TransferabilityReport report is not validated: {e}")
+            self.report(f"EOSReport is not validated: {e}")
             raise e
         else:
             self.out(
