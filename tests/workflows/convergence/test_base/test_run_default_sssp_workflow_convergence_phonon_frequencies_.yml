@@ -1,0 +1,39 @@
+clean_workdir: true
+phonon:
+  clean_workdir: false
+  max_iterations: 5
+  only_initialization: false
+  ph:
+    code: ph-docker@localhost
+    parameters:
+      INPUTPH:
+        diagonalization: cg
+        epsil: false
+        tr2_ph: 1.0e-06
+    settings: {}
+  qpoints:
+  - - 0.5
+    - 0.5
+    - 0.5
+scf:
+  clean_workdir: false
+  kpoints_distance: 0.5
+  max_iterations: 5
+  pw:
+    code: pw-docker@localhost
+    parallelization: {}
+    parameters:
+      CONTROL:
+        calculation: scf
+      ELECTRONS:
+        conv_thr: 2.0e-05
+        mixing_beta: 0.4
+      SYSTEM:
+        degauss: 0.01
+        ecutrho: 120
+        ecutwfc: 30
+        occupations: smearing
+        smearing: cold
+    pseudos:
+      Al: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
+structure: Al2
