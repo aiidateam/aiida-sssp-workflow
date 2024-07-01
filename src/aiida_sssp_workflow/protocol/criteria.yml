@@ -66,4 +66,3 @@ v2024.1001:
         bounds: [0.0, 10]   # when error eta_c < 20 meV
         eps: 1.0e-3
         unit: meV/atom
-

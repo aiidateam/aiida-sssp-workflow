@@ -119,18 +119,21 @@ class PseudoInfo(BaseModel):
     # source_lib: str
     # ...
 
+
 class DualType(Enum):
     NC = "nc"
     AUGLOW = "charge augmentation low"
     AUGHIGH = "charge augmentation high"
 
+
 def get_dual_type(pp_type: str, element: str) -> DualType:
-        if element in HIGH_DUAL_ELEMENTS and pp_type != 'nc':
-            return DualType.AUGHIGH
-        elif pp_type == 'nc':
-            return DualType.NC
-        else:
-            return DualType.AUGLOW
+    if element in HIGH_DUAL_ELEMENTS and pp_type != "nc":
+        return DualType.AUGHIGH
+    elif pp_type == "nc":
+        return DualType.NC
+    else:
+        return DualType.AUGLOW
+
 
 def extract_pseudo_info(pseudo_text: str) -> PseudoInfo:
     """Giving a pseudo, extract the pseudo info and return as a `PseudoInfo` object"""

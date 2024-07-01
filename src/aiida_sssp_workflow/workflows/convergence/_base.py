@@ -196,7 +196,6 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         return self.ctx.configuration
 
-
     @property
     def pseudos(self):
         """Syntax sugar for self.ctx.pseudos"""
@@ -278,7 +277,6 @@ class _BaseConvergenceWorkChain(SelfCleanWorkChain):
 
         if ret := is_valid_cutoff_list(cutoff_list):
             raise ValueError(ret)
-
 
         builder.cutoff_list = orm.List(list=cutoff_list)
         builder.clean_workdir = orm.Bool(clean_workdir)

@@ -1,6 +1,5 @@
 """Test ``utils.pseudo`` module."""
 
-from _pytest.pytester import pytester
 import pytest
 from pathlib import Path
 
@@ -71,14 +70,15 @@ def test_compute_total_nelectrons():
     ]:
         assert compute_total_nelectrons(configuration, pseudos) == n_total
 
+
 @pytest.mark.parametrize(
-    "element, pp_type, expected_dual_type", 
+    "element, pp_type, expected_dual_type",
     [
-        ('He', 'nc', DualType.NC),
-        ('Fe', 'nc', DualType.NC),
-        ('Fe', 'paw', DualType.AUGHIGH),
-        ('H', 'us', DualType.AUGLOW),
-    ]
+        ("He", "nc", DualType.NC),
+        ("Fe", "nc", DualType.NC),
+        ("Fe", "paw", DualType.AUGHIGH),
+        ("H", "us", DualType.AUGLOW),
+    ],
 )
 def test_get_dual_type(element, pp_type, expected_dual_type):
     assert get_dual_type(pp_type, element) == expected_dual_type

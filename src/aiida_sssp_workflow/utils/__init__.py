@@ -37,6 +37,7 @@ def get_default_mpi_options(
         "withmpi": with_mpi,
     }
 
+
 def serialize_data(data):
     from aiida.orm import (
         AbstractCode,
