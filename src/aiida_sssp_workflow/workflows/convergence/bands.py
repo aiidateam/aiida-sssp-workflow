@@ -4,15 +4,18 @@ Convergence test on bands of a given pseudopotential
 """
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
+import copy
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
 from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import get_default_mpi_options
+from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
 
 class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
@@ -147,3 +150,85 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         builder.run_band_structure = orm.Bool(False)
 
         return builder
+
+
+def compute_xy(
+    node: orm.Node,
+) -> dict[str, Any]:
+    """From report calculate the xy data, xs are cutoffs and ys are band distance from reference"""
+    report_dict = node.outputs.report.get_dict()
+    report = ConvergenceReport.construct(**report_dict)
+
+    reference_node = orm.load_node(report.reference.uuid)
+    band_structure_r: orm.BandsData = reference_node.outputs.bands.band_structure 
+    band_parameters_r: orm.Dict = reference_node.outputs.bands.band_parameters
+
+    bandsdata_r = {
+        "number_of_electrons": band_parameters_r["number_of_electrons"],
+        "number_of_bands": band_parameters_r["number_of_bands"],
+        "fermi_level": band_parameters_r["fermi_energy"],
+        "bands": band_structure_r.get_bands(),
+        "kpoints": band_structure_r.get_kpoints(),
+        "weights": band_structure_r.get_array("weights"),
+    }
+
+    # smearing width is from degauss
+    smearing = reference_node.inputs.bands.pw.parameters.get_dict()['SYSTEM']['degauss']
+    fermi_shift = reference_node.inputs.fermi_shift.value
+
+    # always do smearing on high bands and not include the spin since we didn't turn on the spin for all
+    # convergence test, but this may change in the future.
+    # The `get_bands_distance` function can deal with mag bands with spin_up and spin_down
+    spin = False
+    do_smearing = True
+
+    xs = []
+    ys = []
+    for node_point in report.convergence_list:
+        if node_point.exit_status != 0:
+            # TODO: log to a warning file for where the node is not finished_okay
+            continue
+        
+        x = node_point.wavefunction_cutoff
+        xs.append(x)
+
+        node = orm.load_node(node_point.uuid) 
+        band_structure_p: orm.BandsData = node.outputs.bands.band_structure
+        band_parameters_p: orm.Dict = node.outputs.bands.band_parameters
+
+
+        # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
+        bandsdata_p = {
+            "number_of_electrons": band_parameters_p["number_of_electrons"],
+            "number_of_bands": band_parameters_p["number_of_bands"],
+            "fermi_level": band_parameters_p["fermi_energy"],
+            "bands": band_structure_p.get_bands(),
+            "kpoints": band_structure_p.get_kpoints(),
+            "weights": band_structure_p.get_array("weights"),
+        }
+        res = get_bands_distance(
+            copy.deepcopy(bandsdata_r),
+            copy.deepcopy(bandsdata_p),
+            smearing=smearing,
+            fermi_shift=fermi_shift,
+            do_smearing=do_smearing,
+            spin=spin,
+        )
+        eta_c = res.get("eta_c", None)
+        shift_c = res.get("shift_c", None)
+        max_diff_c = res.get("max_diff_c", None)
+        unit = res.get("unit", None)
+
+        # eta_c is the y, others are write into as metadata
+        ys.append(eta_c)
+         
+
+    return {
+        'x': xs,
+        'y': ys,
+        'metadata': {
+            'shift_c': shift_c,
+            'max_diff_c': max_diff_c,
+            'unit': unit,
+        }
+    }

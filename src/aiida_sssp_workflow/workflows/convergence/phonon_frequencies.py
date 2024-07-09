@@ -3,7 +3,7 @@
 Convergence test on phonon frequencies of a given pseudopotential
 """
 
-from typing import Union
+from typing import Union, Any
 from pathlib import Path
 
 from aiida import orm
@@ -13,6 +13,7 @@ from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWork
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import (
     PhononFrequenciesWorkChain,
 )
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 from aiida_sssp_workflow.utils import get_default_mpi_options
 
 
@@ -167,3 +168,72 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         builder.phonon.ph["metadata"]["options"] = self.inputs.ph_mpi_options.get_dict()
 
         return builder
+
+def compute_xy(
+    node: orm.Node,
+) -> dict[str, Any]:
+    """From report calculate the xy data, xs are cutoffs and ys are phonon frequencies diff from reference"""
+    import numpy as np
+
+    report_dict = node.outputs.report.get_dict()
+    report = ConvergenceReport.construct(**report_dict)
+
+    reference_node = orm.load_node(report.reference.uuid)
+    output_parameters_r: orm.Dict = reference_node.outputs.ph.output_parameters
+    y_ref = output_parameters_r["dynamical_matrix_1"]["frequencies"]
+
+    xs = []
+    ys = []
+    for node_point in report.convergence_list:
+        if node_point.exit_status != 0:
+            # TODO: log to a warning file for where the node is not finished_okay
+            continue
+        
+        x = node_point.wavefunction_cutoff
+        xs.append(x)
+
+        node = orm.load_node(node_point.uuid)
+        output_parameters_p: orm.Dict = node.outputs.ph.output_parameters
+
+        y_p = output_parameters_p["dynamical_matrix_1"]["frequencies"]
+
+        # calculate the diff
+        diffs = np.array(y_p) - np.array(y_ref)
+        weights = np.array(y_ref)
+
+        relative_diff = np.sqrt(np.mean((diffs / weights) ** 2))
+        y = relative_diff
+
+        # XXX: properties that should write down for GUI rendering
+        # omega_max = np.amax(y_p)
+        # absolute_diff = np.mean(diffs)
+        # absolute_max_diff = np.amax(diffs)
+        #
+        # relative_max_diff = np.amax(diffs / weights)
+
+        # Legacy modification required when configuration is `GS` which is not run for convergence anymore
+        # Keep it here just for reference.
+        # if configuration == "GS":
+        #     # leftover setting from SSSP v1
+        #     # Otherwise the phonon frequencies calculated at BZ boundary qpoint (1/2, 1/2, 1/2) are not converged.
+        #     if element == "N" or element == "Cl":
+        #         start_idx = 12
+        #     elif element == "H" or element == "I":
+        #         start_idx = 4
+        #     elif element == "O":
+        #         start_idx = 6
+        #     else:
+        #         start_idx = 0
+        # else:
+        #     start_idx = 0
+        #
+        ys.append(y)
+
+    return {
+        'x': xs,
+        'y': ys,
+        'metadata': {
+            'unit': '%',
+        }
+    }
+

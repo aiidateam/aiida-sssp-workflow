@@ -4,14 +4,16 @@ Convergence test on cohesive energy of a given pseudopotential
 """
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
 from aiida_pseudo.data.pseudo import UpfData
 
+from aiida_sssp_workflow.calculations.calculate_metric import rel_errors_vec_length
 from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 
 
@@ -127,3 +129,59 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
         builder.eos.pw["metadata"]["options"] = self.inputs.mpi_options.get_dict()
 
         return builder
+
+def compute_xy(
+    report: ConvergenceReport,
+) -> dict[str, Any]:
+    """From report calculate the xy data, xs are cutoffs and ys are band distance from reference"""
+    reference_node = orm.load_node(report.reference.uuid)
+    output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
+    ref_V0, ref_B0, ref_B1 = output_parameters_r['birch_murnaghan_results']
+
+
+
+    xs = []
+    ys = []
+    for node_point in report.convergence_list:
+        if node_point.exit_status != 0:
+            # TODO: log to a warning file for where the node is not finished_okay
+            continue
+        
+        x = node_point.wavefunction_cutoff
+        xs.append(x)
+
+        node = orm.load_node(node_point.uuid)
+        output_parameters_p: orm.Dict = node.outputs.output_parameters
+
+        V0, B0, B1 = output_parameters_p['birch_murnaghan_results']
+
+        y_nu = rel_errors_vec_length(ref_V0, ref_B0, ref_B1, V0, B0, B1)
+
+        ys.append(y_nu)
+
+    return {
+        'x': xs,
+        'y': ys,
+        'metadata': {
+            'unit': 'n/a',
+        }
+    }
+
+# def compute_xy_epsilon(
+#     report: ConvergenceReport,
+# ) -> dict[str, Any]:
+#     sample_node = orm.load_node(sample_uuid)
+#     ref_node = orm.load_node(ref_uuid)
+#
+#     arr_sample = np.array(sample_node.outputs.eos.output_volume_energy.get_dict()["energies"])
+#     arr_ref = np.array(ref_node.outputs.eos.output_volume_energy.get_dict()["energies"])
+#
+#     avg_sample = np.average(arr_sample)
+#     avg_ref = np.average(arr_ref)
+#
+#     # eq.6 of nat.rev.phys
+#     A = np.sum(np.square(arr_sample - arr_ref))
+#     B = np.sum(np.square(arr_sample - avg_sample))
+#     C = np.sum(np.square(arr_ref - avg_ref))
+#
+#     epsilon = np.sqrt(A / (np.sqrt(B * C)))

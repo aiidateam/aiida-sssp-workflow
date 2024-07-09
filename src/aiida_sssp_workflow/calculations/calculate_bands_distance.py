@@ -53,7 +53,7 @@ def retrieve_bands(
     collect the bands of certain number with setting the start band.
     In order to make sure that when comparing two bands distance the number of bands is the same.
 
-    aligh bands to fermi level
+    align bands to fermi level
 
     The bands calculation of magnetic elements will giving a three dimensional bands where the
     first dimension is for the up and down spin.
@@ -236,7 +236,8 @@ def get_bands_distance(
         do_smearing,
     )
 
-    # after cut and aligh in retrive band, the shapes are same now
+    # after cut and align in retrive band, the shapes are same now
+    # import ipdb; ipdb.set_trace()
     assert np.shape(bandsdata_a["bands"]) == np.shape(
         bandsdata_b["bands"]
     ), f'{np.shape(bandsdata_a["bands"])} != {np.shape(bandsdata_b["bands"])}'
@@ -275,7 +276,7 @@ def get_bands_distance(
         "eta_c": eta_c,
         "shift_c": shift_c,
         "max_diff_c": max_diff_c,
-        "units": "meV",
+        "unit": "meV",
     }
 
     return out

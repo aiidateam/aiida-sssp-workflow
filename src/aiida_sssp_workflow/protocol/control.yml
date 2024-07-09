@@ -31,6 +31,14 @@ quick:
     nonnc_dual_scan: [6.0, 7.0, 8.0]
     nonnc_high_dual_scan: [8.0, 10.0, 12.0, 18.0]
 
+experiment:
+    description: dense grid for experiments which goes to SI of the paper
+
+    wfc_scan: [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200] # at fix dual
+    nc_dual_scan: [2.0, 2.5, 3.0, 3.5, 4.0] # at fix wfc
+    nonnc_dual_scan: [6.0, 6.5, 7.0, 7.5, 8.0]
+    nonnc_high_dual_scan: [8.0, 9.0, 10.0, 12.0, 16.0, 18.0]
+
 test:
     description: test only
 

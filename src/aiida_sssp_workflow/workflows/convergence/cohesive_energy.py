@@ -4,13 +4,14 @@ Convergence test on cohesive energy of a given pseudopotential
 """
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
 from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import get_default_mpi_options
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
     CohesiveEnergyWorkChain,
@@ -170,3 +171,39 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
         builder.atom.pw["metadata"]["options"] = self.inputs.atom_mpi_options.get_dict()
 
         return builder
+
+def compute_xy(
+    node: orm.Node,
+) -> dict[str, Any]:
+    """From report calculate the xy data, xs are cutoffs and ys are cohesive energy diff from reference"""
+    report_dict = node.outputs.report.get_dict()
+    report = ConvergenceReport.construct(**report_dict)
+
+    reference_node = orm.load_node(report.reference.uuid)
+    output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
+    y_ref = output_parameters_r['cohesive_energy_per_atom']
+
+    xs = []
+    ys = []
+    for node_point in report.convergence_list:
+        if node_point.exit_status != 0:
+            # TODO: log to a warning file for where the node is not finished_okay
+            continue
+        
+        x = node_point.wavefunction_cutoff
+        xs.append(x)
+
+        node = orm.load_node(node_point.uuid)
+        output_parameters_p: orm.Dict = node.outputs.output_parameters
+
+        y = abs((output_parameters_p['cohesive_energy_per_atom'] - y_ref) / y_ref) * 100
+        ys.append(y)
+
+    return {
+        'x': xs,
+        'y': ys,
+        'metadata': {
+            'unit': '%',
+        }
+    }
+

@@ -4,7 +4,7 @@ Convergence test on pressure of a given pseudopotential
 """
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
@@ -14,6 +14,7 @@ from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
 
 class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
@@ -196,3 +197,96 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             "B0": orm.Float(B0),
             "B1": orm.Float(B1),
         }
+
+def _helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
+    """
+    Knowing the pressure P and the Birch-Murnaghan equation of state
+    parameters, gets the volume the closest to V0 (relatively) that is
+    such that P_BirchMurnaghan(V)=P
+
+    retrun unit is (%)
+
+    !! The unit of P and B0 must be compatible. We use eV/angs^3 here.
+    Therefore convert P from GPa to eV/angs^3
+    """
+    import numpy as np
+
+    # convert P from GPa to eV/angs^3
+    P = P / 160.21766208
+
+    # coefficients of the polynomial in x=(V0/V)^(1/3) (aside from the
+    # constant multiplicative factor 3B0/2)
+    polynomial = [
+        3.0 / 4.0 * (B1 - 4.0),
+        0,
+        1.0 - 3.0 / 2.0 * (B1 - 4.0),
+        0,
+        3.0 / 4.0 * (B1 - 4.0) - 1.0,
+        0,
+        0,
+        0,
+        0,
+        -2 * P / (3.0 * B0),
+    ]
+    V = min(
+        [
+            V0 / (x.real**3)
+            for x in np.roots(polynomial)
+            if abs(x.imag) < 1e-8 * abs(x.real)
+        ],
+        key=lambda V: abs(V - V0) / float(V0),
+    )
+
+    return abs(V - V0) / V0 * 100
+
+def compute_xy(
+    node: orm.Node,
+) -> dict[str, Any]:
+    """From report calculate the xy data, xs are cutoffs and ys are residual pressue from reference"""
+    outgoing = node.base.links.get_outgoing()
+    EOS_ref_node = outgoing.get_node_by_label('EOS_for_pressure_ref')
+    extra_ref_parameters = EOS_ref_node.outputs.output_birch_murnaghan_fit.get_dict()
+
+    V0 = extra_ref_parameters["volume0"]
+    B0 = extra_ref_parameters["bulk_modulus0"]  # The unit is eV/angstrom^3
+    B1 = extra_ref_parameters["bulk_deriv0"]
+
+    report_dict = node.outputs.report.get_dict()
+    report = ConvergenceReport.construct(**report_dict)
+
+    reference_node = orm.load_node(report.reference.uuid)
+    output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
+    y_ref = output_parameters_r['hydrostatic_stress']
+
+    xs = []
+    ys = []
+    for node_point in report.convergence_list:
+        if node_point.exit_status != 0:
+            # TODO: log to a warning file for where the node is not finished_okay
+            continue
+        
+        x = node_point.wavefunction_cutoff
+        xs.append(x)
+
+        node = orm.load_node(node_point.uuid)
+        output_parameters_p: orm.Dict = node.outputs.output_parameters
+
+        y_p = output_parameters_p["hydrostatic_stress"]
+
+        # calculate the diff
+        absolute_diff = abs(y_p - y_ref)
+        relative_diff = _helper_get_volume_from_pressure_birch_murnaghan(
+            absolute_diff, V0, B0, B1,
+        )
+        
+        y = relative_diff
+        ys.append(y)
+
+    return {
+        'x': xs,
+        'y': ys,
+        'metadata': {
+            'unit': '%',
+        }
+    }
+
