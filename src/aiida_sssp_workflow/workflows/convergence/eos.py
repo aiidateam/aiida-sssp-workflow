@@ -131,9 +131,12 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
         return builder
 
 def compute_xy(
-    report: ConvergenceReport,
+    node: orm.Node,
 ) -> dict[str, Any]:
-    """From report calculate the xy data, xs are cutoffs and ys are band distance from reference"""
+    """From report calculate the xy data, xs are cutoffs and ys are eos from reference"""
+    report_dict = node.outputs.report.get_dict()
+    report = ConvergenceReport.construct(**report_dict)
+
     reference_node = orm.load_node(report.reference.uuid)
     output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
     ref_V0, ref_B0, ref_B1 = output_parameters_r['birch_murnaghan_results']
@@ -141,7 +144,7 @@ def compute_xy(
 
 
     xs = []
-    ys = []
+    ys_nu = []
     for node_point in report.convergence_list:
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
@@ -157,11 +160,11 @@ def compute_xy(
 
         y_nu = rel_errors_vec_length(ref_V0, ref_B0, ref_B1, V0, B0, B1)
 
-        ys.append(y_nu)
+        ys_nu.append(y_nu)
 
     return {
-        'x': xs,
-        'y': ys,
+        'xs': xs,
+        'ys': ys_nu,
         'metadata': {
             'unit': 'n/a',
         }

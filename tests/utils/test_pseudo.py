@@ -12,6 +12,7 @@ from aiida_sssp_workflow.utils.pseudo import (
     get_pseudo_O,
     get_pseudo_N,
     CurateType,
+    extract_pseudo_info_from_filename,
 )
 
 upf_folder = Path(__file__).parent.parent / "_statics" / "upf"
@@ -82,3 +83,18 @@ def test_compute_total_nelectrons():
 )
 def test_get_dual_type(element, pp_type, expected_dual_type):
     assert get_dual_type(pp_type, element) == expected_dual_type
+
+
+@pytest.mark.parametrize(
+    "filename, element, functional, z_valence, pp_type",
+    [
+        ('Ti.us.pbe.z_12.uspp.gbrv.v1.4.upf', 'Ti', 'pbe', 12, 'us'),
+    ]
+)
+def test_extract_pseudo_info_from_filename(filename, element, functional, z_valence, pp_type):
+    pseudo_info = extract_pseudo_info_from_filename(filename)
+
+    assert pseudo_info.element == element
+    assert pseudo_info.type == pp_type
+    assert pseudo_info.functional == functional
+    assert pseudo_info.z_valence == z_valence

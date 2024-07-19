@@ -274,17 +274,17 @@ def compute_xy(
         y_p = output_parameters_p["hydrostatic_stress"]
 
         # calculate the diff
-        absolute_diff = abs(y_p - y_ref)
+        diff = y_p - y_ref
         relative_diff = _helper_get_volume_from_pressure_birch_murnaghan(
-            absolute_diff, V0, B0, B1,
+            diff, V0, B0, B1,
         )
         
         y = relative_diff
         ys.append(y)
 
     return {
-        'x': xs,
-        'y': ys,
+        'xs': xs,
+        'ys': ys,
         'metadata': {
             'unit': '%',
         }

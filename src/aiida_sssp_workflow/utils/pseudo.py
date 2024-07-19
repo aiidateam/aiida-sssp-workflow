@@ -119,6 +119,7 @@ class PseudoInfo(BaseModel):
     # source_lib: str
     # ...
 
+
 class DualType(Enum):
     NC = "nc"
     AUGLOW = "charge augmentation low"
@@ -142,6 +143,16 @@ def extract_pseudo_info(pseudo_text: str) -> PseudoInfo:
         z_valence=upf_info["z_valence"],
     )
 
+def extract_pseudo_info_from_filename(filename: str) -> PseudoInfo:
+    """We give standard filename for PP, so it now can be parsed"""
+    parts = filename.split('.') 
+    
+    return PseudoInfo(
+        element=parts[0],
+        type=parts[1],
+        functional=parts[2],
+        z_valence=int(parts[3].split('_')[1])
+    )
 
 def _get_proper_dual(pp_info: PseudoInfo) -> int:
     if pp_info.type == "nc":

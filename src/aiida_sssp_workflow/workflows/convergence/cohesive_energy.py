@@ -11,6 +11,7 @@ from aiida.engine import ProcessBuilder
 from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import get_default_mpi_options
+from aiida_sssp_workflow.utils.element import ACTINIDE_ELEMENTS, LANTHANIDE_ELEMENTS
 from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.workflows.evaluate._cohesive_energy import (
@@ -160,6 +161,12 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
             },
         }
 
+        # XXX: This I have to add here, although not best option to keep
+        # an condition inside the generic workflow. But for lanthanoids and actinoids
+        # using large nbnd is the only way to make it converge. Set it to 5 * Z
+        if self.element in LANTHANIDE_ELEMENTS + ACTINIDE_ELEMENTS:
+            atom_pw_parameters["SYSTEM"]["nbnd"] = 5 * self.inputs.pseudo.z_valence
+
         atom_kpoints = orm.KpointsData()
         atom_kpoints.set_kpoints_mesh([1, 1, 1])
 
@@ -196,12 +203,13 @@ def compute_xy(
         node = orm.load_node(node_point.uuid)
         output_parameters_p: orm.Dict = node.outputs.output_parameters
 
-        y = abs((output_parameters_p['cohesive_energy_per_atom'] - y_ref) / y_ref) * 100
+        y = (output_parameters_p['cohesive_energy_per_atom'] - y_ref) / y_ref * 100
         ys.append(y)
 
     return {
-        'x': xs,
-        'y': ys,
+        'xs': xs,
+        'ys': ys,
+        'ys_relative_diff': ys,
         'metadata': {
             'unit': '%',
         }

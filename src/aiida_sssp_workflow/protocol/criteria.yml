@@ -67,3 +67,70 @@ v2024.1001:
         eps: 1.0e-3
         unit: meV/atom
 
+efficiency:
+    name: Legacy efficiency
+    description: Protocol to pick the legacy efficiency pseudopotestials.
+
+    cohesive_energy:
+        mode: 0
+        bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
+        eps: 1.0e-3
+        unit: meV/atom
+
+    eos:
+        mode: 0
+        bounds: [0.0, 0.2]  # when absolute error < 0.2 meV/atom
+        eps: 1.0e-3
+        unit: meV/atom
+
+    phonon_frequencies:
+        mode: 0
+        bounds: [0.0, 2.0]  # when relative error < 2.0%
+        eps: 1.0e-3
+        unit: "%"
+
+    pressure:
+        mode: 0
+        bounds: [0.0, 1.0]  # when relative error < 1.0%
+        eps: 1.0e-3
+        unit: "%"
+
+    bands:
+        mode: 0
+        bounds: [0.0, 20]   # when error eta_c < 20 meV
+        eps: 1.0e-3
+        unit: meV/atom
+
+precision:
+    name: Legacy precision
+    description: Protocol to pick the legacy efficiency pseudopotestials.
+
+    cohesive_energy:
+        mode: 0
+        bounds: [0.0, 2.0]  # when relative error < 2.0 meV/atom
+        eps: 1.0e-3
+        unit: meV/atom
+
+    eos:
+        mode: 0
+        bounds: [0.0, 0.2]  # when absolute error < 0.2 meV/atom
+        eps: 1.0e-3
+        unit: meV/atom
+
+    phonon_frequencies:
+        mode: 0
+        bounds: [0.0, 1.0]  # when relative error < 2.0%
+        eps: 1.0e-3
+        unit: "%"
+
+    pressure:
+        mode: 0
+        bounds: [0.0, 0.5]  # when relative error < 1.0%
+        eps: 1.0e-3
+        unit: "%"
+
+    bands:
+        mode: 0
+        bounds: [0.0, 20]   # when error eta_c < 20 meV
+        eps: 1.0e-3
+        unit: meV/atom

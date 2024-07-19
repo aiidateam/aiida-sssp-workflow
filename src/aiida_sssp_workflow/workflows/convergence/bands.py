@@ -183,7 +183,8 @@ def compute_xy(
     do_smearing = True
 
     xs = []
-    ys = []
+    ys_eta_c = []
+    ys_max_diff_c = []
     for node_point in report.convergence_list:
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
@@ -220,15 +221,16 @@ def compute_xy(
         unit = res.get("unit", None)
 
         # eta_c is the y, others are write into as metadata
-        ys.append(eta_c)
+        ys_eta_c.append(eta_c)
+        ys_max_diff_c.append(max_diff_c)
          
 
     return {
-        'x': xs,
-        'y': ys,
+        'xs': xs,
+        'ys': ys_eta_c,
+        'ys_eta_c': ys_eta_c,
+        'ys_max_diff_c': ys_max_diff_c,
         'metadata': {
-            'shift_c': shift_c,
-            'max_diff_c': max_diff_c,
             'unit': unit,
         }
     }

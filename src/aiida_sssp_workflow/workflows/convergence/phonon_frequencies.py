@@ -183,7 +183,9 @@ def compute_xy(
     y_ref = output_parameters_r["dynamical_matrix_1"]["frequencies"]
 
     xs = []
-    ys = []
+    ys_relative_diff = []
+    ys_omega_max = []
+    ys_relative_max_diff = []
     for node_point in report.convergence_list:
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
@@ -202,14 +204,11 @@ def compute_xy(
         weights = np.array(y_ref)
 
         relative_diff = np.sqrt(np.mean((diffs / weights) ** 2))
-        y = relative_diff
 
-        # XXX: properties that should write down for GUI rendering
-        # omega_max = np.amax(y_p)
-        # absolute_diff = np.mean(diffs)
-        # absolute_max_diff = np.amax(diffs)
-        #
-        # relative_max_diff = np.amax(diffs / weights)
+        omega_max = np.amax(y_p)
+        absolute_diff = np.mean(diffs)
+        absolute_max_diff = np.amax(diffs)
+        relative_max_diff = np.amax(np.abs(diffs / weights))
 
         # Legacy modification required when configuration is `GS` which is not run for convergence anymore
         # Keep it here just for reference.
@@ -227,13 +226,18 @@ def compute_xy(
         # else:
         #     start_idx = 0
         #
-        ys.append(y)
+        ys_relative_diff.append(relative_diff)
+        ys_omega_max.append(omega_max)
+        ys_relative_max_diff.append(relative_max_diff)
 
     return {
-        'x': xs,
-        'y': ys,
+        'xs': xs,
+        'ys': ys_relative_diff,
+        'ys_relative_diff': ys_relative_diff,
+        'ys_omega_max': ys_omega_max,
+        'ys_relative_max_diff': ys_relative_max_diff,
         'metadata': {
-            'unit': '%',
+            'unit_default': '%',
         }
     }
 

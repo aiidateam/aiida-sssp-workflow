@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
-from typing import Tuple
+from typing import Tuple, Any
 from pathlib import Path
 
 from aiida import orm
@@ -454,3 +454,23 @@ class TransferabilityEOSWorkChain(_BaseMeasureWorkChain):
     def _finalize(self):
         """calculate the delta factor"""
         # TODO: see what need to be added here
+
+def extract_eos(
+    node: orm.Node,
+) -> Tuple[dict[str, Any], dict[str, Any]]:
+    """From report calculate the xy data, xs are cutoffs and ys are cohesive energy diff from reference"""
+    report_dict = node.outputs.report.get_dict()
+    report = EOSReport.construct(**report_dict)
+
+    raw_eos = {}
+    metric_dict = {}
+    for k, v in report.eos_dict.items():
+        point_node = orm.load_node(v.uuid)
+        if point_node.exit_status != 0:
+            # TODO: log to a warning file for where the node is not finished_okay
+            continue
+        
+        raw_eos[k] = point_node.outputs.eos.output_volume_energy.get_dict()
+        metric_dict[k] = point_node.outputs.output_parameters.get_dict()
+
+    return raw_eos, metric_dict
