@@ -13,7 +13,7 @@ from aiida import orm
 from aiida.cmdline.params import options, types
 from aiida.cmdline.utils import echo
 from aiida.engine import ProcessBuilder, run_get_node, submit
-from aiida.plugins import DataFactory, WorkflowFactory
+from aiida.plugins import WorkflowFactory
 
 from aiida_pseudo.data.pseudo.upf import UpfData
 from aiida_sssp_workflow.cli import cmd_root
@@ -24,6 +24,7 @@ from aiida_sssp_workflow.workflows.verifications import (
 )
 
 VerificationWorkChain = WorkflowFactory("sssp_workflow.verification")
+
 
 def guess_properties_list(property: list) -> Tuple[List[str], str]:
     # if the property is not specified, use the default list with all properties calculated.
@@ -43,20 +44,26 @@ def guess_properties_list(property: list) -> Tuple[List[str], str]:
 
     return properties_list, extra_desc
 
+
 def guess_is_convergence(properties_list: list) -> bool:
     """Check if it is a convergence test"""
 
     return any([c for c in properties_list if c.startswith("convergence")])
 
+
 def guess_is_full_convergence(properties_list: list) -> bool:
     """Check if all properties are run for convergence test"""
 
-    return len([c for c in properties_list if c.startswith("convergence")]) == len(DEFAULT_CONVERGENCE_PROPERTIES_LIST)
+    return len([c for c in properties_list if c.startswith("convergence")]) == len(
+        DEFAULT_CONVERGENCE_PROPERTIES_LIST
+    )
+
 
 def guess_is_measure(properties_list: list) -> bool:
     """Check if it is a measure test"""
 
     return any([c for c in properties_list if c.startswith("measure")])
+
 
 def guess_is_ph(properties_list: list) -> bool:
     """Check if it has a measure test"""
@@ -175,7 +182,9 @@ def launch(
     is_ph = guess_is_ph(properties_list)
 
     if is_ph and not ph_code:
-        echo.echo_critical("ph_code must be provided since we run on it for phonon frequencies.")
+        echo.echo_critical(
+            "ph_code must be provided since we run on it for phonon frequencies."
+        )
 
     if is_convergence and len(configuration) > 1:
         echo.echo_critical(
@@ -183,7 +192,9 @@ def launch(
         )
 
     if is_measure and not is_full_convergence:
-        echo.echo_warning("Full convergence tests are not run, so we use maximum cutoffs for transferability verification.")
+        echo.echo_warning(
+            "Full convergence tests are not run, so we use maximum cutoffs for transferability verification."
+        )
 
     # Load the curent AiiDA profile and log to user
     _profile = aiida.load_profile()
@@ -211,7 +222,9 @@ def launch(
         clean_workdir=clean_workdir,
     )
 
-    builder.metadata.label = f"({protocol} at {pw_code.computer.label} - {conf_label}) {pseudo.stem}"
+    builder.metadata.label = (
+        f"({protocol} at {pw_code.computer.label} - {conf_label}) {pseudo.stem}"
+    )
     builder.metadata.description = f"""Calculation is run on protocol: {protocol}; on {pw_code.computer.label}; on configuration {conf_label}; on pseudo {pseudo.stem}."""
 
     builder.pw_code = pw_code

@@ -125,13 +125,15 @@ class DualType(Enum):
     AUGLOW = "charge augmentation low"
     AUGHIGH = "charge augmentation high"
 
+
 def get_dual_type(pp_type: str, element: str) -> DualType:
-        if element in HIGH_DUAL_ELEMENTS and pp_type != 'nc':
-            return DualType.AUGHIGH
-        elif pp_type == 'nc':
-            return DualType.NC
-        else:
-            return DualType.AUGLOW
+    if element in HIGH_DUAL_ELEMENTS and pp_type != "nc":
+        return DualType.AUGHIGH
+    elif pp_type == "nc":
+        return DualType.NC
+    else:
+        return DualType.AUGLOW
+
 
 def extract_pseudo_info(pseudo_text: str) -> PseudoInfo:
     """Giving a pseudo, extract the pseudo info and return as a `PseudoInfo` object"""
@@ -143,16 +145,18 @@ def extract_pseudo_info(pseudo_text: str) -> PseudoInfo:
         z_valence=upf_info["z_valence"],
     )
 
+
 def extract_pseudo_info_from_filename(filename: str) -> PseudoInfo:
     """We give standard filename for PP, so it now can be parsed"""
-    parts = filename.split('.') 
-    
+    parts = filename.split(".")
+
     return PseudoInfo(
         element=parts[0],
         type=parts[1],
         functional=parts[2],
-        z_valence=int(parts[3].split('_')[1])
+        z_valence=int(parts[3].split("_")[1]),
     )
+
 
 def _get_proper_dual(pp_info: PseudoInfo) -> int:
     if pp_info.type == "nc":

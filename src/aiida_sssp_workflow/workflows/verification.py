@@ -2,6 +2,7 @@
 """
 All in one verification workchain
 """
+
 from typing import Tuple
 from pathlib import Path
 
@@ -14,9 +15,14 @@ from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils.protocol import generate_cutoff_list, get_protocol
 from aiida_sssp_workflow.utils import get_default_mpi_options, parse, serialize_data
-from aiida_sssp_workflow.utils.pseudo import PseudoInfo, extract_pseudo_info, get_default_dual
+from aiida_sssp_workflow.utils.pseudo import (
+    PseudoInfo,
+    extract_pseudo_info,
+    get_default_dual,
+)
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
+
 
 # XXX: remove me if I am not used
 @calcfunction
@@ -47,11 +53,14 @@ DEFAULT_PROPERTIES_LIST = (
     DEFAULT_MEASURE_PROPERTIES_LIST + DEFAULT_CONVERGENCE_PROPERTIES_LIST
 )
 
-def compute_recommended_cutoffs(workchains: dict, pseudo: UpfData, criteria_name: str='standard'):
+
+def compute_recommended_cutoffs(
+    workchains: dict, pseudo: UpfData, criteria_name: str = "standard"
+):
     """Input is a dict with workchain name and values are the workchain node,
     loop over the workchain and apply the criteria to get the recommended cutoffs.
     """
-    criteria = get_protocol(category='criteria', name=criteria_name)
+    criteria = get_protocol(category="criteria", name=criteria_name)
     success_workchains = {k: w for k, w in workchains.items() if w.is_finished_ok}
 
     assert len(success_workchains) <= len(DEFAULT_CONVERGENCE_PROPERTIES_LIST)
@@ -62,13 +71,14 @@ def compute_recommended_cutoffs(workchains: dict, pseudo: UpfData, criteria_name
         ecutrho = -1
         for k, w in success_workchains.items():
             k: str
-            property_name = k.split('.')[-1]
+            property_name = k.split(".")[-1]
 
-            recommended_ecutwfc, recommended_ecutrho = converge_check(w.outputs.report, criteria[property_name])
+            recommended_ecutwfc, recommended_ecutrho = converge_check(
+                w.outputs.report, criteria[property_name]
+            )
 
             ecutwfc = max(ecutwfc, recommended_ecutwfc)
             ecutrho = max(ecutrho, recommended_ecutrho)
-    
 
         return ecutwfc, ecutrho
 
@@ -84,6 +94,7 @@ def compute_recommended_cutoffs(workchains: dict, pseudo: UpfData, criteria_name
     dual = get_default_dual(pseudo)
 
     return ecutwfc, ecutwfc * dual
+
 
 def converge_check(report: ConvergenceReport, criteria: dict) -> Tuple[int, int]:
     """From the report, go through evaluation node of reference and convergence test points,
@@ -103,22 +114,38 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
     # run and results write to outputs ports.
     _VALID_CONGENCENCE_WF = DEFAULT_CONVERGENCE_PROPERTIES_LIST
     _VALID_MEASURE_WF = DEFAULT_MEASURE_PROPERTIES_LIST
-    _CRITERIA = 'v2024.1001'
+    _CRITERIA = "v2024.1001"
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.input('pw_code', valid_type=orm.AbstractCode,
-                    help='The `pw.x` code use for the `PwCalculation`.')
-        spec.input('ph_code', valid_type=orm.AbstractCode, required=True,
-                    help='The `ph.x` code use for the `PhCalculation`.')
-        spec.input('pseudo', valid_type=UpfData, required=True,
-                    help='Pseudopotential to be verified')
-        spec.input('protocol', valid_type=orm.Str,
-                   help='Verification protocol') # XXX: validate, can only be standard, quick, test
-        spec.input('curate_type', valid_type=orm.Str, required=True,
-                   help='sssp or nc, which oxygen to use') # XXX: validation
-        spec.input('dry_run', valid_type=orm.Bool, default=lambda: orm.Bool(False))
+        spec.input(
+            "pw_code",
+            valid_type=orm.AbstractCode,
+            help="The `pw.x` code use for the `PwCalculation`.",
+        )
+        spec.input(
+            "ph_code",
+            valid_type=orm.AbstractCode,
+            required=True,
+            help="The `ph.x` code use for the `PhCalculation`.",
+        )
+        spec.input(
+            "pseudo",
+            valid_type=UpfData,
+            required=True,
+            help="Pseudopotential to be verified",
+        )
+        spec.input(
+            "protocol", valid_type=orm.Str, help="Verification protocol"
+        )  # XXX: validate, can only be standard, quick, test
+        spec.input(
+            "curate_type",
+            valid_type=orm.Str,
+            required=True,
+            help="sssp or nc, which oxygen to use",
+        )  # XXX: validation
+        spec.input("dry_run", valid_type=orm.Bool, default=lambda: orm.Bool(False))
         spec.input(
             "parallelization",
             valid_type=orm.Dict,
@@ -144,21 +171,36 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
             ),
         )
 
-        spec.output('pseudo_info', valid_type=orm.Dict, required=True,
-                help='pseudopotential info')
-        spec.output_namespace('builders', dynamic=True,
-                help='Flat out subworkchain builders info, only output this port when it is in dry run.')
+        spec.output(
+            "pseudo_info",
+            valid_type=orm.Dict,
+            required=True,
+            help="pseudopotential info",
+        )
+        spec.output_namespace(
+            "builders",
+            dynamic=True,
+            help="Flat out subworkchain builders info, only output this port when it is in dry run.",
+        )
         for wfname in cls._VALID_MEASURE_WF:
-            spec.output_namespace(wfname, dynamic=True,
-                help=f'results of {wfname} calculation.')
+            spec.output_namespace(
+                wfname, dynamic=True, help=f"results of {wfname} calculation."
+            )
         for wfname in cls._VALID_CONGENCENCE_WF:
-            spec.output_namespace(wfname, dynamic=True,
-                help=f'results of {wfname} calculation.')
+            spec.output_namespace(
+                wfname, dynamic=True, help=f"results of {wfname} calculation."
+            )
 
-        spec.exit_code(401, 'ERROR_CACHING_ON_BUT_FAILED',
-            message='The caching is triggered but failed.')
-        spec.exit_code(811, 'WARNING_NOT_ALL_SUB_WORKFLOW_OK',
-            message='The sub-workflows {processes} is not finished ok.')
+        spec.exit_code(
+            401,
+            "ERROR_CACHING_ON_BUT_FAILED",
+            message="The caching is triggered but failed.",
+        )
+        spec.exit_code(
+            811,
+            "WARNING_NOT_ALL_SUB_WORKFLOW_OK",
+            message="The sub-workflows {processes} is not finished ok.",
+        )
 
     @classmethod
     def get_builder(
@@ -182,7 +224,6 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         builder.curate_type = orm.Str(curate_type)
         builder.dry_run = orm.Bool(dry_run)
 
-
         if parallelization:
             builder.parallelization = orm.Dict(parallelization)
         else:
@@ -192,7 +233,6 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
             builder.mpi_options = orm.Dict(mpi_options)
         else:
             builder.mpi_options = orm.Dict(get_default_mpi_options())
-
 
         return builder
 
@@ -208,17 +248,19 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         """
         protocol = self.inputs.protocol.value
         mapping_to_convergence = {
-            'standard': 'balanced',
-            'quick': 'balanced',
-            'test': 'test',
+            "standard": "balanced",
+            "quick": "balanced",
+            "test": "test",
         }
         mapping_to_control = {
-            'standard': 'standard',
-            'quick': 'quick',
-            'test': 'test',
+            "standard": "standard",
+            "quick": "quick",
+            "test": "test",
         }
 
-        cutoff_list = generate_cutoff_list(mapping_to_control[protocol], self.ctx.element, self.ctx.pp_type)
+        cutoff_list = generate_cutoff_list(
+            mapping_to_control[protocol], self.ctx.element, self.ctx.pp_type
+        )
 
         builders = {}
         for property in self._VALID_CONGENCENCE_WF:
@@ -230,47 +272,47 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
                 "clean_workdir": self.inputs.clean_workdir.value,
             }
             if "phonon_frequencies" in property:
-                builder_inputs['pw_code'] = self.inputs.pw_code
-                builder_inputs['ph_code'] = self.inputs.ph_code
+                builder_inputs["pw_code"] = self.inputs.pw_code
+                builder_inputs["ph_code"] = self.inputs.ph_code
             else:
-                builder_inputs['code'] = self.inputs.pw_code
+                builder_inputs["code"] = self.inputs.pw_code
 
-            # The problem with this setting is nothing is optimized for the atom 
+            # The problem with this setting is nothing is optimized for the atom
             # and npool is always set to 1.
-            # Meanwhile, I don't want to add support to all types of scheduler 
+            # Meanwhile, I don't want to add support to all types of scheduler
             # (Especially, I am using hyperqueue at the moment which has diffrent mpi_options inputs as slurm)
             # The ultimate solution would be to have a single interface to set for all kinds of schedule.
             if "cohesive_energy" in property:
-                builder_inputs['bulk_parallelization'] = self.inputs.parallelization
-                builder_inputs['bulk_mpi_options'] = self.inputs.mpi_options
-                builder_inputs['atom_parallelization'] = self.inputs.parallelization
-                builder_inputs['atom_mpi_options'] = self.inputs.mpi_options
+                builder_inputs["bulk_parallelization"] = self.inputs.parallelization
+                builder_inputs["bulk_mpi_options"] = self.inputs.mpi_options
+                builder_inputs["atom_parallelization"] = self.inputs.parallelization
+                builder_inputs["atom_mpi_options"] = self.inputs.mpi_options
             elif "phonon_frequencies" in property:
-                npool = 1 # XXX: Need to be optimized
-                builder_inputs['pw_parallelization'] = self.inputs.parallelization
-                builder_inputs['pw_mpi_options'] = self.inputs.mpi_options
-                builder_inputs['ph_mpi_options'] = self.inputs.mpi_options
-                builder_inputs['ph_settings'] = {"CMDLINE": ["-npool", f"{npool}"]}
+                npool = 1  # XXX: Need to be optimized
+                builder_inputs["pw_parallelization"] = self.inputs.parallelization
+                builder_inputs["pw_mpi_options"] = self.inputs.mpi_options
+                builder_inputs["ph_mpi_options"] = self.inputs.mpi_options
+                builder_inputs["ph_settings"] = {"CMDLINE": ["-npool", f"{npool}"]}
             else:
-                builder_inputs['parallelization'] = self.inputs.parallelization
-                builder_inputs['mpi_options'] = self.inputs.mpi_options
+                builder_inputs["parallelization"] = self.inputs.parallelization
+                builder_inputs["mpi_options"] = self.inputs.mpi_options
 
             builder: ProcessBuilder = _WorkChain.get_builder(
-                **builder_inputs,    
+                **builder_inputs,
             )
 
             builders[property] = builder
 
         mapping_to_eos = {
-            'standard': 'standard',
-            'quick': 'standard',
-            'test': 'test',
+            "standard": "standard",
+            "quick": "standard",
+            "test": "test",
         }
 
         mapping_to_bands = {
-            'standard': 'balanced',
-            'quick': 'balanced',
-            'test': 'test',
+            "standard": "balanced",
+            "quick": "balanced",
+            "test": "test",
         }
 
         _WorkChain = WorkflowFactory("sssp_workflow.transferability.eos")
@@ -284,7 +326,7 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         builder.parallelization = self.inputs.parallelization
         builder.mpi_options = self.inputs.mpi_options
 
-        builders['transferability.eos'] = builder
+        builders["transferability.eos"] = builder
 
         _WorkChain = WorkflowFactory("sssp_workflow.transferability.bands")
         builder: ProcessBuilder = _WorkChain.get_builder(
@@ -296,7 +338,7 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         builder.parallelization = self.inputs.parallelization
         builder.mpi_options = self.inputs.mpi_options
 
-        builders['transferability.bands'] = builder
+        builders["transferability.bands"] = builder
 
         self.ctx.builders = builders
 
@@ -306,7 +348,10 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         # Write to the output of all builder for check if it is dry run
         # which is helpful for test and sanity check.
         if dry_run:
-            serialized_builders = {k: serialize_data(builder._inputs(prune=True)) for k, builder in self.ctx.builders.items()}
+            serialized_builders = {
+                k: serialize_data(builder._inputs(prune=True))
+                for k, builder in self.ctx.builders.items()
+            }
 
             self.out("builders", serialized_builders)
 
@@ -316,9 +361,7 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         workchains = {}
         for property in self._VALID_CONGENCENCE_WF:
             running = self.submit(self.ctx.builders.get(property))
-            self.report(
-                f"Submit {property} convergence workchain pk={running.pk}"
-            )
+            self.report(f"Submit {property} convergence workchain pk={running.pk}")
 
             self.to_context(_=running)
 
@@ -334,11 +377,15 @@ class FullVerificationWorkChain(SelfCleanWorkChain):
         test are run, then use the maximum cutoff for the transferability run.
         """
         for property in self._VALID_MEASURE_WF:
-            wavefunction_cutoff, charge_density_cutoff = compute_recommended_cutoffs(self.ctx.convergence_workchains, self.inputs.pseudo, criteria_name=self._CRITERIA)
+            wavefunction_cutoff, charge_density_cutoff = compute_recommended_cutoffs(
+                self.ctx.convergence_workchains,
+                self.inputs.pseudo,
+                criteria_name=self._CRITERIA,
+            )
             builder = self.ctx.builders.get(property)
 
-            builder['wavefunction_cutoff'] = orm.Int(wavefunction_cutoff)
-            builder['charge_density_cutoff'] = orm.Int(charge_density_cutoff)
+            builder["wavefunction_cutoff"] = orm.Int(wavefunction_cutoff)
+            builder["charge_density_cutoff"] = orm.Int(charge_density_cutoff)
 
     def _run_transferability_verification(self):
         """Run delta measure sub-workflow"""

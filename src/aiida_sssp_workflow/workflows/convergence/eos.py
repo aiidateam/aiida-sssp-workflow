@@ -130,6 +130,7 @@ class ConvergenceEOSWorkChain(_BaseConvergenceWorkChain):
 
         return builder
 
+
 def compute_xy(
     node: orm.Node,
 ) -> dict[str, Any]:
@@ -139,9 +140,7 @@ def compute_xy(
 
     reference_node = orm.load_node(report.reference.uuid)
     output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
-    ref_V0, ref_B0, ref_B1 = output_parameters_r['birch_murnaghan_results']
-
-
+    ref_V0, ref_B0, ref_B1 = output_parameters_r["birch_murnaghan_results"]
 
     xs = []
     ys_nu = []
@@ -149,26 +148,27 @@ def compute_xy(
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
-        
+
         x = node_point.wavefunction_cutoff
         xs.append(x)
 
         node = orm.load_node(node_point.uuid)
         output_parameters_p: orm.Dict = node.outputs.output_parameters
 
-        V0, B0, B1 = output_parameters_p['birch_murnaghan_results']
+        V0, B0, B1 = output_parameters_p["birch_murnaghan_results"]
 
         y_nu = rel_errors_vec_length(ref_V0, ref_B0, ref_B1, V0, B0, B1)
 
         ys_nu.append(y_nu)
 
     return {
-        'xs': xs,
-        'ys': ys_nu,
-        'metadata': {
-            'unit': 'n/a',
-        }
+        "xs": xs,
+        "ys": ys_nu,
+        "metadata": {
+            "unit": "n/a",
+        },
     }
+
 
 # def compute_xy_epsilon(
 #     report: ConvergenceReport,

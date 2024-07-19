@@ -198,6 +198,7 @@ class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
             "B1": orm.Float(B1),
         }
 
+
 def _helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
     """
     Knowing the pressure P and the Birch-Murnaghan equation of state
@@ -239,12 +240,13 @@ def _helper_get_volume_from_pressure_birch_murnaghan(P, V0, B0, B1):
 
     return abs(V - V0) / V0 * 100
 
+
 def compute_xy(
     node: orm.Node,
 ) -> dict[str, Any]:
     """From report calculate the xy data, xs are cutoffs and ys are residual pressue from reference"""
     outgoing = node.base.links.get_outgoing()
-    EOS_ref_node = outgoing.get_node_by_label('EOS_for_pressure_ref')
+    EOS_ref_node = outgoing.get_node_by_label("EOS_for_pressure_ref")
     extra_ref_parameters = EOS_ref_node.outputs.output_birch_murnaghan_fit.get_dict()
 
     V0 = extra_ref_parameters["volume0"]
@@ -256,7 +258,7 @@ def compute_xy(
 
     reference_node = orm.load_node(report.reference.uuid)
     output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
-    y_ref = output_parameters_r['hydrostatic_stress']
+    y_ref = output_parameters_r["hydrostatic_stress"]
 
     xs = []
     ys = []
@@ -264,7 +266,7 @@ def compute_xy(
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
-        
+
         x = node_point.wavefunction_cutoff
         xs.append(x)
 
@@ -276,17 +278,19 @@ def compute_xy(
         # calculate the diff
         diff = y_p - y_ref
         relative_diff = _helper_get_volume_from_pressure_birch_murnaghan(
-            diff, V0, B0, B1,
+            diff,
+            V0,
+            B0,
+            B1,
         )
-        
+
         y = relative_diff
         ys.append(y)
 
     return {
-        'xs': xs,
-        'ys': ys,
-        'metadata': {
-            'unit': '%',
-        }
+        "xs": xs,
+        "ys": ys,
+        "metadata": {
+            "unit": "%",
+        },
     }
-

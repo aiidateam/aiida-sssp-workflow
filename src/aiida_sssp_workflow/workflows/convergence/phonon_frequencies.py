@@ -169,6 +169,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
 
         return builder
 
+
 def compute_xy(
     node: orm.Node,
 ) -> dict[str, Any]:
@@ -190,7 +191,7 @@ def compute_xy(
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
-        
+
         x = node_point.wavefunction_cutoff
         xs.append(x)
 
@@ -231,13 +232,12 @@ def compute_xy(
         ys_relative_max_diff.append(relative_max_diff)
 
     return {
-        'xs': xs,
-        'ys': ys_relative_diff,
-        'ys_relative_diff': ys_relative_diff,
-        'ys_omega_max': ys_omega_max,
-        'ys_relative_max_diff': ys_relative_max_diff,
-        'metadata': {
-            'unit_default': '%',
-        }
+        "xs": xs,
+        "ys": ys_relative_diff,
+        "ys_relative_diff": ys_relative_diff,
+        "ys_omega_max": ys_omega_max,
+        "ys_relative_max_diff": ys_relative_max_diff,
+        "metadata": {
+            "unit_default": "%",
+        },
     }
-

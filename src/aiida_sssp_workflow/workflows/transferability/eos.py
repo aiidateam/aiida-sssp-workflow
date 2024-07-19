@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
+
 from typing import Tuple, Any
 from pathlib import Path
 
@@ -172,9 +173,7 @@ class TransferabilityEOSWorkChain(_BaseMeasureWorkChain):
 
     def _setup_protocol(self):
         """unzip and parse protocol parameters to context"""
-        protocol = get_protocol(
-            category="eos", name=self.inputs.protocol.value
-        )
+        protocol = get_protocol(category="eos", name=self.inputs.protocol.value)
         self.ctx.protocol = protocol
 
     @property
@@ -205,12 +204,12 @@ class TransferabilityEOSWorkChain(_BaseMeasureWorkChain):
     ) -> ProcessBuilder:
         """Return a builder to run this EOS convergence workchain"""
         builder = super().get_builder(
-            code, 
+            code,
             pseudo,
-            protocol, 
-            cutoffs, 
-            parallelization, 
-            mpi_options, 
+            protocol,
+            cutoffs,
+            parallelization,
+            mpi_options,
             clean_workdir,
         )
 
@@ -455,6 +454,7 @@ class TransferabilityEOSWorkChain(_BaseMeasureWorkChain):
         """calculate the delta factor"""
         # TODO: see what need to be added here
 
+
 def extract_eos(
     node: orm.Node,
 ) -> Tuple[dict[str, Any], dict[str, Any]]:
@@ -469,7 +469,7 @@ def extract_eos(
         if point_node.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
-        
+
         raw_eos[k] = point_node.outputs.eos.output_volume_energy.get_dict()
         metric_dict[k] = point_node.outputs.output_parameters.get_dict()
 

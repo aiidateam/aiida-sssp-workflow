@@ -160,7 +160,7 @@ def compute_xy(
     report = ConvergenceReport.construct(**report_dict)
 
     reference_node = orm.load_node(report.reference.uuid)
-    band_structure_r: orm.BandsData = reference_node.outputs.bands.band_structure 
+    band_structure_r: orm.BandsData = reference_node.outputs.bands.band_structure
     band_parameters_r: orm.Dict = reference_node.outputs.bands.band_parameters
 
     bandsdata_r = {
@@ -173,7 +173,7 @@ def compute_xy(
     }
 
     # smearing width is from degauss
-    smearing = reference_node.inputs.bands.pw.parameters.get_dict()['SYSTEM']['degauss']
+    smearing = reference_node.inputs.bands.pw.parameters.get_dict()["SYSTEM"]["degauss"]
     fermi_shift = reference_node.inputs.fermi_shift.value
 
     # always do smearing on high bands and not include the spin since we didn't turn on the spin for all
@@ -189,14 +189,13 @@ def compute_xy(
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
-        
+
         x = node_point.wavefunction_cutoff
         xs.append(x)
 
-        node = orm.load_node(node_point.uuid) 
+        node = orm.load_node(node_point.uuid)
         band_structure_p: orm.BandsData = node.outputs.bands.band_structure
         band_parameters_p: orm.Dict = node.outputs.bands.band_parameters
-
 
         # The raw implementation of `get_bands_distance` is in `aiida_sssp_workflow/calculations/bands_distance.py`
         bandsdata_p = {
@@ -223,14 +222,13 @@ def compute_xy(
         # eta_c is the y, others are write into as metadata
         ys_eta_c.append(eta_c)
         ys_max_diff_c.append(max_diff_c)
-         
 
     return {
-        'xs': xs,
-        'ys': ys_eta_c,
-        'ys_eta_c': ys_eta_c,
-        'ys_max_diff_c': ys_max_diff_c,
-        'metadata': {
-            'unit': unit,
-        }
+        "xs": xs,
+        "ys": ys_eta_c,
+        "ys_eta_c": ys_eta_c,
+        "ys_max_diff_c": ys_max_diff_c,
+        "metadata": {
+            "unit": unit,
+        },
     }
