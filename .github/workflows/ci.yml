@@ -1,66 +1,106 @@
 ---
 # Run basic tests for this app on the latest aiidalab-docker image.
 
-name: continuous-integration
+name: CI unit test
 
 on: [push, pull_request]
 
 jobs:
 
-    pre-commit:
+
+    fast-tests:
         runs-on: ubuntu-latest
-
-        steps:
-            - uses: actions/checkout@v2
-
-            - name: Setup Python
-              uses: actions/setup-python@v2
-              with:
-                  python-version: '3.10'
-
-            - name: Install dependencies
-              run: pip install -U pre-commit==2.10.0
-
-            - name: Run pre-commit
-              run: pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
-
-    test:
-        needs: [pre-commit]
-
-        strategy:
-            matrix:
-                python-version: ['3.9', '3.10']
+        timeout-minutes: 10
 
         services:
-            rabbitmq:
-                image: rabbitmq:3.8.14-management
-                ports:
-                    - 5672:5672
-                    - 15672:15672
-
-        runs-on: ubuntu-latest
-        timeout-minutes: 40
+          rabbitmq:
+            image: rabbitmq:3.8.14-management
+            ports:
+            - 5672:5672
+            - 15672:15672
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
 
-            - name: Cache Python dependencies
-              uses: actions/cache@v1
+            - name: Set up Python 3.10
+              uses: actions/setup-python@v5
               with:
-                  path: ~/.cache/pip
-                  key: pip-${{ matrix.python-version }}-tests-${{ hashFiles('**/setup.json') }}
-                  restore-keys: pip-${{ matrix.python-version }}-tests
-
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
-              with:
-                  python-version: ${{ matrix.python-version }}
+                  python-version: "3.10"
 
             - name: Install dependencies for test
               run: |
-                  pip install -U pip==22.3.1
-                  pip install -U .[tests]
+                  pip install .[dev]
 
-            - name: Pull the image and Run pytest
+            - name: Run pytest
               run: |
-                pytest -sv tests
+                  pytest -s tests -m "not slow"
+
+    slow-tests:
+
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        services:
+          rabbitmq:
+            image: rabbitmq:3.8.14-management
+            ports:
+            - 5672:5672
+            - 15672:15672
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Python 3.10
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10"
+
+            - name: Install dependencies for test
+              run: |
+                  pip install .[dev]
+
+            - name: Run pytest
+              run: |
+                  pytest -s tests -m "slow"
+
+    edge-aiida-core-tests:
+        # This is to test the plugin is compatible with the main branch of aiida-core
+
+        needs: [slow-tests]
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        services:
+          rabbitmq:
+            image: rabbitmq:3.8.14-management
+            ports:
+            - 5672:5672
+            - 15672:15672
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Python 3.10
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10"
+
+            - name: Install dependencies and edge aiida-core for test
+              run: |
+                  pip install .[dev]
+                  pip uninstall --yes aiida-core
+                  git clone --depth 1 https://github.com/aiidateam/aiida-core.git
+                  pip install ./aiida-core
+
+            - name: Check aiida-core version is the edget ('post' in version tag)
+              run: |
+                  if verdi --version | grep -q "post"; then
+                    echo $(verdi --version)
+                  else
+                    echo $(verdi --version)
+                    exit 1
+                  fi
+
+            - name: Run pytest
+              run: |
+                  pytest -s tests

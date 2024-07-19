@@ -1,0 +1,30 @@
+---
+balanced:
+    name: balanced
+    description: Bands measure parameters
+
+    occupations: smearing
+    degauss: 0.02
+    smearing: cold
+    mixing_beta: 0.4
+    conv_thr_per_atom: 1.0e-8
+    kpoints_distance: 0.2
+    kpoints_distance_bs: 0.025
+
+    init_nbands_factor: 5
+    fermi_shift: 15.0
+
+test:
+    name: test-only
+    description: light loose set for test
+
+    occupations: smearing
+    degauss: 0.0045
+    smearing: fd
+    mixing_beta: 0.4
+    conv_thr_per_atom: 1.0e-6
+    kpoints_distance: 0.25
+    kpoints_distance_bs: 0.10
+
+    init_nbands_factor: 3
+    fermi_shift: 10.0

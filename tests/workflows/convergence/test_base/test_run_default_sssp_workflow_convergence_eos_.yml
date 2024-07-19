@@ -1,0 +1,28 @@
+clean_workdir: true
+configuration: DC
+element: Al
+eos:
+  clean_workdir: false
+  kpoints_distance: 0.5
+  max_iterations: 5
+  pw:
+    code: pw-docker@localhost
+    parallelization: {}
+    parameters:
+      CONTROL:
+        calculation: scf
+        disk_io: nowf
+      ELECTRONS:
+        conv_thr: 2.0e-05
+        mixing_beta: 0.4
+      SYSTEM:
+        degauss: 0.01
+        ecutrho: 120
+        ecutwfc: 30
+        occupations: smearing
+        smearing: cold
+    pseudos:
+      Al: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
+  scale_count: 5
+  scale_increment: 0.02
+  structure: Al2

@@ -1,0 +1,43 @@
+bands:
+  max_iterations: 5
+  pw:
+    code: pw-docker@localhost
+    parallelization: {}
+    parameters:
+      CONTROL:
+        calculation: bands
+      ELECTRONS:
+        conv_thr: 1.0e-06
+        mixing_beta: 0.4
+      SYSTEM:
+        degauss: 0.0045
+        ecutrho: 100
+        ecutwfc: 25
+        occupations: smearing
+        smearing: fd
+    pseudos:
+      Al: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
+bands_kpoints_distance: 0.1
+clean_workdir: false
+nbands_factor: 7.0
+scf:
+  kpoints_distance: 0.25
+  max_iterations: 5
+  pw:
+    code: pw-docker@localhost
+    parallelization: {}
+    parameters:
+      CONTROL:
+        calculation: scf
+      ELECTRONS:
+        conv_thr: 1.0e-06
+        mixing_beta: 0.4
+      SYSTEM:
+        degauss: 0.0045
+        ecutrho: 100
+        ecutwfc: 25
+        occupations: smearing
+        smearing: fd
+    pseudos:
+      Al: Al<md5=a2ca6568aad2214016a12794e7e55b1e>
+structure: Al
