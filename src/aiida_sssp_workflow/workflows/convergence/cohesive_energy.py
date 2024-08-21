@@ -192,6 +192,7 @@ def compute_xy(
 
     xs = []
     ys = []
+    ys_cohesive_energy_per_atom = []
     for node_point in report.convergence_list:
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
@@ -205,11 +206,13 @@ def compute_xy(
 
         y = (output_parameters_p['cohesive_energy_per_atom'] - y_ref) / y_ref * 100
         ys.append(y)
+        ys_cohesive_energy_per_atom.append(output_parameters_p['cohesive_energy_per_atom'])
 
     return {
         'xs': xs,
         'ys': ys,
         'ys_relative_diff': ys,
+        'ys_cohesive_energy_per_atom': ys_cohesive_energy_per_atom,
         'metadata': {
             'unit': '%',
         }
