@@ -457,13 +457,14 @@ class TransferabilityEOSWorkChain(_BaseMeasureWorkChain):
 
 def extract_eos(
     node: orm.Node,
-) -> Tuple[dict[str, Any], dict[str, Any]]:
+) -> Tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """From report calculate the xy data, xs are cutoffs and ys are cohesive energy diff from reference"""
     report_dict = node.outputs.report.get_dict()
     report = EOSReport.construct(**report_dict)
 
     raw_eos = {}
     metric_dict = {}
+    birch_murnaghan_fit = {}
     for k, v in report.eos_dict.items():
         point_node = orm.load_node(v.uuid)
         if point_node.exit_status != 0:
@@ -471,6 +472,7 @@ def extract_eos(
             continue
 
         raw_eos[k] = point_node.outputs.eos.output_volume_energy.get_dict()
+        birch_murnaghan_fit[k] = point_node.outputs.eos.output_birch_murnaghan_fit.get_dict()
         metric_dict[k] = point_node.outputs.output_parameters.get_dict()
 
-    return raw_eos, metric_dict
+    return raw_eos, birch_murnaghan_fit, metric_dict
