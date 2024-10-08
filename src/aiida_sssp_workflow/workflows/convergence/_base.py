@@ -46,7 +46,7 @@ class abstract_attribute(object):
 
 def is_valid_convergence_configuration(value, _=None):
     """Check if the configuration is valid"""
-    valid_configurations = UNARIE_CONFIGURATIONS
+    valid_configurations = UNARIE_CONFIGURATIONS + ["GS"]
     if value not in valid_configurations:
         return f"Configuration {value} is not valid. Valid configurations are {valid_configurations}"
 
