@@ -189,7 +189,7 @@ def compute_xy(
 
     reference_node = orm.load_node(report.reference.uuid)
     output_parameters_r: orm.Dict = reference_node.outputs.output_parameters
-    y_ref = output_parameters_r['cohesive_energy_per_atom']
+    y_ref = output_parameters_r["cohesive_energy_per_atom"]
 
     xs = []
     ys = []
@@ -198,24 +198,25 @@ def compute_xy(
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
-        
+
         x = node_point.wavefunction_cutoff
         xs.append(x)
 
         node = orm.load_node(node_point.uuid)
         output_parameters_p: orm.Dict = node.outputs.output_parameters
 
-        y = (output_parameters_p['cohesive_energy_per_atom'] - y_ref) / y_ref * 100
+        y = (output_parameters_p["cohesive_energy_per_atom"] - y_ref) / y_ref * 100
         ys.append(y)
-        ys_cohesive_energy_per_atom.append(output_parameters_p['cohesive_energy_per_atom'])
+        ys_cohesive_energy_per_atom.append(
+            output_parameters_p["cohesive_energy_per_atom"]
+        )
 
     return {
-        'xs': xs,
-        'ys': ys,
-        'ys_relative_diff': ys,
-        'ys_cohesive_energy_per_atom': ys_cohesive_energy_per_atom,
-        'metadata': {
-            'unit': '%',
-        }
+        "xs": xs,
+        "ys": ys,
+        "ys_relative_diff": ys,
+        "ys_cohesive_energy_per_atom": ys_cohesive_energy_per_atom,
+        "metadata": {
+            "unit": "%",
+        },
     }
-
