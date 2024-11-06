@@ -17,6 +17,15 @@ VALID_CONFIGURATIONS = (
     ACWF_CONFIGURATIONS  # FIXME: should also have GS for bands and LANN
 )
 
+@calcfunction
+def scale_structure(
+    structure: orm.StructureData, scale_factor: orm.Float
+) -> orm.StructureData:
+    """Scale the structure with the given scaling factor."""
+    ase = structure.get_ase().copy()
+    ase.set_cell(ase.get_cell() * float(scale_factor) ** (1 / 3), scale_atoms=True)
+    return orm.StructureData(ase=ase)
+
 
 @calcfunction
 def get_default_configuration(element: orm.Str, property: orm.Str) -> orm.Str:

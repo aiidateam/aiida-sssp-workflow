@@ -4,22 +4,13 @@
 from typing import List
 
 from aiida import orm
-from aiida.engine import WorkChain, append_, calcfunction, run_get_node
+from aiida.engine import WorkChain, append_, run_get_node
 from aiida.plugins import CalculationFactory, WorkflowFactory
+
+from aiida_sssp_workflow.utils.structure import scale_structure
 
 PwBaseWorkChain = WorkflowFactory("quantumespresso.pw.base")
 birch_murnaghan_fit = CalculationFactory("sssp_workflow.birch_murnaghan_fit")
-
-
-@calcfunction
-def scale_structure(
-    structure: orm.StructureData, scale_factor: orm.Float
-) -> orm.StructureData:
-    """Scale the structure with the given scaling factor."""
-    ase = structure.get_ase().copy()
-    ase.set_cell(ase.get_cell() * float(scale_factor) ** (1 / 3), scale_atoms=True)
-    return orm.StructureData(ase=ase)
-
 
 class _EquationOfStateWorkChain(WorkChain):
     """Workflow to compute the equation of state for a given crystal structure."""
