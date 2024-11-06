@@ -187,12 +187,14 @@ def compute_xy(
     ys_relative_diff = []
     ys_omega_max = []
     ys_relative_max_diff = []
+    ys_absolute_max_diff = []
     for node_point in report.convergence_list:
         if node_point.exit_status != 0:
             # TODO: log to a warning file for where the node is not finished_okay
             continue
 
         x = node_point.wavefunction_cutoff
+
         xs.append(x)
 
         node = orm.load_node(node_point.uuid)
@@ -207,7 +209,6 @@ def compute_xy(
         relative_diff = np.sqrt(np.mean((diffs / weights) ** 2))
 
         omega_max = np.amax(y_p)
-        absolute_diff = np.mean(diffs)
         absolute_max_diff = np.amax(diffs)
         relative_max_diff = np.amax(np.abs(diffs / weights))
 
@@ -230,12 +231,14 @@ def compute_xy(
         ys_relative_diff.append(relative_diff)
         ys_omega_max.append(omega_max)
         ys_relative_max_diff.append(relative_max_diff)
+        ys_absolute_max_diff.append(absolute_max_diff)
 
     return {
         "xs": xs,
         "ys": ys_relative_diff,
         "ys_relative_diff": ys_relative_diff,
         "ys_omega_max": ys_omega_max,
+        "ys_absolute_max_diff": ys_absolute_max_diff,
         "ys_relative_max_diff": ys_relative_max_diff,
         "metadata": {
             "unit_default": "%",
