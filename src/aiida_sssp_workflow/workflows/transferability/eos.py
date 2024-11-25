@@ -472,7 +472,9 @@ def extract_eos(
             continue
 
         raw_eos[k] = point_node.outputs.eos.output_volume_energy.get_dict()
-        birch_murnaghan_fit[k] = point_node.outputs.eos.output_birch_murnaghan_fit.get_dict()
+        birch_murnaghan_fit[k] = (
+            point_node.outputs.eos.output_birch_murnaghan_fit.get_dict()
+        )
         metric_dict[k] = point_node.outputs.output_parameters.get_dict()
 
     return raw_eos, birch_murnaghan_fit, metric_dict
