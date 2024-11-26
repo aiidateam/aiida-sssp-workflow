@@ -106,8 +106,8 @@ class _BaseMeasureWorkChain(SelfCleanWorkChain):
             ecutwfc = max(ecutwfc, o_ecutwfc)
             ecutrho = max(ecutrho, o_ecutrho)
 
-        if "N" in elements:
-            ecutwfc = max(ecutwfc, self._N_ECUTWFC)
-            ecutrho = max(ecutrho, self._N_ECUTRHO)
+        # if "N" in elements:
+        #     ecutwfc = max(ecutwfc, self._N_ECUTWFC)
+        #     ecutrho = max(ecutrho, self._N_ECUTRHO)
 
         return ecutwfc, ecutrho
