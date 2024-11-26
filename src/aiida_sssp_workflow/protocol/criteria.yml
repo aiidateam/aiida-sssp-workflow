@@ -11,9 +11,8 @@ standard:
 
     eos:
         mode: 0
-        bounds: [0.0, 0.2]  # when absolute error < 0.2 meV/atom
+        bounds: [0.0, 0.2]  # when absolute error
         eps: 1.0e-3
-        unit: meV/atom
 
     phonon_frequencies:
         mode: 0
@@ -79,9 +78,8 @@ efficiency:
 
     eos:
         mode: 0
-        bounds: [0.0, 0.2]  # when absolute error < 0.2 meV/atom
+        bounds: [0.0, 0.2]  
         eps: 1.0e-3
-        unit: meV/atom
 
     phonon_frequencies:
         mode: 0
@@ -113,9 +111,8 @@ precision:
 
     eos:
         mode: 0
-        bounds: [0.0, 0.2]  # when absolute error < 0.2 meV/atom
+        bounds: [0.0, 0.2]
         eps: 1.0e-3
-        unit: meV/atom
 
     phonon_frequencies:
         mode: 0
