@@ -6,9 +6,9 @@ balanced:
     base:   # base parameters is inherit by other process
         occupations: smearing
         degauss: 0.02   # balanced protocol of qe -> gabriel
-        smearing: fd
-        conv_thr_per_atom: 1.0e-8
-        kpoints_distance: 0.2  # balanced protocol of qe -> gabriel
+        smearing: cold
+        conv_thr_per_atom: 2.0e-10
+        kpoints_distance: 0.15  # balanced protocol of qe -> gabriel
         mixing_beta: 0.4
 
     cohesive_energy:
@@ -36,11 +36,11 @@ balanced:
 
 fine:
     name: fine
-    description: The balanced protocol from Gabriel
+    description: The fine protocol from Gabriel
 
     base:   # base parameters is inherit by other process
         occupations: smearing
-        degauss: 0.0125   # balanced protocol of qe -> gabriel
+        degauss: 0.0125   
         smearing: fd
         conv_thr_per_atom: 1.0e-9
         kpoints_distance: 0.1  # fine protocol of qe -> gabriel
