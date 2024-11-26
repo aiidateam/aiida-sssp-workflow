@@ -5,6 +5,7 @@
 import json
 import random
 from pathlib import Path
+from math import ceil
 
 import click
 import matplotlib.pyplot as plt
@@ -333,7 +334,7 @@ def inspect(node, output):
                 pass
 
             # if there are 5 plots, need 3 rows, since the output_parametres is in the dict len(precision) / 2 is the number of rows
-            rows = len(precision) // 2
+            rows = ceil(len(results) / 2)
 
             # create a figure with 2 columns and rows rows on a a4 size paper
             fig, axs = plt.subplots(rows, 2, figsize=(8.27, 11.69), dpi=100)
