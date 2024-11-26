@@ -6,7 +6,7 @@ balanced:
     base:   # base parameters is inherit by other process
         occupations: smearing
         degauss: 0.02   # balanced protocol of qe -> gabriel
-        smearing: fd
+        smearing: cold
         conv_thr_per_atom: 1.0e-8
         kpoints_distance: 0.2  # balanced protocol of qe -> gabriel
         mixing_beta: 0.4
