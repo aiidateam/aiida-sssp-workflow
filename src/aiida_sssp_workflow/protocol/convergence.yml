@@ -40,7 +40,7 @@ fine:
 
     base:   # base parameters is inherit by other process
         occupations: smearing
-        degauss: 0.0125   
+        degauss: 0.0125
         smearing: fd
         conv_thr_per_atom: 1.0e-9
         kpoints_distance: 0.1  # fine protocol of qe -> gabriel
