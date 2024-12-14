@@ -78,7 +78,7 @@ efficiency:
 
     eos:
         mode: 0
-        bounds: [0.0, 0.2]  
+        bounds: [0.0, 0.2]
         eps: 1.0e-3
 
     phonon_frequencies:
