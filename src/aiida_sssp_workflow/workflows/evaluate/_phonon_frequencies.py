@@ -194,11 +194,15 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
         """set ecutwfc and ecutrho"""
 
         if self.inputs.clean_workdir.value is True:
-            cleaned_calcs = operate_calcjobs(
-                self.node, operator=clean_workdir, all_same_nodes=False
-            )
-
-            if cleaned_calcs:
+            try:
+                cleaned_calcs = operate_calcjobs(
+                    self.node, operator=clean_workdir, all_same_nodes=False
+                )
+            except ConnectionError as exc:
+                self.logger.warning(
+                    f"clean remote workdir folder {self.inputs.clean_workir} failed: {exc}"
+                )
+            else:
                 self.report(
                     f"cleaned remote folders of calculations: {' '.join(map(str, cleaned_calcs))}"
                 )
