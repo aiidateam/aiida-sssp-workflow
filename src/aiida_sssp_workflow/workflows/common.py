@@ -1,4 +1,7 @@
+from builtins import ConnectionError
 from typing import Optional
+from paramiko import ssh_exception
+
 
 from aiida import orm
 
@@ -40,8 +43,12 @@ def clean_workdir(node: orm.CalcJobNode) -> Optional[int]:
     # other subsequent calcjob as `parent_folder`, i.e PH calculation.
     cached_from = node.base.extras.get("_aiida_cached_from", None)
     if not cached_from:
-        node.outputs.remote_folder._clean()  # pylint: disable=protected-access
-        return node.pk
+        try:
+            node.outputs.remote_folder._clean()  # pylint: disable=protected-access
+        except ssh_exception.SSHException as exc:
+            raise ConnectionError("ssh error") from exc
+        else:
+            return node.pk
     else:
         return None
 
