@@ -3,6 +3,7 @@
 WorkChain calculate phonon frequencies at Gamma
 """
 
+from builtins import RuntimeError
 from aiida import orm
 from aiida.common import NotExistentAttributeError
 from aiida.engine import ToContext, while_
@@ -198,7 +199,7 @@ class PhononFrequenciesWorkChain(_BaseEvaluateWorkChain):
                 cleaned_calcs = operate_calcjobs(
                     self.node, operator=clean_workdir, all_same_nodes=False
                 )
-            except ConnectionError as exc:
+            except RuntimeError as exc:
                 self.logger.warning(
                     f"clean remote workdir folder {self.inputs.clean_workir} failed: {exc}"
                 )
