@@ -19,7 +19,7 @@ balanced:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-12
+        tr2_ph: 1.0e-18
         diagonalization: cg
 
     pressure:
@@ -54,7 +54,7 @@ fine:
         qpoints_list:
             - [0.5, 0.5, 0.5]
         epsilon: false
-        tr2_ph: 1.0e-12
+        tr2_ph: 1.0e-18
         diagonalization: cg
 
     pressure:
