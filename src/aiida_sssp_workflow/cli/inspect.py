@@ -469,7 +469,7 @@ def inspect(node, output):
 
             color = "red" if wfc_scan_healthy != 1 or rho_scan_healthy != 1 else "green"
             click.secho(
-                f"Convergence scan healthy check for {property}: wavefunction scan = {round(wfc_scan_healthy*100, 2)}%, charge density scan = {round(rho_scan_healthy*100, 2)}%",
+                f"Convergence scan healthy check for {property}: wavefunction scan = {round(wfc_scan_healthy * 100, 2)}%, charge density scan = {round(rho_scan_healthy * 100, 2)}%",
                 fg=color,
             )
 

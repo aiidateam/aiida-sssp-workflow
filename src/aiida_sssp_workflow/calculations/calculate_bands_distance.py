@@ -119,9 +119,9 @@ def calculate_eta_and_max_diff(
     weight_a = bandsdata_a.get("weights")
     weight_b = bandsdata_b.get("weights")
     weight = weight_a
-    assert np.allclose(
-        weight_a, weight_b
-    ), "Different weight of kpoints of two calculation."
+    assert np.allclose(weight_a, weight_b), (
+        "Different weight of kpoints of two calculation."
+    )
 
     bands_a = bandsdata_a.get("bands")
     bands_b = bandsdata_b.get("bands")
@@ -205,10 +205,11 @@ def get_bands_distance(
         # swap to make sure a is less electrons pseudo
         bandsdata_a, bandsdata_b = bandsdata_b, bandsdata_a
 
-    assert (
-        int(bandsdata_b["number_of_electrons"])
-        >= int(bandsdata_a["number_of_electrons"])
-    ), f"Need to be less num_bands in a {bandsdata_a['number_of_electrons']} than b {bandsdata_b['number_of_electrons']}"
+    assert int(bandsdata_b["number_of_electrons"]) >= int(
+        bandsdata_a["number_of_electrons"]
+    ), (
+        f"Need to be less num_bands in a {bandsdata_a['number_of_electrons']} than b {bandsdata_b['number_of_electrons']}"
+    )
 
     num_electrons_a = int(bandsdata_a["number_of_electrons"])
     num_electrons_b = int(bandsdata_b["number_of_electrons"])
@@ -238,9 +239,9 @@ def get_bands_distance(
 
     # after cut and align in retrive band, the shapes are same now
     # import ipdb; ipdb.set_trace()
-    assert np.shape(bandsdata_a["bands"]) == np.shape(
-        bandsdata_b["bands"]
-    ), f'{np.shape(bandsdata_a["bands"])} != {np.shape(bandsdata_b["bands"])}'
+    assert np.shape(bandsdata_a["bands"]) == np.shape(bandsdata_b["bands"]), (
+        f"{np.shape(bandsdata_a['bands'])} != {np.shape(bandsdata_b['bands'])}"
+    )
 
     # eta_v
     fermi_shift_v = 0.0
