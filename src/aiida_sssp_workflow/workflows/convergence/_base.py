@@ -55,15 +55,14 @@ def is_valid_cutoff_list(cutoff_list, _=None):
     """Check the cutoff list is a list of tuples and the cutoffs are increasing"""
     if not all(isinstance(cutoff, (tuple, list)) for cutoff in cutoff_list):
         return "cutoff_list must be a list of tuples or list."
-    if not all(
-        cutoff_list[i][0] < cutoff_list[i + 1][0] for i in range(len(cutoff_list) - 1)
-    ):
-        return "cutoff_list must be a list of tuples with increasing ecutwfc"
 
-    if not all(
-        cutoff_list[i][1] < cutoff_list[i + 1][1] for i in range(len(cutoff_list) - 1)
+    if not (
+        all(cutoff_list[i][0] < cutoff_list[i + 1][0] for i in range(len(cutoff_list) - 1))
+        or
+        all(cutoff_list[i][1] < cutoff_list[i + 1][1] for i in range(len(cutoff_list) - 1))
     ):
-        return "cutoff_list must be a list of tuples with increasing ecutrho"
+        return "cutoff_list must be a list of tuples with increasing ecutwfc OR increasing ecutrho"
+
 
 
 class _BaseConvergenceWorkChain(SelfCleanWorkChain):

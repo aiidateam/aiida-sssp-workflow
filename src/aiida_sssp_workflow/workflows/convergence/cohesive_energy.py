@@ -182,6 +182,7 @@ class ConvergenceCohesiveEnergyWorkChain(_BaseConvergenceWorkChain):
 
 def compute_xy(
     node: orm.Node,
+    rho: bool = False,
 ) -> dict[str, Any]:
     """From report calculate the xy data, xs are cutoffs and ys are cohesive energy diff from reference"""
     report_dict = node.outputs.report.get_dict()
@@ -199,7 +200,11 @@ def compute_xy(
             # TODO: log to a warning file for where the node is not finished_okay
             continue
 
-        x = node_point.wavefunction_cutoff
+        if rho:
+            x = node_point.charge_density_cutoff
+        else:
+            x = node_point.wavefunction_cutoff
+
         xs.append(x)
 
         node = orm.load_node(node_point.uuid)
