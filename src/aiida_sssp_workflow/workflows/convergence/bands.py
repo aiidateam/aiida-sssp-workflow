@@ -147,6 +147,7 @@ class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):
         builder.kpoints_distance_bands = orm.Float(protocol["kpoints_distance"])
         builder.init_nbands_factor = orm.Int(protocol["init_nbands_factor"])
         builder.fermi_shift = orm.Float(protocol["fermi_shift"])
+        builder.valence_window_lo = orm.Float(protocol["valence_window_lo"])
         builder.run_band_structure = orm.Bool(False)
 
         return builder
@@ -175,6 +176,7 @@ def compute_xy(
     # smearing width is from degauss
     smearing = reference_node.inputs.bands.pw.parameters.get_dict()["SYSTEM"]["degauss"]
     fermi_shift = reference_node.inputs.fermi_shift.value
+    valence_window_lo = reference_node.inputs.valence_window_lo.value
 
     # always do smearing on high bands and not include the spin since we didn't turn on the spin for all
     # convergence test, but this may change in the future.
@@ -213,6 +215,7 @@ def compute_xy(
             fermi_shift=fermi_shift,
             do_smearing=do_smearing,
             spin=spin,
+            valence_window_lo=valence_window_lo,
         )
         eta_c = res.get("eta_c", None)
         shift_c = res.get("shift_c", None)
