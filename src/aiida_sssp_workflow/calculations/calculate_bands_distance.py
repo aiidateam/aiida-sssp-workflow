@@ -274,7 +274,11 @@ def get_bands_distance(
         smearing_v = 0
 
     outputs = calculate_eta_and_max_diff(
-        bandsdata_a, bandsdata_b, spin, fermi_shift_v, smearing_v,
+        bandsdata_a,
+        bandsdata_b,
+        spin,
+        fermi_shift_v,
+        smearing_v,
         valence_window_lo=valence_window_lo,
     )
 
@@ -287,7 +291,11 @@ def get_bands_distance(
     # if not metal
     smearing_c = smearing
     outputs = calculate_eta_and_max_diff(
-        bandsdata_a, bandsdata_b, spin, fermi_shift, smearing_c,
+        bandsdata_a,
+        bandsdata_b,
+        spin,
+        fermi_shift,
+        smearing_c,
         valence_window_lo=valence_window_lo,
     )
 
