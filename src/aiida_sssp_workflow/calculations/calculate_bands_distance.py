@@ -41,6 +41,23 @@ def fermi_dirac(band_energy, fermi_energy, smearing, spin):
     return res
 
 
+def low_edge_weight(band_energy, lower_edge, smearing):
+    """Smooth indicator ~1 for E > lower_edge, ~0 for E < lower_edge.
+
+    Used as a low-side band-pass multiplier on the Fermi-Dirac occupation:
+    suppresses deep semicore states from contributing to the band-distance
+    metric when their energy is more than `|lower_edge|` below E_F.
+    """
+    old_settings = np.seterr(over="raise", divide="raise")
+    try:
+        res = 1.0 / (np.exp((lower_edge - band_energy) / smearing) + 1.0)
+    except FloatingPointError:
+        res = np.heaviside(band_energy - lower_edge, 1.0)
+    np.seterr(**old_settings)
+
+    return res
+
+
 def retrieve_bands(
     bandsdata: dict,  # bands, kpoints, weights -> corresponding array
     start_band_idx,
@@ -108,6 +125,7 @@ def calculate_eta_and_max_diff(
     spin: bool,
     fermi_shift,
     smearing,
+    valence_window_lo=None,
 ):
     """
     calculate the difference of two bands, weight is supported
@@ -137,6 +155,11 @@ def calculate_eta_and_max_diff(
     # all bands are already shifted to fermi level aligh to zero
     occ_a = fermi_dirac(bands_a, fermi_shift, smearing, spin)
     occ_b = fermi_dirac(bands_b, fermi_shift, smearing, spin)
+    if valence_window_lo is not None:
+        # symmetric low-side cut: suppress states more than `valence_window_lo` eV
+        # below E_F (bands are already shifted so E_F = 0 here)
+        occ_a = occ_a * low_edge_weight(bands_a, -valence_window_lo, smearing)
+        occ_b = occ_b * low_edge_weight(bands_b, -valence_window_lo, smearing)
     occ = np.sqrt(occ_a * occ_b)
 
     bands_diff = bands_a - bands_b
@@ -176,6 +199,7 @@ def get_bands_distance(
     fermi_shift: float,
     do_smearing: bool,
     spin: bool,
+    valence_window_lo=None,
 ):
     """
     example of bandsdata_a -> dict = {
@@ -250,7 +274,12 @@ def get_bands_distance(
         smearing_v = 0
 
     outputs = calculate_eta_and_max_diff(
-        bandsdata_a, bandsdata_b, spin, fermi_shift_v, smearing_v
+        bandsdata_a,
+        bandsdata_b,
+        spin,
+        fermi_shift_v,
+        smearing_v,
+        valence_window_lo=valence_window_lo,
     )
 
     _eV_to_mev = 1000
@@ -262,7 +291,12 @@ def get_bands_distance(
     # if not metal
     smearing_c = smearing
     outputs = calculate_eta_and_max_diff(
-        bandsdata_a, bandsdata_b, spin, fermi_shift, smearing_c
+        bandsdata_a,
+        bandsdata_b,
+        spin,
+        fermi_shift,
+        smearing_c,
+        valence_window_lo=valence_window_lo,
     )
 
     eta_c = outputs.get("eta") * _eV_to_mev

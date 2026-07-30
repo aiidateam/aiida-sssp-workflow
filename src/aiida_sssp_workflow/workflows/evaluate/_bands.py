@@ -80,6 +80,10 @@ class BandsWorkChain(_BaseEvaluateWorkChain):
                     help='initial nbands factor.')
         spec.input('fermi_shift', valid_type=orm.Float, default=lambda: orm.Float(10.0),
                     help='The uplimit of energy to check the bands diff, control the number of bands.')
+        spec.input('valence_window_lo', valid_type=orm.Float, default=lambda: orm.Float(10.0),
+                    help='Low-side energy window (eV) around E_F for the band-distance metric. '
+                         'States more than this many eV below E_F are suppressed via a smooth '
+                         'Fermi-Dirac edge, making the metric robust to semicore-mismatch.')
         spec.input('run_band_structure', valid_type=orm.Bool, default=lambda: orm.Bool(False),
                     help='if True, run bands structure calculation on seekpath kpath.')
         spec.input('kpoints_distance_band_structure', valid_type=orm.Float, required=False,

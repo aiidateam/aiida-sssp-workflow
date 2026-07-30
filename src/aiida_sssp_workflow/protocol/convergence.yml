@@ -29,6 +29,7 @@ balanced:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
+        valence_window_lo: 10.0
 
     eos:
         scale_count: 7
@@ -64,6 +65,7 @@ fine:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
+        valence_window_lo: 10.0
 
     eos:
         scale_count: 7
@@ -99,6 +101,7 @@ test:
     bands:
         init_nbands_factor: 3.0
         fermi_shift: 10.0
+        valence_window_lo: 10.0
 
     eos:
         scale_count: 5
