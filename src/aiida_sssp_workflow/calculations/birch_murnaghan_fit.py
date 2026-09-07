@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Birch-Murnaghan fit as calcfunction refactor from eosfit.py v3.1 write by Kurt Lejaeghere
 Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for

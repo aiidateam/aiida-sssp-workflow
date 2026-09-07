@@ -1,11 +1,11 @@
 import json
-from pathlib import Path
 from importlib import resources
-from ase import Atoms, io
+from pathlib import Path
 
 from aiida import orm
 from aiida.engine import calcfunction
 from aiida.tools.data.array.kpoints import get_kpoints_path
+from ase import Atoms, io
 
 from .element import MAGNETIC_ELEMENTS
 
