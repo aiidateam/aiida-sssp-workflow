@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on bands of a given pseudopotential
 """

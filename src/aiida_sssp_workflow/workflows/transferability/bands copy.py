@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Bands distance of many input pseudos
 """
