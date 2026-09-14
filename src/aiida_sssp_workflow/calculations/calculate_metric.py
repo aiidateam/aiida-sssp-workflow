@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Refactor from calcDelta.py v3.1 write by Kurt Lejaeghere
 Copyright (C) 2012 Kurt Lejaeghere <Kurt.Lejaeghere@UGent.be>, Center for

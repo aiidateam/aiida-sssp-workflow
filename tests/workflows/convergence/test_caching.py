@@ -1,9 +1,7 @@
 import pytest
-
-from aiida.plugins import DataFactory, WorkflowFactory
 from aiida.engine import ProcessBuilder, run_get_node
 from aiida.manage.caching import enable_caching
-
+from aiida.plugins import DataFactory, WorkflowFactory
 
 UpfData = DataFactory("pseudo.upf")
 

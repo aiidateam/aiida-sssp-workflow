@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """Workchain to calculate delta factor of specific psp"""
 
-from typing import Tuple, Any
 from pathlib import Path
+from typing import Any, Tuple
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
@@ -18,10 +17,10 @@ from aiida_sssp_workflow.utils import (
     get_standard_structure,
 )
 from aiida_sssp_workflow.utils.pseudo import (
-    extract_pseudo_info,
-    compute_total_nelectrons,
-    get_pseudo_O,
     CurateType,
+    compute_total_nelectrons,
+    extract_pseudo_info,
+    get_pseudo_O,
 )
 from aiida_sssp_workflow.workflows.evaluate._metric import MetricWorkChain
 from aiida_sssp_workflow.workflows.transferability import _BaseMeasureWorkChain
