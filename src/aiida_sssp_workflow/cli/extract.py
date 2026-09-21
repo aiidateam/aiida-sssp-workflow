@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Extract SSSP verification results from AiiDA database.
 
 This script will get verification nodes pk as inputs and export all results into a json file
