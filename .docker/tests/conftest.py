@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=missing-docstring, redefined-outer-name
 import pytest
 

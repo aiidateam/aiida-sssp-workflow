@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Base legacy work chain
 """
@@ -31,7 +30,7 @@ from aiida_sssp_workflow.workflows.common import (
 UpfData = DataFactory("pseudo.upf")
 
 
-class abstract_attribute(object):
+class abstract_attribute:
     """lazy variable check: https://stackoverflow.com/a/32536493"""
 
     def __get__(self, obj, type):

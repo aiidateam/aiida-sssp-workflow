@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on cohesive energy of a given pseudopotential
 """
 
 from pathlib import Path
-from typing import Union, Any
+from typing import Any, Union
 
 from aiida import orm
 from aiida.engine import ProcessBuilder

@@ -1,8 +1,7 @@
 import pytest
-
 from aiida import orm
-from aiida.plugins import DataFactory, WorkflowFactory
 from aiida.engine import ProcessBuilder, run_get_node
+from aiida.plugins import DataFactory, WorkflowFactory
 
 from aiida_sssp_workflow.workflows.transferability.report import EOSReport
 

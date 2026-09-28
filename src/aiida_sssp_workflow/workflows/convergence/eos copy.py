@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on cohesive energy of a given pseudopotential
 """

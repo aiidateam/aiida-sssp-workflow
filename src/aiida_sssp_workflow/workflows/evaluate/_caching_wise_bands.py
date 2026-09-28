@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Workchain to compute a band structure for a given structure using Quantum ESPRESSO pw.x.
 This is a modified version of the original `PwBandsWorkChain` in aiida-quantumespresso in order to
 support caching of the results wisely. The PW calculation will be re-run if the the parent folder is cleaned and
@@ -402,7 +401,7 @@ class PwBandsWorkChain(ProtocolMixin, WorkChain):
                 try:
                     called_descendant.outputs.remote_folder._clean()  # pylint: disable=protected-access
                     cleaned_calcs.append(called_descendant.pk)
-                except (IOError, OSError, KeyError):
+                except (OSError, KeyError):
                     pass
 
         if cleaned_calcs:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on pressure of a given pseudopotential
 """

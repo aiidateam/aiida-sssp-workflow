@@ -1,12 +1,11 @@
 import re
-
-from pydantic import BaseModel
-from importlib import resources
 from enum import Enum
+from importlib import resources
+
 from aiida_pseudo.data.pseudo import UpfData
+from pydantic import BaseModel
 
 from .element import HIGH_DUAL_ELEMENTS
-
 
 REGEX_ELEMENT_V1 = re.compile(r"""(?P<element>[a-zA-Z]{1,2})\s+Element""")
 REGEX_ELEMENT_V2 = re.compile(

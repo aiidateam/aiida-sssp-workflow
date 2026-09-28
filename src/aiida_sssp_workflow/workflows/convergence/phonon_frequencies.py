@@ -1,20 +1,20 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on phonon frequencies of a given pseudopotential
 """
 
-from typing import Union, Any
 from pathlib import Path
+from typing import Any, Union
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
 from aiida_pseudo.data.pseudo import UpfData
+
+from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 from aiida_sssp_workflow.workflows.evaluate._phonon_frequencies import (
     PhononFrequenciesWorkChain,
 )
-from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
-from aiida_sssp_workflow.utils import get_default_mpi_options
 
 
 class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
