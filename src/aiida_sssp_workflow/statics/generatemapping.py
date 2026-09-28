@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 
 from aiida_sssp_workflow.utils import (
-    MAGNETIC_ELEMENTS,
     ACTINIDE_ELEMENTS,
-    LANTHANIDE_ELEMENTS,
-    NO_GS_CONF_ELEMENTS,
     ALL_ELEMENTS,
+    LANTHANIDE_ELEMENTS,
+    MAGNETIC_ELEMENTS,
+    NO_GS_CONF_ELEMENTS,
     UNSUPPORTED_ELEMENTS,
 )
 

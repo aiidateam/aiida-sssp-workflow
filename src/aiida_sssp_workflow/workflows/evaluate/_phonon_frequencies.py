@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
 """
 WorkChain calculate phonon frequencies at Gamma
 """
 
 from builtins import RuntimeError
+
 from aiida import orm
 from aiida.common import NotExistentAttributeError
 from aiida.engine import ToContext, while_
-from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 from aiida_quantumespresso.workflows.ph.base import PhBaseWorkChain
+from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 
 from aiida_sssp_workflow.workflows.common import clean_workdir, operate_calcjobs
 
