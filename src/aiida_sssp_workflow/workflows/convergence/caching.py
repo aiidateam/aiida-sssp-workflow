@@ -2,11 +2,10 @@ from pathlib import Path
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
-
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 
-from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 from aiida_sssp_workflow.utils import get_default_mpi_options
+from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
 
 
 class _CachingConvergenceWorkChain(_BaseConvergenceWorkChain):
