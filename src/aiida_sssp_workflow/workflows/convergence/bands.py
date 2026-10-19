@@ -1,21 +1,20 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on bands of a given pseudopotential
 """
 
-from pathlib import Path
-from typing import Union, Any
 import copy
+from pathlib import Path
+from typing import Any, Union
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
 from aiida_pseudo.data.pseudo import UpfData
 
-from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.calculations.calculate_bands_distance import get_bands_distance
+from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
-from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
+from aiida_sssp_workflow.workflows.evaluate._bands import BandsWorkChain
 
 
 class ConvergenceBandsWorkChain(_BaseConvergenceWorkChain):

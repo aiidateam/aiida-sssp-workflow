@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on phonon frequencies of a given pseudopotential
 """
@@ -191,7 +190,7 @@ class ConvergencePhononFrequenciesWorkChain(_BaseConvergenceWorkChain):
         # since ph calculation now doesn't support parallelization
         cmdline_list = []
         for key, value in self.ctx.parallelization.items():
-            cmdline_list.append(f"-{str(key)}")
+            cmdline_list.append(f"-{key!s}")
             cmdline_list.append(str(value))
 
         # Sinec PH calculation always runs more time then the correspoding pw calculation
