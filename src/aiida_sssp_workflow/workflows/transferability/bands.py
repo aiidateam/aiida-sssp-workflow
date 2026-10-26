@@ -1,25 +1,24 @@
-# -*- coding: utf-8 -*-
 """
 Bands distance of many input pseudos
 """
 
-from typing import Tuple
 from pathlib import Path
+from typing import Tuple
 
 from aiida import orm
-from aiida.engine import ToContext, ProcessBuilder
+from aiida.engine import ProcessBuilder, ToContext
 from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import (
+    extract_pseudo_info,
     get_protocol,
     get_standard_structure,
 )
-from aiida_sssp_workflow.utils import extract_pseudo_info
+from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
 from aiida_sssp_workflow.utils.structure import (
     UNARIE_CONFIGURATIONS,
     get_default_configuration,
 )
-from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
 from aiida_sssp_workflow.workflows.evaluate._bands import (
     BandsWorkChain as EvaluateBandsWorkChain,
 )
