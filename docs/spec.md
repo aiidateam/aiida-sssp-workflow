@@ -125,7 +125,6 @@ The `options` dict has the format of:
     "max_wallclock_seconds": 1800,  # 30 min
     "withmpi": True,
 }
-
 ```
 where the `max_wallclock_seconds` is exactly used for pw calculation while for ph calculation the value is set to 4 times of value since the ph calculation roughly estimated to elapse 4 times slower that pw calculation of the corresponding pw calculation to finish.
 For atomic calculation in cohesive energy evaluation of lanthanides, the `max_wallclock_seconds` also set to 4 times otherwise it may not finished after 5 times of restart.

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=wrong-import-position,wildcard-import
 """Module for the command line interface."""
 
