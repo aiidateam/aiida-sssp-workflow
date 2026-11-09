@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """utils.py"""
 
 import collections.abc
@@ -160,11 +159,10 @@ def get_magnetic_inputs(structure: orm.StructureData):
             },
         }
 
-    #
     if kind_name in ["Mn", "O", "Cr"]:
         for i, site in enumerate(structure.sites):
             mag_structure.append_atom(
-                position=site.position, symbols=kind_name, name=f"{kind_name}{i+1}"
+                position=site.position, symbols=kind_name, name=f"{kind_name}{i + 1}"
             )
 
         if kind_name == "Mn":

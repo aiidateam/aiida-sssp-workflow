@@ -1,20 +1,19 @@
-# -*- coding: utf-8 -*-
 """
 All in one verification workchain
 """
 
-from typing import Tuple
 from pathlib import Path
+from typing import Tuple
 
 from aiida import orm
-from aiida.engine import if_, ProcessBuilder
+from aiida.engine import ProcessBuilder, if_
 from aiida.engine.processes.exit_code import ExitCode
 from aiida.engine.processes.functions import calcfunction
 from aiida.plugins import WorkflowFactory
 from aiida_pseudo.data.pseudo import UpfData
 
-from aiida_sssp_workflow.utils.protocol import generate_cutoff_list, get_protocol
 from aiida_sssp_workflow.utils import get_default_mpi_options, parse, serialize_data
+from aiida_sssp_workflow.utils.protocol import generate_cutoff_list, get_protocol
 from aiida_sssp_workflow.utils.pseudo import (
     PseudoInfo,
     extract_pseudo_info,

@@ -1,9 +1,8 @@
 from builtins import ConnectionError
 from typing import Optional
-from paramiko import ssh_exception
-
 
 from aiida import orm
+from paramiko import ssh_exception
 
 
 def get_extra_parameters_for_lanthanides(element, nbnd) -> dict:
@@ -87,7 +86,7 @@ def operate_calcjobs(wnode, operator, all_same_nodes=False):
                     pk = operator(n)
                     cleaned_calcs += [pk] if pk else []
 
-            except (IOError, OSError, KeyError) as exc:
+            except (OSError, KeyError) as exc:
                 raise RuntimeError(
                     "Failed to clean working dirctory of calcjob"
                 ) from exc

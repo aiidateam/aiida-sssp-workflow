@@ -1,5 +1,4 @@
 import pytest
-
 from aiida.engine import ProcessBuilder, run_get_node
 from aiida.plugins import WorkflowFactory
 

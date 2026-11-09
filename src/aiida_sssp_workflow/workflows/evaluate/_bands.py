@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 WorkChain calculate the bands for certain pseudopotential
 """

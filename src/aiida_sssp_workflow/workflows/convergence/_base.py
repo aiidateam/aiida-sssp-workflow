@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Base convergence workchain
 
@@ -6,13 +5,12 @@ This abstract class give the framework of how to run a convergence test on a giv
 The detail parameters for different properties are defined in the subclass that inherit this base class.
 """
 
-from typing import Union
-from pathlib import Path
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
+from typing import Union
 
 from aiida import orm
-from aiida.engine import append_
-from aiida.engine import ProcessBuilder
+from aiida.engine import ProcessBuilder, append_
 from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import (
@@ -20,14 +18,14 @@ from aiida_sssp_workflow.utils import (
     get_protocol,
     get_standard_structure,
 )
+from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
 from aiida_sssp_workflow.utils.pseudo import extract_pseudo_info
 from aiida_sssp_workflow.utils.structure import UNARIE_CONFIGURATIONS
-from aiida_sssp_workflow.utils.element import UNSUPPORTED_ELEMENTS
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
 
-class abstract_attribute(object):
+class abstract_attribute:
     """lazy variable check: https://stackoverflow.com/a/32536493"""
 
     def __get__(self, obj, type):

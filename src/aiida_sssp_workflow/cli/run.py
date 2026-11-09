@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Running verification workchain
 """
 
-from typing import List, Tuple
 from pathlib import Path
+from typing import List, Tuple
 
 import aiida
 import click
@@ -14,8 +13,8 @@ from aiida.cmdline.params import options, types
 from aiida.cmdline.utils import echo
 from aiida.engine import ProcessBuilder, run_get_node, submit
 from aiida.plugins import WorkflowFactory
-
 from aiida_pseudo.data.pseudo.upf import UpfData
+
 from aiida_sssp_workflow.cli import cmd_root
 from aiida_sssp_workflow.workflows.verifications import (
     DEFAULT_CONVERGENCE_PROPERTIES_LIST,
