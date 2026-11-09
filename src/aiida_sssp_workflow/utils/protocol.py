@@ -1,6 +1,7 @@
-from typing import List, Tuple
-import yaml
 from importlib import resources
+from typing import List, Tuple
+
+import yaml
 
 from aiida_sssp_workflow.utils.pseudo import DualType, get_dual_type
 
