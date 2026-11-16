@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 WorkChain calculate the metric (from EOS results) for certain pseudopotential
 """
@@ -8,8 +7,8 @@ from aiida.plugins import DataFactory
 from plumpy import ToContext
 
 from aiida_sssp_workflow.calculations.calculate_metric import metric_analyze
-from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
+from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 
 UpfData = DataFactory("pseudo.upf")
 

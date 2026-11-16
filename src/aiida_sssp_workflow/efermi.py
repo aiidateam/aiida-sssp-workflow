@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Reuse the pure python translate from Nicola's F77 code
 Adapt from Austin's repository:

@@ -3,13 +3,13 @@ This class makes it able to expose precision measure and bands measure inputs to
 workchain.
 """
 
-from typing import Tuple
 from pathlib import Path
+from typing import Tuple
 
 from aiida import orm
 from aiida_pseudo.data.pseudo import UpfData
 
-from aiida_sssp_workflow.utils import get_default_mpi_options, get_default_dual
+from aiida_sssp_workflow.utils import get_default_dual, get_default_mpi_options
 from aiida_sssp_workflow.workflows import SelfCleanWorkChain
 
 
