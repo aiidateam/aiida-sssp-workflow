@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 A calcfunctian create_isolate_atom
 Create the structure of isolate atom

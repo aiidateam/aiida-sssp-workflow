@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The string copy paste from WIEN2k.txt of calcDelta package version 3.1
 and WIEN2K eos results for the rare-earth nitrides (Lanthanides)

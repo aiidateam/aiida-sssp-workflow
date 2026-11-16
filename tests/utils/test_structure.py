@@ -1,9 +1,9 @@
-import pytest
 import itertools
-import numpy as np
 
-from aiida.engine import run_get_node
+import numpy as np
+import pytest
 from aiida import orm
+from aiida.engine import run_get_node
 
 from aiida_sssp_workflow.utils import get_default_configuration, get_standard_structure
 from aiida_sssp_workflow.utils.element import ALL_ELEMENTS, UNSUPPORTED_ELEMENTS

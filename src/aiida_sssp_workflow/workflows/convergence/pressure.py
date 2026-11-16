@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Convergence test on pressure of a given pseudopotential
 """
 
 from pathlib import Path
-from typing import Union, Any
+from typing import Any, Union
 
 from aiida import orm
 from aiida.engine import ProcessBuilder
@@ -12,9 +11,9 @@ from aiida_pseudo.data.pseudo import UpfData
 
 from aiida_sssp_workflow.utils import get_default_mpi_options
 from aiida_sssp_workflow.workflows.convergence._base import _BaseConvergenceWorkChain
+from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 from aiida_sssp_workflow.workflows.evaluate._eos import _EquationOfStateWorkChain
 from aiida_sssp_workflow.workflows.evaluate._pressure import PressureWorkChain
-from aiida_sssp_workflow.workflows.convergence.report import ConvergenceReport
 
 
 class ConvergencePressureWorkChain(_BaseConvergenceWorkChain):
