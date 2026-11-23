@@ -1,17 +1,18 @@
 """Test ``utils.pseudo`` module."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from aiida_sssp_workflow.utils import extract_pseudo_info, parse_std_filename
 from aiida_sssp_workflow.utils.pseudo import (
+    CurateType,
     DualType,
     compute_total_nelectrons,
-    get_dual_type,
-    get_pseudo_O,
-    get_pseudo_N,
-    CurateType,
     extract_pseudo_info_from_filename,
+    get_dual_type,
+    get_pseudo_N,
+    get_pseudo_O,
 )
 
 upf_folder = Path(__file__).parent.parent / "_statics" / "upf"
