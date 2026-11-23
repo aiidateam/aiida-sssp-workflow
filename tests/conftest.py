@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
 """fixtures"""
 
-import os
-import pytest
-from pathlib import Path
-import uuid
 import hashlib
+import os
+import uuid
+from pathlib import Path
 
+import pytest
 from aiida import orm
-from aiida.orm.utils.managers import NodeLinksManager
 from aiida.engine import ProcessBuilder
+from aiida.orm.utils.managers import NodeLinksManager
+
 from aiida_sssp_workflow.utils import serialize_data
 
 pytest_plugins = ["aiida.manage.tests.pytest_fixtures"]
@@ -42,9 +42,7 @@ def code_generator(aiida_localhost):
         aiida_localhost.set_use_double_quotes(True)
         uid = os.getuid()
         gid = os.getgid()
-        engine_command = """docker run -i -v $PWD:/workdir -w /workdir -u {uid}:{gid} {{image_name}} sh -c""".format(
-            uid=uid, gid=gid
-        )
+        engine_command = f"""docker run -i -v $PWD:/workdir -w /workdir -u {uid}:{gid} {{image_name}} sh -c"""
         code = orm.ContainerizedCode(
             label=f"{bin}-docker",
             default_calc_job_plugin=plugin,
